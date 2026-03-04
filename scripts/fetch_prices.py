@@ -15,7 +15,8 @@ cur.execute("""
 CREATE TABLE IF NOT EXISTS prices (
 product_id INTEGER,
 price REAL,
-date TEXT
+date TEXT,
+PRIMARY KEY (product_id, date)
 )
 """)
 
