@@ -48,7 +48,7 @@ for g in groups[:20]:   # first 20 sets for now
             continue
 
         cur.execute(
-            "INSERT INTO prices VALUES (?, ?, ?)",
+            "INSERT OR REPLACE INTO prices(product_id, price, date) VALUES (?, ?, ?)",
             (p["productId"], price, today)
         )
 
