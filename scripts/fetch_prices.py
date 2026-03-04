@@ -1,11 +1,14 @@
 import requests
 import sqlite3
 from datetime import date
+import os
+
+os.makedirs("data", exist_ok=True)
 
 CATEGORY_ID = 2
 BASE = "https://tcgcsv.com/tcgplayer"
 
-conn = sqlite3.connect("prices.db")
+conn = sqlite3.connect("data/prices.db")
 cur = conn.cursor()
 
 cur.execute("""
