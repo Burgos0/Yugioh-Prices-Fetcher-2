@@ -1,29 +1,34 @@
 import requests
-import json
+import sqlite3
+from datetime import date
 
 CATEGORY_ID = 2
-
 BASE = "https://tcgcsv.com/tcgplayer"
 
+conn = sqlite3.connect("prices.db")
+cur = conn.cursor()
+
+cur.execute("""
+CREATE TABLE IF NOT EXISTS prices (
+product_id INTEGER,
+price REAL,
+date TEXT
+)
+""")
+
 def get_groups():
-    url = f"{BASE}/{CATEGORY_ID}/groups"
-    r = requests.get(url)
-    data = r.json()
-    return data["results"]
+    r = requests.get(f"{BASE}/{CATEGORY_ID}/groups")
+    return r.json()["results"]
 
 def get_prices(group_id):
-    url = f"{BASE}/{CATEGORY_ID}/{group_id}/prices"
-    r = requests.get(url)
-    data = r.json()
-    return data["results"]
+    r = requests.get(f"{BASE}/{CATEGORY_ID}/{group_id}/prices")
+    return r.json()["results"]
 
 groups = get_groups()
 
-print("Total sets:", len(groups))
+today = str(date.today())
 
-all_prices = []
-
-for g in groups[:10]:  # limit first 10 sets for now
+for g in groups[:20]:   # first 20 sets for now
     gid = g["groupId"]
     name = g["name"]
 
@@ -32,9 +37,18 @@ for g in groups[:10]:  # limit first 10 sets for now
     prices = get_prices(gid)
 
     for p in prices:
-        all_prices.append({
-            "productId": p["productId"],
-            "marketPrice": p["marketPrice"]
-        })
 
-print("Total cards fetched:", len(all_prices))
+        price = p.get("marketPrice")
+
+        if price is None:
+            continue
+
+        cur.execute(
+            "INSERT INTO prices VALUES (?, ?, ?)",
+            (p["productId"], price, today)
+        )
+
+conn.commit()
+conn.close()
+
+print("Saved prices for", today)
