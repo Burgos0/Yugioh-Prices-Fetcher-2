@@ -25,6 +25,10 @@ CREATE TABLE IF NOT EXISTS prices (
 def get_groups():
     r = requests.get(f"{BASE}/{CATEGORY_ID}/groups")
     return r.json()["results"]
+    
+def get_products(group_id):
+    r = requests.get(f"{BASE}/{CATEGORY_ID}/{group_id}/products")
+    return r.json()["results"]
 
 def get_prices(group_id):
     r = requests.get(f"{BASE}/{CATEGORY_ID}/{group_id}/prices")
@@ -34,20 +38,33 @@ groups = get_groups()
 
 today = str(date.today())
 
-for g in groups[:20]:   # first 20 sets for now
+for g in groups[:20]:
     gid = g["groupId"]
     set_name = g["name"]
 
     print("Fetching:", set_name)
 
+    products = get_products(gid)
+
+    product_lookup = {}
+
+    for prod in products:
+        product_lookup[prod["productId"]] = prod.get("name")
+
     prices = get_prices(gid)
 
     for p in prices:
-        card_name = p.get("productName")
+        product_id = p["productId"]
+        card_name = product_lookup.get(product_id)
         price = p.get("marketPrice")
 
         if price is None:
-            continue
+        continue
+
+        cur.execute(
+            "INSERT OR REPLACE INTO prices(product_id, card_name, set_name, price, date) VALUES (?, ?, ?, ?, ?)",
+            (product_id, card_name, set_name, price, today)
+        )
 
         cur.execute(
             "INSERT OR REPLACE INTO prices(product_id, card_name, set_name, price, date) VALUES (?, ?, ?, ?, ?)",
