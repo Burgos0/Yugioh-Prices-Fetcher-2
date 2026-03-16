@@ -16,7 +16,11 @@ CREATE TABLE IF NOT EXISTS prices (
     product_id INTEGER,
     card_name TEXT,
     set_name TEXT,
-    price REAL,
+    low_price REAL,
+    mid_price REAL,
+    high_price REAL,
+    market_price REAL,
+    direct_low_price REAL,
     date TEXT,
     PRIMARY KEY (product_id, date)
 )
@@ -56,19 +60,43 @@ for g in groups[:20]:
     for p in prices:
         product_id = p["productId"]
         card_name = product_lookup.get(product_id)
-        price = p.get("marketPrice")
+        
+        low_price = p.get("lowPrice")
+        mid_price = p.get("midPrice")
+        high_price = p.get("highPrice")
+        market_price = p.get("marketPrice")
+        direct_low_price = p.get("directLowPrice")
 
-        if price is None:
+        values = [v for v in [low_price, mid_price, high_price, market_price, direct_low_price] if v is not None]
+
+        if not values:
             continue
-
+            
         cur.execute(
-            "INSERT OR REPLACE INTO prices(product_id, card_name, set_name, price, date) VALUES (?, ?, ?, ?, ?)",
-            (product_id, card_name, set_name, price, today)
-        )
-
-        cur.execute(
-            "INSERT OR REPLACE INTO prices(product_id, card_name, set_name, price, date) VALUES (?, ?, ?, ?, ?)",
-            (p["productId"], card_name, set_name, price, today)
+            """
+            INSERT OR REPLACE INTO prices(
+                product_id,
+                card_name,
+                set_name,
+                low_price,
+                mid_price,
+                high_price,
+                market_price,
+                direct_low_price,
+                date
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                product_id,
+                card_name,
+                set_name,
+                low_price,
+                mid_price,
+                high_price,
+                market_price,
+                direct_low_price,
+                today
+            )
         )
 
 conn.commit()
