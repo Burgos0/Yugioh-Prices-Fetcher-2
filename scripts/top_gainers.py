@@ -30,4 +30,4 @@ top = merged.sort_values("gain", ascending=False).head(20)
 print("\nTop Weekly Gainers\n")
 
 for _, row in top.iterrows():
-    print(row["product_id"], round(row["gain"] * 100, 2), "%")
+    print(row["card_name_now"], "-", round(row["gain"] * 100, 2), "%", "| Set:", row["set_name_now"])
