@@ -13,10 +13,12 @@ cur = conn.cursor()
 
 cur.execute("""
 CREATE TABLE IF NOT EXISTS prices (
-product_id INTEGER,
-price REAL,
-date TEXT,
-PRIMARY KEY (product_id, date)
+    product_id INTEGER,
+    card_name TEXT,
+    set_name TEXT,
+    price REAL,
+    date TEXT,
+    PRIMARY KEY (product_id, date)
 )
 """)
 
@@ -34,22 +36,22 @@ today = str(date.today())
 
 for g in groups[:20]:   # first 20 sets for now
     gid = g["groupId"]
-    name = g["name"]
+    set_name = g["name"]
 
-    print("Fetching:", name)
+    print("Fetching:", set_name)
 
     prices = get_prices(gid)
 
     for p in prices:
-
+        card_name = p.get("productName")
         price = p.get("marketPrice")
 
         if price is None:
             continue
 
         cur.execute(
-            "INSERT OR REPLACE INTO prices(product_id, price, date) VALUES (?, ?, ?)",
-            (p["productId"], price, today)
+            "INSERT OR REPLACE INTO prices(product_id, card_name, set_name, price, date) VALUES (?, ?, ?, ?, ?)",
+            (p["productId"], card_name, set_name, price, today)
         )
 
 conn.commit()
