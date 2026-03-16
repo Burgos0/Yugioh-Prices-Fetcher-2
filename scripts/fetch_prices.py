@@ -59,7 +59,7 @@ for g in groups[:20]:
         price = p.get("marketPrice")
 
         if price is None:
-        continue
+            continue
 
         cur.execute(
             "INSERT OR REPLACE INTO prices(product_id, card_name, set_name, price, date) VALUES (?, ?, ?, ?, ?)",
