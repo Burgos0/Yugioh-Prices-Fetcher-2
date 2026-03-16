@@ -27,6 +27,10 @@ jobs:
       - name: run yugioh fetcher
         run: |
           python scripts/fetch_prices.py
+      
+      - name: Calculate top gainers
+        run: |
+          python scripts/top_gainers.py
 
       - name: Commit database to repo
         run: |
