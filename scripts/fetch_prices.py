@@ -26,17 +26,45 @@ CREATE TABLE IF NOT EXISTS prices (
 )
 """)
 
+def fetch_json(url):
+    headers = {
+        "User-Agent": "Mozilla/5.0 yugioh-price-fetcher/1.0"
+    }
+
+    r = requests.get(url, headers=headers, timeout=30)
+
+    print("URL:", url)
+    print("Status:", r.status_code)
+    print("Content-Type:", r.headers.get("content-type"))
+
+    if r.status_code != 200:
+        print("Response preview:", r.text[:500])
+        r.raise_for_status()
+
+    try:
+        data = r.json()
+    except Exception:
+        print("JSON failed. Response preview:")
+        print(r.text[:1000])
+        raise
+
+    if "results" not in data:
+        print("Unexpected JSON:", data)
+        raise ValueError("Missing 'results' in response")
+
+    return data["results"]
+
+
 def get_groups():
-    r = requests.get(f"{BASE}/{CATEGORY_ID}/groups")
-    return r.json()["results"]
-    
+    return fetch_json(f"{BASE}/{CATEGORY_ID}/groups")
+
+
 def get_products(group_id):
-    r = requests.get(f"{BASE}/{CATEGORY_ID}/{group_id}/products")
-    return r.json()["results"]
+    return fetch_json(f"{BASE}/{CATEGORY_ID}/{group_id}/products")
+
 
 def get_prices(group_id):
-    r = requests.get(f"{BASE}/{CATEGORY_ID}/{group_id}/prices")
-    return r.json()["results"]
+    return fetch_json(f"{BASE}/{CATEGORY_ID}/{group_id}/prices")
 
 groups = get_groups()
 
