@@ -77,6 +77,9 @@ for g in groups[:20]:
     print("Fetching:", set_name)
 
     products = get_products(gid)
+    
+    print(products[0])
+    exit()
 
     product_lookup = {}
 
