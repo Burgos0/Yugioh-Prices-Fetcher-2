@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="content-wrapper">
+    {% if error %}
+    <div class="error-box">
+        <strong>Error:</strong> {{ error }}
+    </div>
+    {% endif %}
+    
+    <div class="filters">
+        <p class="filter-label">Filter by status:</p>
+        <div class="filter-buttons">
+            <a href="{{ url_for('main.index', status='all') }}" 
+               class="filter-btn {% if current_filter == 'all' %}active{% endif %}">
+                All
+            </a>
+            <a href="{{ url_for('main.index', status='confirmed') }}" 
+               class="filter-btn {% if current_filter == 'confirmed' %}active{% endif %}">
+                ✓ Confirmed Only
+            </a>
+            <a href="{{ url_for('main.index', status='unconfirmed') }}" 
+               class="filter-btn {% if current_filter == 'unconfirmed' %}active{% endif %}">
+                ⚠ Unconfirmed Only
+            </a>
+        </div>
+    </div>
+    
+    {% if gainers %}
+    <div class="table-wrapper">
+        <table class="gainers-table">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Card Name</th>
+                    <th>Set</th>
+                    <th>Baseline</th>
+                    <th>Current</th>
+                    <th>Gain ($)</th>
+                    <th>Gain (%)</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for gainer in gainers %}
+                <tr class="status-{{ gainer.status|lower }}">
+                    <td class="rank">{{ gainer.rank }}</td>
+                    <td class="card-name">{{ gainer.card_name }}</td>
+                    <td class="set-name">{{ gainer.set_name }}</td>
+                    <td class="price">${{ "%.2f"|format(gainer.baseline_value) }}</td>
+                    <td class="price">${{ "%.2f"|format(gainer.current_value) }}</td>
+                    <td class="price">${{ "%.2f"|format(gainer.dollar_gain) }}</td>
+                    <td class="percent">{{ "%.2f"|format(gainer.percent_gain) }}%</td>
+                    <td class="status">
+                        {% if gainer.status == 'CONFIRMED' %}
+                        <span class="badge confirmed">✓ CONFIRMED</span>
+                        {% else %}
+                        <span class="badge unconfirmed">⚠ UNCONFIRMED</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="summary">
+        <p><strong>{{ gainers|length }} top gainers displayed</strong> | Analysis period: ~7 days ago vs recent 3-day average</p>
+    </div>
+    {% else %}
+    <div class="no-data">
+        <p>No gainers found. Data may not be available yet.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
