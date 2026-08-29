@@ -30,12 +30,13 @@ jobs:
       
       - name: Calculate top gainers
         run: |
-          python scripts/top_gainers.py
+          python -m scripts.top_gainers
+        continue-on-error: true
 
       - name: Commit database to repo
+        if: always()
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add data/prices.db
-          git commit -m "Update prices.db" || echo "No changes to commit"
-          git push
+          git diff --cached --quiet || (git commit -m "Update prices.db" && git push)
