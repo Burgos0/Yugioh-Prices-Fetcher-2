@@ -8,8 +8,11 @@ os.makedirs("data", exist_ok=True)
 
 CATEGORY_ID = 2
 BASE = "https://tcgcsv.com/tcgplayer"
-MAX_RETRIES = 3
-RETRY_DELAY = 1  # seconds
+MAX_RETRIES = 5
+RETRY_DELAY = 1  # seconds, doubled each retry (exponential backoff)
+SET_DELAY = 0.5  # seconds to wait between sets, to reduce rate-limit/server pressure
+MIN_EXPECTED_DAILY_ROWS = 40000  # normal daily count is ~47,000
+MAX_FAILED_SET_RATIO = 0.10  # fail the run if more than 10% of sets failed
 
 conn = sqlite3.connect("data/prices.db")
 cur = conn.cursor()
@@ -30,43 +33,44 @@ CREATE TABLE IF NOT EXISTS prices (
 """)
 
 def fetch_json(url):
-    """Fetch JSON from URL with retry logic and exponential backoff."""
+    """Fetch JSON from URL with retry logic and exponential backoff.
+    
+    Retries on: request timeouts, connection errors, HTTP 429, and HTTP 5xx.
+    Does NOT retry other HTTP errors (e.g. 404) since those won't succeed on retry.
+    """
     headers = {
         "User-Agent": "Mozilla/5.0 yugioh-price-fetcher/1.0"
     }
     
+    last_error = None
+    
     for attempt in range(MAX_RETRIES):
         try:
             r = requests.get(url, headers=headers, timeout=30)
-            
-            if r.status_code != 200:
-                if attempt < MAX_RETRIES - 1:
-                    sleep_time = RETRY_DELAY * (2 ** attempt)
-                    print(f"  HTTP {r.status_code}. Retrying in {sleep_time}s...")
-                    time.sleep(sleep_time)
-                    continue
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+            last_error = e
+        else:
+            if r.status_code == 200:
+                try:
+                    data = r.json()
+                    if "results" not in data:
+                        raise ValueError("Missing 'results' in response")
+                    return data["results"]
+                except ValueError as e:
+                    last_error = e
+            elif r.status_code == 429 or r.status_code >= 500:
+                # Rate-limited or server error - retryable
+                last_error = requests.HTTPError(f"HTTP {r.status_code} (retryable)")
+            else:
+                # Non-retryable client error - fail immediately
                 r.raise_for_status()
-            
-            try:
-                data = r.json()
-            except Exception as e:
-                if attempt < MAX_RETRIES - 1:
-                    sleep_time = RETRY_DELAY * (2 ** attempt)
-                    print(f"  JSON parse error. Retrying in {sleep_time}s...")
-                    time.sleep(sleep_time)
-                    continue
-                raise ValueError(f"Failed to parse JSON: {e}")
-            
-            if "results" not in data:
-                raise ValueError("Missing 'results' in response")
-            
-            return data["results"]
-            
-        except Exception as e:
-            if attempt == MAX_RETRIES - 1:
-                raise
+        
+        if attempt < MAX_RETRIES - 1:
+            sleep_time = RETRY_DELAY * (2 ** attempt)
+            print(f"  {last_error}. Retrying in {sleep_time}s...")
+            time.sleep(sleep_time)
     
-    raise RuntimeError(f"Failed after {MAX_RETRIES} retries")
+    raise RuntimeError(f"Failed after {MAX_RETRIES} retries: {last_error}")
 
 
 def get_groups():
@@ -85,6 +89,13 @@ def get_record_count():
     """Get current row count in prices table."""
     cur.execute("SELECT COUNT(*) FROM prices")
     return cur.fetchone()[0]
+
+
+def get_daily_row_count(day):
+    """Get row count in prices table for a specific date."""
+    cur.execute("SELECT COUNT(*) FROM prices WHERE date = ?", (day,))
+    return cur.fetchone()[0]
+
 
 
 # ===== MAIN EXECUTION =====
@@ -188,9 +199,15 @@ for g in groups:
         stats['failed'] += 1
         stats['failed_sets'].append((set_name, str(e)))
         print(f"✗ FAILED: {e}")
-        continue
+    
+    finally:
+        # Small delay between sets to reduce rate-limit/server pressure
+        time.sleep(SET_DELAY)
 
 conn.commit()
+
+# Final row count for today, queried before closing the connection
+daily_rows = get_daily_row_count(today)
 conn.close()
 
 # ===== SUMMARY REPORT =====
@@ -205,6 +222,7 @@ print(f"Sets succeeded:  {stats['succeeded']}")
 print(f"Sets failed:     {stats['failed']}")
 print(f"Records inserted: {stats['records_inserted']}")
 print(f"Runtime:         {elapsed:.2f} seconds")
+print(f"Rows for {today}: {daily_rows}")
 
 if stats['failed_sets']:
     print(f"\n⚠️  Failed sets ({len(stats['failed_sets'])}):")
@@ -213,3 +231,22 @@ if stats['failed_sets']:
         print(f"    └─ {error[:100]}")
 
 print("="*50)
+
+# ===== COMPLETENESS CHECK =====
+# GitHub Actions must FAIL if the dataset is incomplete, instead of looking green.
+failed_ratio = (stats['failed'] / stats['attempted']) if stats['attempted'] else 0
+incomplete = False
+
+if daily_rows < MIN_EXPECTED_DAILY_ROWS:
+    print(f"\nERROR: Daily fetch is INCOMPLETE. Rows for {today}: {daily_rows} "
+          f"(expected at least {MIN_EXPECTED_DAILY_ROWS})")
+    print(f"Failed sets: {stats['failed']} / {stats['attempted']}")
+    incomplete = True
+
+if failed_ratio > MAX_FAILED_SET_RATIO:
+    print(f"\nERROR: Too many sets failed ({stats['failed']} / {stats['attempted']} "
+          f"= {failed_ratio * 100:.1f}%, max allowed is {MAX_FAILED_SET_RATIO * 100:.0f}%)")
+    incomplete = True
+
+if incomplete:
+    exit(1)
