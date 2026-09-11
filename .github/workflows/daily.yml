@@ -43,5 +43,5 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add data/prices.db data/top_gainers.json data/early_movers.json
-          git diff --cached --quiet || (git commit -m "Update prices.db, top_gainers.json, and early_movers.json" && git push)
+          git add data/prices.db data/top_gainers.json data/early_movers.json data/signals.db
+          git diff --cached --quiet || (git commit -m "Update prices.db, top_gainers.json, early_movers.json, and signals.db" && git push)
