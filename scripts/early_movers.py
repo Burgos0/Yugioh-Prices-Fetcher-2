@@ -1,7 +1,6 @@
 import json
 import os
 import sqlite3
-from datetime import date
 from app.analysis import calculate_early_movers
 
 # Connect to database and calculate early movers
@@ -25,7 +24,12 @@ with open(json_path, 'w') as f:
     json.dump(movers_list, f, indent=2)
 
 # ===== SAVE SIGNAL HISTORY =====
-signal_date = date.today().isoformat()
+# Use the latest date present in the price data, not the system/UTC date
+prices_conn = sqlite3.connect("data/prices.db")
+signal_date = prices_conn.execute("SELECT MAX(date) FROM prices").fetchone()[0]
+prices_conn.close()
+
+print(f"Using signal_date from prices.db: {signal_date}")
 
 signals_conn = sqlite3.connect("data/signals.db")
 signals_conn.execute(

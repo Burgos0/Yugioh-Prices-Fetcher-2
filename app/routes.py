@@ -4,7 +4,7 @@ import json
 import sqlite3
 from datetime import datetime
 
-from app.analysis import calculate_penny_movers, get_product_history_info
+from app.analysis import calculate_penny_movers, calculate_early_movers_backtest, get_product_history_info
 
 bp = Blueprint('main', __name__)
 
@@ -79,6 +79,22 @@ def early_movers():
     except Exception as e:
         error_msg = f"Error loading early movers: {str(e)}"
         return render_template('early_movers.html', movers=[], error=error_msg)
+
+@bp.route('/backtest-early-movers')
+def backtest_early_movers():
+    try:
+        if not os.path.exists('data/signals.db'):
+            return render_template('backtest_early_movers.html', signals=[], summary=None)
+        
+        result = calculate_early_movers_backtest('data/prices.db', 'data/signals.db')
+        return render_template(
+            'backtest_early_movers.html',
+            signals=result['signals'],
+            summary=result['summary']
+        )
+    except Exception as e:
+        error_msg = f"Error loading backtest results: {str(e)}"
+        return render_template('backtest_early_movers.html', signals=[], summary=None, error=error_msg)
 
 @bp.route('/card/<int:product_id>')
 def card_detail(product_id):

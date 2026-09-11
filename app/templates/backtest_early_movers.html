@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="content-wrapper">
+    {% if error %}
+    <div class="error-box">
+        <strong>Error:</strong> {{ error }}
+    </div>
+    {% endif %}
+
+    {% if summary %}
+    <div class="backtest-summary">
+        {% for horizon in [3, 7, 14] %}
+        <div class="backtest-summary-card">
+            <h3>{{ horizon }}-Day</h3>
+            {% if summary[horizon].count %}
+            <p>{{ summary[horizon].count }} completed signals</p>
+            <p>Avg return: {{ "%.2f"|format(summary[horizon].avg_return) }}%</p>
+            <p>{{ "%.2f"|format(summary[horizon].percent_positive) }}% positive</p>
+            {% else %}
+            <p>No completed signals yet</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if signals %}
+    <div class="table-wrapper">
+        <table class="gainers-table">
+            <thead>
+                <tr>
+                    <th>Image</th>
+                    <th>Card Name</th>
+                    <th>Signal Date</th>
+                    <th>Signal Price</th>
+                    <th>3 Day Price</th>
+                    <th>3 Day Return</th>
+                    <th>7 Day Price</th>
+                    <th>7 Day Return</th>
+                    <th>14 Day Price</th>
+                    <th>14 Day Return</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for signal in signals %}
+                <tr>
+
+                    <td class="card-image">
+                        <img
+                            src="https://product-images.tcgplayer.com/fit-in/100x100/{{ signal.product_id }}.jpg"
+                            alt="{{ signal.card_name }}"
+                            style="width: 60px; height: auto; border-radius: 4px;"
+                            loading="lazy"
+                        >
+                    </td>
+
+                    <td class="card-name">
+                        <a href="{{ url_for('main.card_detail', product_id=signal.product_id) }}">
+                            {{ signal.card_name }}
+                        </a>
+                    </td>
+
+                    <td class="set-name">
+                        {{ signal.signal_date }}
+                    </td>
+
+                    <td class="price">
+                        ${{ "%.2f"|format(signal.signal_price) }}
+                    </td>
+
+                    {% for horizon in [3, 7, 14] %}
+                    {% set status = signal['status_' ~ horizon ~ 'd'] %}
+                    {% if status == 'ok' %}
+                    <td class="price">
+                        ${{ "%.2f"|format(signal['price_' ~ horizon ~ 'd']) }}
+                    </td>
+                    <td class="percent
+                        {% if signal['return_' ~ horizon ~ 'd'] > 0 %}return-positive
+                        {% elif signal['return_' ~ horizon ~ 'd'] < 0 %}return-negative
+                        {% else %}return-neutral{% endif %}">
+                        {{ "%.2f"|format(signal['return_' ~ horizon ~ 'd']) }}%
+                    </td>
+                    {% else %}
+                    <td class="price pending">Pending</td>
+                    <td class="percent pending">Pending</td>
+                    {% endif %}
+                    {% endfor %}
+
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="summary">
+        <p>
+            <strong>{{ signals|length }} Early Mover signals tracked</strong>
+            | Returns measured against exact-date prices 3/7/14 days after each signal
+        </p>
+    </div>
+
+    {% else %}
+
+    <div class="no-data">
+        <p>No Early Mover signals found yet. Data may not be available yet.</p>
+    </div>
+
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,6 +1,6 @@
 import sqlite3
 import pandas as pd
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 def calculate_relevant_sets(df):
     """
@@ -600,3 +600,104 @@ def get_product_history_info(db_path, product_id):
         "last_seen_date": last_seen_date,
         "days_of_history": days_of_history or 0
     }
+
+
+def calculate_early_movers_backtest(prices_db_path, signals_db_path, horizons=(3, 7, 14)):
+    """
+    Backtest saved Early Mover signals using future prices already in the price DB.
+    
+    For each row in early_mover_signals, looks up the exact-date market_price
+    at signal_date + N days for each horizon (no substitution of nearby dates).
+    A horizon is "pending" if that date hasn't happened yet (beyond the latest
+    date in prices), or "unavailable" if the date has passed but has no price row.
+    
+    Args:
+        prices_db_path: Path to prices.db
+        signals_db_path: Path to signals.db
+        horizons: day offsets to evaluate (default 3, 7, 14)
+    
+    Returns:
+        dict with:
+          "signals": list of dicts, one per signal, each containing
+              product_id, card_name, set_name, signal_date, signal_price,
+              and for every horizon N: f"price_{N}d", f"return_{N}d", f"status_{N}d"
+              (status is "ok", "pending", or "unavailable")
+          "summary": dict keyed by horizon -> {count, avg_return, percent_positive}
+              computed only over "ok" observations
+    """
+    prices_conn = sqlite3.connect(prices_db_path)
+    signals_conn = sqlite3.connect(signals_db_path)
+
+    max_date_str = prices_conn.execute("SELECT MAX(date) FROM prices").fetchone()[0]
+
+    signal_rows = signals_conn.execute(
+        '''
+        SELECT product_id, card_name, set_name, signal_date, signal_price
+        FROM early_mover_signals
+        ORDER BY signal_date DESC, card_name
+        '''
+    ).fetchall()
+    signals_conn.close()
+
+    if max_date_str is None or not signal_rows:
+        prices_conn.close()
+        return {"signals": [], "summary": {h: {"count": 0, "avg_return": None, "percent_positive": None} for h in horizons}}
+
+    max_date = datetime.strptime(max_date_str, "%Y-%m-%d")
+    returns_by_horizon = {h: [] for h in horizons}
+
+    signals = []
+    for product_id, card_name, set_name, signal_date_str, signal_price in signal_rows:
+        signal_date = datetime.strptime(signal_date_str, "%Y-%m-%d")
+
+        signal_result = {
+            "product_id": product_id,
+            "card_name": card_name,
+            "set_name": set_name,
+            "signal_date": signal_date_str,
+            "signal_price": signal_price
+        }
+
+        for horizon in horizons:
+            target_date = signal_date + timedelta(days=horizon)
+            target_date_str = target_date.strftime("%Y-%m-%d")
+
+            if target_date > max_date:
+                status, price, pct_return = "pending", None, None
+            else:
+                row = prices_conn.execute(
+                    "SELECT market_price FROM prices WHERE product_id = ? AND date = ?",
+                    (product_id, target_date_str)
+                ).fetchone()
+                price = row[0] if row and row[0] is not None else None
+
+                if price is None:
+                    status, pct_return = "unavailable", None
+                else:
+                    status = "ok"
+                    pct_return = ((price - signal_price) / signal_price) * 100
+                    returns_by_horizon[horizon].append(pct_return)
+
+            signal_result[f"price_{horizon}d"] = price
+            signal_result[f"return_{horizon}d"] = pct_return
+            signal_result[f"status_{horizon}d"] = status
+
+        signals.append(signal_result)
+
+    prices_conn.close()
+
+    summary = {}
+    for horizon in horizons:
+        returns = returns_by_horizon[horizon]
+        count = len(returns)
+        if count == 0:
+            summary[horizon] = {"count": 0, "avg_return": None, "percent_positive": None}
+        else:
+            summary[horizon] = {
+                "count": count,
+                "avg_return": sum(returns) / count,
+                "percent_positive": (sum(1 for r in returns if r > 0) / count) * 100
+            }
+
+    return {"signals": signals, "summary": summary}
+

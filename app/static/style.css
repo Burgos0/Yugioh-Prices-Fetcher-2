@@ -200,6 +200,52 @@ header .subtitle {
     color: #27ae60;
 }
 
+.gainers-table .percent.return-positive {
+    color: #27ae60;
+}
+
+.gainers-table .percent.return-negative {
+    color: #c0392b;
+}
+
+.gainers-table .percent.return-neutral {
+    color: #666;
+}
+
+.gainers-table td.pending {
+    text-align: right;
+    color: #999;
+    font-style: italic;
+}
+
+/* Backtest Summary Cards */
+.backtest-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.backtest-summary-card {
+    flex: 1;
+    min-width: 180px;
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 1rem 1.25rem;
+}
+
+.backtest-summary-card h3 {
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.backtest-summary-card p {
+    font-size: 0.9rem;
+    color: #555;
+    margin: 0.15rem 0;
+}
+
 .gainers-table .status {
     text-align: center;
 }
