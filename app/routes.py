@@ -10,6 +10,7 @@ bp = Blueprint('main', __name__)
 
 GAINERS_JSON_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'top_gainers.json')
 LOSERS_JSON_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'top_losers.json')
+EARLY_MOVERS_JSON_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'early_movers.json')
 
 @bp.route('/')
 def index():
@@ -61,6 +62,23 @@ def penny_movers():
     except Exception as e:
         error_msg = f"Error loading penny movers: {str(e)}"
         return render_template('penny_movers.html', movers=[], error=error_msg)
+
+@bp.route('/early-movers')
+def early_movers():
+    try:
+        # Check if cached JSON exists
+        if not os.path.exists(EARLY_MOVERS_JSON_PATH):
+            return render_template('early_movers.html', movers=[])
+        
+        # Load from cached JSON
+        with open(EARLY_MOVERS_JSON_PATH, 'r') as f:
+            movers_list = json.load(f)
+        
+        return render_template('early_movers.html', movers=movers_list)
+    
+    except Exception as e:
+        error_msg = f"Error loading early movers: {str(e)}"
+        return render_template('early_movers.html', movers=[], error=error_msg)
 
 @bp.route('/card/<int:product_id>')
 def card_detail(product_id):

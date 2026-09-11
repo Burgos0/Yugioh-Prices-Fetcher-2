@@ -20,6 +20,10 @@
                class="nav-btn {% if request.path == url_for('main.penny_movers') %}active{% endif %}">
                 💰 Penny Movers
             </a>
+            <a href="{{ url_for('main.early_movers') }}"
+               class="nav-btn {% if request.path == url_for('main.early_movers') %}active{% endif %}">
+                🌱 Early Movers
+            </a>
             <a href="{{ url_for('main.losers') }}"
                class="nav-btn {% if request.path == url_for('main.losers') %}active{% endif %}">
                 📉 Top Losers

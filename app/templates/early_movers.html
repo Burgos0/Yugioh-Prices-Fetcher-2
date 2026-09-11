@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="content-wrapper">
+    {% if error %}
+    <div class="error-box">
+        <strong>Error:</strong> {{ error }}
+    </div>
+    {% endif %}
+
+    {% if movers %}
+    <div class="table-wrapper">
+        <table class="gainers-table">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Image</th>
+                    <th>Card Name</th>
+                    <th>Set</th>
+                    <th>2 Days Ago</th>
+                    <th>Previous</th>
+                    <th>Current</th>
+                    <th>Gain ($)</th>
+                    <th>Gain (%)</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for mover in movers %}
+                <tr>
+
+                    <td class="rank">
+                        {{ mover.rank }}
+                    </td>
+
+                    <td class="card-image">
+                        <img
+                            src="https://product-images.tcgplayer.com/fit-in/100x100/{{ mover.product_id }}.jpg"
+                            alt="{{ mover.card_name }}"
+                            style="width: 60px; height: auto; border-radius: 4px;"
+                            loading="lazy"
+                        >
+                    </td>
+
+                    <td class="card-name">
+                        <a href="{{ url_for('main.card_detail', product_id=mover.product_id) }}">
+                            {{ mover.card_name }}
+                        </a>
+                    </td>
+
+                    <td class="set-name">
+                        {{ mover.set_name }}
+                    </td>
+
+                    <td class="price">
+                        ${{ "%.2f"|format(mover.price_2_days_ago) }}
+                    </td>
+
+                    <td class="price">
+                        ${{ "%.2f"|format(mover.previous_price) }}
+                    </td>
+
+                    <td class="price">
+                        ${{ "%.2f"|format(mover.latest_price) }}
+                    </td>
+
+                    <td class="price">
+                        ${{ "%.2f"|format(mover.dollar_gain) }}
+                    </td>
+
+                    <td class="percent">
+                        {{ "%.2f"|format(mover.percent_gain) }}%
+                    </td>
+
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="summary">
+        <p>
+            <strong>{{ movers|length }} early movers displayed</strong>
+            | Cards showing early upward momentum (latest vs. 2 days ago)
+        </p>
+    </div>
+
+    {% else %}
+
+    <div class="no-data">
+        <p>No early movers found. Data may not be available yet.</p>
+    </div>
+
+    {% endif %}
+</div>
+{% endblock %}

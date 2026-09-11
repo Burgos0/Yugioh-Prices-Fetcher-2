@@ -33,10 +33,15 @@ jobs:
           python -m scripts.top_gainers
         continue-on-error: true
 
+      - name: Calculate early movers
+        run: |
+          python -m scripts.early_movers
+        continue-on-error: true
+
       - name: Commit results to repo
         if: always()
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add data/prices.db data/top_gainers.json
-          git diff --cached --quiet || (git commit -m "Update prices.db and top_gainers.json" && git push)
+          git add data/prices.db data/top_gainers.json data/early_movers.json
+          git diff --cached --quiet || (git commit -m "Update prices.db, top_gainers.json, and early_movers.json" && git push)

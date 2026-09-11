@@ -479,6 +479,97 @@ def calculate_penny_movers(db_path, limit=50):
     return results_df
 
 
+def calculate_early_movers(db_path, limit=50):
+    """
+    Calculate "Early Movers" - cards showing the start of upward momentum,
+    before they become major Top Gainers.
+    
+    V1 logic (simple and explainable):
+    - Look at each card's last 3 valid (non-null, non-zero) price readings:
+      price_2_days_ago, previous_price, latest_price
+    - Require latest_price > previous_price >= price_2_days_ago (building momentum)
+    - percent_gain = (latest_price - price_2_days_ago) / price_2_days_ago * 100
+    - Keep only 10% <= percent_gain <= 50% (bigger moves belong in Top Gainers)
+    - Require at least $0.25 of dollar movement to reduce penny-price noise
+    
+    Returns DataFrame with columns:
+    [rank, product_id, card_name, set_name, price_2_days_ago, previous_price,
+     latest_price, dollar_gain, percent_gain]
+    
+    Args:
+        db_path: Path to prices.db
+        limit: Number of early movers to return
+    
+    Returns:
+        DataFrame sorted by percent_gain descending
+    """
+    # Load data
+    conn = sqlite3.connect(db_path)
+    df = pd.read_sql("SELECT * FROM prices", conn)
+    conn.close()
+    
+    if df.empty:
+        return pd.DataFrame()
+    
+    df["date"] = pd.to_datetime(df["date"])
+    
+    # Calculate relevant sets
+    relevant_sets = calculate_relevant_sets(df)
+    
+    # Ignore null or zero market prices
+    df_valid = df[df["market_price"].notna() & (df["market_price"] > 0)].sort_values(["product_id", "date"])
+    
+    # Need enough recent data to evaluate at least the last 4 days
+    valid_counts = df_valid.groupby("product_id").size()
+    products_with_history = valid_counts[valid_counts >= 4].index
+    
+    # Take each card's last 3 valid readings: price_2_days_ago, previous_price, latest_price
+    last_3 = df_valid[df_valid["product_id"].isin(products_with_history)].groupby("product_id").tail(3)
+    last_3 = last_3.copy()
+    last_3["position"] = last_3.groupby("product_id").cumcount()
+    
+    prices = last_3.pivot(index="product_id", columns="position", values="market_price")
+    prices.columns = ["price_2_days_ago", "previous_price", "latest_price"]
+    
+    # Look for recent upward momentum
+    momentum = (prices["latest_price"] > prices["previous_price"]) & \
+               (prices["previous_price"] >= prices["price_2_days_ago"])
+    prices = prices[momentum]
+    
+    if prices.empty:
+        return pd.DataFrame()
+    
+    # Calculate gain
+    prices["dollar_gain"] = prices["latest_price"] - prices["price_2_days_ago"]
+    prices["percent_gain"] = (prices["dollar_gain"] / prices["price_2_days_ago"]) * 100
+    
+    # Anti-junk filtering
+    prices = prices[
+        (prices["dollar_gain"] >= 0.25) &
+        (prices["percent_gain"] >= 10) &
+        (prices["percent_gain"] <= 50)
+    ]
+    
+    if prices.empty:
+        return pd.DataFrame()
+    
+    # Attach card_name/set_name (one row per product_id) and apply relevant-set filtering
+    card_info = df.drop_duplicates("product_id").set_index("product_id")[["card_name", "set_name"]]
+    results_df = prices.join(card_info, how="left")
+    results_df = results_df[results_df["set_name"].isin(relevant_sets)]
+    
+    if results_df.empty:
+        return pd.DataFrame()
+    
+    results_df = results_df.reset_index()
+    
+    # Sort (highest recent percent gain first) and limit
+    results_df = results_df.sort_values('percent_gain', ascending=False).head(limit)
+    results_df.insert(0, 'rank', range(1, len(results_df) + 1))
+    
+    return results_df
+
+
 def get_product_history_info(db_path, product_id):
     """
     Get first/last seen dates and days of history for a product_id.
