@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="content-wrapper">
+    <h1>{{ card_name }}</h1>
+
+    <p>{{ set_name }}</p>
+
+    {% if first_seen_date %}
+    <p class="card-history-meta">
+        First Seen: {{ first_seen_date }}<br>
+        Days of History: {{ days_of_history }}
+    </p>
+    {% endif %}
+
+<div style="
+    display: flex;
+    gap: 50px;
+    align-items: center;
+    margin-top: 30px;
+">
+
+    <div>
+        <img
+            src="https://product-images.tcgplayer.com/fit-in/400x400/{{ product_id }}.jpg"
+            alt="{{ card_name }}"
+            style="
+                width: 280px;
+                height: auto;
+                border-radius: 8px;
+                cursor: pointer;
+            "
+        >
+    </div>
+
+    <div style="flex: 1; max-width: 900px;">
+        <canvas id="priceChart"></canvas>
+    </div>
+
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    const dates = {{ dates | tojson }};
+    const prices = {{ prices | tojson }};
+
+    const ctx = document.getElementById('priceChart');
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: dates,
+            datasets: [{
+                label: 'Market Price',
+                data: prices,
+                borderWidth: 3,
+                tension: 0.25
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Price History'
+                }
+            },
+            scales: {
+                y: {
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value;
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

@@ -111,6 +111,55 @@ def detect_spike(product_id, baseline_value, current_value, df, latest_date):
     return "CONFIRMED"
 
 
+def detect_drop(product_id, baseline_value, current_value, df, latest_date):
+    """
+    Detect if a price decrease is CONFIRMED or a suspicious UNCONFIRMED dip.
+    
+    Mirrors detect_spike() but for downward moves. Returns "UNCONFIRMED" if:
+    - Latest raw price is >50% below the recent 3-day median, OR
+    - Fewer than 2 of the last 3 daily prices are depressed (<=90% of baseline)
+    
+    Otherwise returns "CONFIRMED".
+    
+    Args:
+        product_id: Card ID
+        baseline_value: 3-day median from ~7 days ago
+        current_value: 3-day median from recent days
+        df: DataFrame with all price data
+        latest_date: Most recent date in dataset
+    
+    Returns:
+        "CONFIRMED" or "UNCONFIRMED"
+    """
+    recent_3day_start = latest_date - timedelta(days=2)
+    
+    # RULE 1: Latest raw price more than 50% below recent 3-day median?
+    latest_price_row = df[
+        (df["product_id"] == product_id) &
+        (df["date"] == latest_date) &
+        (df["market_price"].notna())
+    ]
+    
+    if not latest_price_row.empty:
+        latest_raw_price = latest_price_row.iloc[0]["market_price"]
+        if latest_raw_price < current_value * 0.5:
+            return "UNCONFIRMED"
+    
+    # RULE 2: Persistence check - require 2+ of last 3 prices depressed (<= 90% of baseline)
+    recent_prices = df[
+        (df["product_id"] == product_id) &
+        (df["date"] >= recent_3day_start) &
+        (df["market_price"].notna())
+    ].sort_values("date")["market_price"].values
+    
+    if len(recent_prices) >= 2:
+        depressed_count = sum(1 for p in recent_prices if p <= baseline_value * 0.9)
+        if depressed_count < 2:
+            return "UNCONFIRMED"
+    
+    return "CONFIRMED"
+
+
 def calculate_top_gainers(db_path, limit=50):
     """
     Calculate top gainers with all analysis logic.
@@ -194,6 +243,7 @@ def calculate_top_gainers(db_path, limit=50):
         card_name = df[df["product_id"] == product_id]["card_name"].iloc[0]
         
         results.append({
+            'product_id': product_id,
             'card_name': card_name,
             'set_name': set_name,
             'baseline_value': baseline_value,
@@ -212,3 +262,250 @@ def calculate_top_gainers(db_path, limit=50):
     results_df.insert(0, 'rank', range(1, len(results_df) + 1))
     
     return results_df
+
+
+def calculate_top_losers(db_path, limit=50):
+    """
+    Calculate top losers with the same structure/safeguards as calculate_top_gainers.
+    
+    Returns DataFrame with columns:
+    [rank, product_id, card_name, set_name, baseline_value, current_value, 
+     dollar_change, percent_change, status]
+    
+    Args:
+        db_path: Path to prices.db
+        limit: Number of top losers to return
+    
+    Returns:
+        DataFrame sorted by percent_change ascending (biggest loss first)
+    """
+    # Load data
+    conn = sqlite3.connect(db_path)
+    df = pd.read_sql("SELECT * FROM prices", conn)
+    conn.close()
+    
+    if df.empty:
+        return pd.DataFrame()
+    
+    df["date"] = pd.to_datetime(df["date"])
+    latest_date = df["date"].max()
+    
+    # Calculate relevant sets
+    relevant_sets = calculate_relevant_sets(df)
+    
+    # Define time windows
+    recent_3day_start = latest_date - timedelta(days=2)
+    baseline_window_start = latest_date - timedelta(days=8)
+    baseline_window_end = latest_date - timedelta(days=6)
+    
+    # Calculate medians for each card
+    df_recent_3day = df[
+        (df["date"] >= recent_3day_start) & 
+        (df["market_price"].notna())
+    ]
+    current_medians = df_recent_3day.groupby("product_id")["market_price"].median()
+    
+    df_baseline = df[
+        (df["date"] >= baseline_window_start) & 
+        (df["date"] <= baseline_window_end) &
+        (df["market_price"].notna())
+    ]
+    baseline_medians = df_baseline.groupby("product_id")["market_price"].median()
+    
+    # Build results
+    results = []
+    
+    for product_id in df["product_id"].unique():
+        # Skip if not in relevant set
+        set_name = df[df["product_id"] == product_id]["set_name"].iloc[0]
+        if set_name not in relevant_sets:
+            continue
+        
+        # Skip if missing baseline or current value
+        if product_id not in baseline_medians.index or product_id not in current_medians.index:
+            continue
+        
+        baseline_value = baseline_medians[product_id]
+        current_value = current_medians[product_id]
+        
+        # Skip if baseline value below $3 (same price-floor safeguard as top gainers)
+        if baseline_value < 3.0:
+            continue
+        
+        # Skip if no loss or a gain
+        if current_value >= baseline_value:
+            continue
+        
+        # Calculate loss
+        dollar_change = current_value - baseline_value
+        percent_change = (dollar_change / baseline_value) * 100
+        
+        # Detect drop
+        status = detect_drop(product_id, baseline_value, current_value, df, latest_date)
+        
+        # Get card name
+        card_name = df[df["product_id"] == product_id]["card_name"].iloc[0]
+        
+        results.append({
+            'product_id': product_id,
+            'card_name': card_name,
+            'set_name': set_name,
+            'baseline_value': baseline_value,
+            'current_value': current_value,
+            'dollar_change': dollar_change,
+            'percent_change': percent_change,
+            'status': status
+        })
+    
+    # Sort (largest percentage loss first) and limit
+    results_df = pd.DataFrame(results)
+    if results_df.empty:
+        return results_df
+    
+    results_df = results_df.sort_values('percent_change', ascending=True).head(limit)
+    results_df.insert(0, 'rank', range(1, len(results_df) + 1))
+    
+    return results_df
+
+
+def calculate_penny_movers(db_path, limit=50):
+    """
+    Calculate "Penny Movers" - cheap cards ($0.25-$5.00 baseline) with strong gains.
+    
+    Reuses the same baseline/current median logic as top gainers:
+    - baseline = median of days -8, -7, -6
+    - current = median of today, -1, -2
+    
+    Filters:
+    - baseline price between $0.25 and $5.00
+    - current price > baseline price
+    - dollar_gain >= $0.25
+    - percent_gain >= 20%
+    
+    Returns DataFrame with columns:
+    [rank, card_name, set_name, baseline_value, current_value, 
+     dollar_gain, percent_gain, status]
+    
+    Args:
+        db_path: Path to prices.db
+        limit: Number of penny movers to return
+    
+    Returns:
+        DataFrame sorted by percent_gain descending
+    """
+    # Load data
+    conn = sqlite3.connect(db_path)
+    df = pd.read_sql("SELECT * FROM prices", conn)
+    conn.close()
+    
+    if df.empty:
+        return pd.DataFrame()
+    
+    df["date"] = pd.to_datetime(df["date"])
+    latest_date = df["date"].max()
+    
+    # Define time windows
+    recent_3day_start = latest_date - timedelta(days=2)
+    baseline_window_start = latest_date - timedelta(days=8)
+    baseline_window_end = latest_date - timedelta(days=6)
+    
+    # Calculate medians for each card
+    df_recent_3day = df[
+        (df["date"] >= recent_3day_start) & 
+        (df["market_price"].notna())
+    ]
+    current_medians = df_recent_3day.groupby("product_id")["market_price"].median()
+    
+    df_baseline = df[
+        (df["date"] >= baseline_window_start) & 
+        (df["date"] <= baseline_window_end) &
+        (df["market_price"].notna())
+    ]
+    baseline_medians = df_baseline.groupby("product_id")["market_price"].median()
+    
+    # Build results
+    results = []
+    
+    for product_id in df["product_id"].unique():
+        # Skip if missing baseline or current value
+        if product_id not in baseline_medians.index or product_id not in current_medians.index:
+            continue
+        
+        baseline_value = baseline_medians[product_id]
+        current_value = current_medians[product_id]
+        
+        # Only cheap cards
+        if not (0.25 <= baseline_value <= 5.00):
+            continue
+        
+        # Skip if no gain or negative gain
+        if current_value <= baseline_value:
+            continue
+        
+        # Calculate gain
+        dollar_gain = current_value - baseline_value
+        percent_gain = (dollar_gain / baseline_value) * 100
+        
+        # Anti-junk filtering
+        if dollar_gain < 0.25 or percent_gain < 20:
+            continue
+        
+        # Detect spike
+        status = detect_spike(product_id, baseline_value, current_value, df, latest_date)
+        
+        # Get card name and set
+        set_name = df[df["product_id"] == product_id]["set_name"].iloc[0]
+        card_name = df[df["product_id"] == product_id]["card_name"].iloc[0]
+        
+        results.append({
+            'product_id': product_id,
+            'card_name': card_name,
+            'set_name': set_name,
+            'baseline_value': baseline_value,
+            'current_value': current_value,
+            'dollar_gain': dollar_gain,
+            'percent_gain': percent_gain,
+            'status': status
+        })
+    
+    # Sort and limit
+    results_df = pd.DataFrame(results)
+    if results_df.empty:
+        return results_df
+    
+    results_df = results_df.sort_values('percent_gain', ascending=False).head(limit)
+    results_df.insert(0, 'rank', range(1, len(results_df) + 1))
+    
+    return results_df
+
+
+def get_product_history_info(db_path, product_id):
+    """
+    Get first/last seen dates and days of history for a product_id.
+    
+    Args:
+        db_path: Path to prices.db
+        product_id: Card ID
+    
+    Returns:
+        dict with first_seen_date, last_seen_date, days_of_history
+        (values are None / 0 if the product has no rows)
+    """
+    conn = sqlite3.connect(db_path)
+    row = conn.execute(
+        '''
+        SELECT MIN(date), MAX(date), COUNT(DISTINCT date)
+        FROM prices
+        WHERE product_id = ?
+        ''',
+        (product_id,)
+    ).fetchone()
+    conn.close()
+
+    first_seen_date, last_seen_date, days_of_history = row
+
+    return {
+        "first_seen_date": first_seen_date,
+        "last_seen_date": last_seen_date,
+        "days_of_history": days_of_history or 0
+    }

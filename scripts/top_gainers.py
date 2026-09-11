@@ -1,11 +1,26 @@
+import json
+import os
 from app.analysis import calculate_top_gainers
 
 # Connect to database and calculate top gainers
 gainers = calculate_top_gainers("data/prices.db", limit=50)
 
+# Save results to JSON (always, even if empty)
+os.makedirs("data", exist_ok=True)
+json_path = "data/top_gainers.json"
+
 if gainers.empty:
+    # Save empty list if no gainers found
+    with open(json_path, 'w') as f:
+        json.dump([], f, indent=2)
     print("No gainers found. Data may not be available yet.")
+    print(f"Saved empty results to {json_path}")
     exit(0)
+
+# Convert DataFrame to list of dicts and save
+gainers_list = gainers.to_dict('records')
+with open(json_path, 'w') as f:
+    json.dump(gainers_list, f, indent=2)
 
 # ===== OUTPUT RESULTS =====
 print("="*130)
@@ -42,3 +57,4 @@ print(f"Top gainers shown: {len(gainers)}")
 print(f"  ✓ CONFIRMED: {confirmed_count} (price increase sustained across multiple recent days)")
 print(f"  ⚠ UNCONFIRMED: {unconfirmed_count} (potential spike or single-day anomaly)")
 print("="*130)
+print(f"\nResults saved to: {json_path}")
