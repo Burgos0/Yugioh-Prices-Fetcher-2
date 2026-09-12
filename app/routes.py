@@ -90,7 +90,8 @@ def backtest_early_movers():
         return render_template(
             'backtest_early_movers.html',
             signals=result['signals'],
-            summary=result['summary']
+            summary=result['summary'],
+            evaluation=result
         )
     except Exception as e:
         error_msg = f"Error loading backtest results: {str(e)}"

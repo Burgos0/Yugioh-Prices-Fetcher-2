@@ -1,5 +1,7 @@
 import sqlite3
 import pandas as pd
+import math
+from statistics import median
 from datetime import timedelta, datetime
 
 def calculate_relevant_sets(df):
@@ -25,41 +27,16 @@ def calculate_relevant_sets(df):
     seven_days_ago = latest_date - timedelta(days=7)
     df_7day = df[df["date"] >= seven_days_ago]
     
-    def get_card_price(product_id):
-        """Get 7-day median price for a card, or latest if sparse."""
-        prices_7day = df_7day[
-            (df_7day["product_id"] == product_id) & 
-            (df_7day["market_price"].notna())
-        ]["market_price"]
-        
-        if len(prices_7day) >= 7:
-            return prices_7day.median()
-        elif len(prices_7day) > 0:
-            card_data = df[
-                (df["product_id"] == product_id) & 
-                (df["market_price"].notna())
-            ].sort_values("date")
-            return card_data.iloc[-1]["market_price"]
-        else:
-            return None
-    
-    card_prices = {}
-    for product_id in df["product_id"].unique():
-        card_prices[product_id] = get_card_price(product_id)
-    
-    relevant_sets = set()
-    for set_name in df["set_name"].unique():
-        set_cards = df[df["set_name"] == set_name]["product_id"].unique()
-        set_prices = [card_prices.get(pid) for pid in set_cards if card_prices.get(pid) is not None]
-        
-        cards_over_3 = sum(1 for p in set_prices if p >= 3)
-        cards_over_10 = sum(1 for p in set_prices if p >= 10)
-        cards_over_25 = sum(1 for p in set_prices if p >= 25)
-        
-        if (cards_over_3 >= 5) or (cards_over_10 >= 2) or (cards_over_25 >= 1):
-            relevant_sets.add(set_name)
-    
-    return relevant_sets
+    # Aggregate once instead of scanning the full history for every product.
+    valid = df_7day[df_7day["market_price"].notna()].sort_values("date")
+    stats = valid.groupby("product_id")["market_price"].agg(["count", "median", "last"])
+    card_prices = stats["median"].where(stats["count"] >= 7, stats["last"])
+    cards = df[["set_name", "product_id"]].drop_duplicates().copy()
+    cards["price"] = cards["product_id"].map(card_prices)
+    for threshold in (3, 10, 25):
+        cards[f"over_{threshold}"] = cards["price"] >= threshold
+    counts = cards.groupby("set_name")[["over_3", "over_10", "over_25"]].sum()
+    return set(counts.index[(counts.over_3 >= 5) | (counts.over_10 >= 2) | (counts.over_25 >= 1)])
 
 
 def detect_spike(product_id, baseline_value, current_value, df, latest_date):
@@ -479,13 +456,13 @@ def calculate_penny_movers(db_path, limit=50):
     return results_df
 
 
-def calculate_early_movers(db_path, limit=50):
+def calculate_early_movers(db_path, limit=50, as_of=None):
     """
     Calculate "Early Movers" - cards showing the start of upward momentum,
     before they become major Top Gainers.
     
     V1 logic (simple and explainable):
-    - Look at each card's last 3 valid (non-null, non-zero) price readings:
+    - Require 3 valid consecutive calendar dates ending on the analysis date:
       price_2_days_ago, previous_price, latest_price
     - Require latest_price > previous_price >= price_2_days_ago (building momentum)
     - percent_gain = (latest_price - price_2_days_ago) / price_2_days_ago * 100
@@ -503,21 +480,23 @@ def calculate_early_movers(db_path, limit=50):
     Returns:
         DataFrame sorted by percent_gain descending
     """
-    # Load data
-    conn = sqlite3.connect(db_path)
-    df = pd.read_sql("SELECT * FROM prices", conn)
-    conn.close()
-    
+    # Cut off data BEFORE any filters to prevent future data entering a replay.
+    with sqlite3.connect(db_path) as conn:
+        if as_of is None:
+            as_of = conn.execute("SELECT MAX(date) FROM prices").fetchone()[0]
+        if as_of is None:
+            return pd.DataFrame()
+        as_of = datetime.strptime(as_of, "%Y-%m-%d").strftime("%Y-%m-%d")
+        df = pd.read_sql("SELECT * FROM prices WHERE date <= ?", conn, params=(as_of,))
     if df.empty:
         return pd.DataFrame()
-    
     df["date"] = pd.to_datetime(df["date"])
-    
+
     # Calculate relevant sets
     relevant_sets = calculate_relevant_sets(df)
     
     # Ignore null or zero market prices
-    df_valid = df[df["market_price"].notna() & (df["market_price"] > 0)].sort_values(["product_id", "date"])
+    df_valid = df[df["market_price"].map(lambda p: pd.notna(p) and math.isfinite(p) and p > 0)].sort_values(["product_id", "date"])
     
     # Need enough recent data to evaluate at least the last 4 days
     valid_counts = df_valid.groupby("product_id").size()
@@ -526,6 +505,13 @@ def calculate_early_movers(db_path, limit=50):
     # Take each card's last 3 valid readings: price_2_days_ago, previous_price, latest_price
     last_3 = df_valid[df_valid["product_id"].isin(products_with_history)].groupby("product_id").tail(3)
     last_3 = last_3.copy()
+    # Require three consecutive calendar dates ending on the analysis date.
+    expected = pd.date_range(end=as_of, periods=3)
+    last_3 = last_3[last_3["date"].isin(expected)]
+    counts = last_3.groupby("product_id")["date"].nunique()
+    last_3 = last_3[last_3["product_id"].isin(counts[counts == 3].index)]
+    if last_3.empty:
+        return pd.DataFrame()
     last_3["position"] = last_3.groupby("product_id").cumcount()
     
     prices = last_3.pivot(index="product_id", columns="position", values="market_price")
@@ -602,7 +588,8 @@ def get_product_history_info(db_path, product_id):
     }
 
 
-def calculate_early_movers_backtest(prices_db_path, signals_db_path, horizons=(3, 7, 14)):
+def calculate_early_movers_backtest(prices_db_path, signals_db_path, horizons=(3, 7, 14),
+                                   jump_percent=20.0, jump_dollars=1.0):
     """
     Backtest saved Early Mover signals using future prices already in the price DB.
     
@@ -625,6 +612,8 @@ def calculate_early_movers_backtest(prices_db_path, signals_db_path, horizons=(3
           "summary": dict keyed by horizon -> {count, avg_return, percent_positive}
               computed only over "ok" observations
     """
+    if not all(math.isfinite(v) and v >= 0 for v in (jump_percent, jump_dollars)):
+        raise ValueError("Jump thresholds must be finite and nonnegative")
     prices_conn = sqlite3.connect(prices_db_path)
     signals_conn = sqlite3.connect(signals_db_path)
 
@@ -639,12 +628,10 @@ def calculate_early_movers_backtest(prices_db_path, signals_db_path, horizons=(3
     ).fetchall()
     signals_conn.close()
 
-    if max_date_str is None or not signal_rows:
-        prices_conn.close()
-        return {"signals": [], "summary": {h: {"count": 0, "avg_return": None, "percent_positive": None} for h in horizons}}
-
-    max_date = datetime.strptime(max_date_str, "%Y-%m-%d")
+    max_date = datetime.strptime(max_date_str, "%Y-%m-%d") if max_date_str else None
     returns_by_horizon = {h: [] for h in horizons}
+    hits_by_horizon = {h: 0 for h in horizons}
+    statuses = {h: {"pending": 0, "unavailable": 0} for h in horizons}
 
     signals = []
     for product_id, card_name, set_name, signal_date_str, signal_price in signal_rows:
@@ -662,7 +649,9 @@ def calculate_early_movers_backtest(prices_db_path, signals_db_path, horizons=(3
             target_date = signal_date + timedelta(days=horizon)
             target_date_str = target_date.strftime("%Y-%m-%d")
 
-            if target_date > max_date:
+            if not signal_price or not math.isfinite(signal_price) or signal_price <= 0:
+                status, price, pct_return = "unavailable", None, None
+            elif max_date is None or target_date > max_date:
                 status, price, pct_return = "pending", None, None
             else:
                 row = prices_conn.execute(
@@ -671,12 +660,19 @@ def calculate_early_movers_backtest(prices_db_path, signals_db_path, horizons=(3
                 ).fetchone()
                 price = row[0] if row and row[0] is not None else None
 
-                if price is None:
+                if price is None or not math.isfinite(price) or price <= 0:
                     status, pct_return = "unavailable", None
                 else:
                     status = "ok"
                     pct_return = ((price - signal_price) / signal_price) * 100
                     returns_by_horizon[horizon].append(pct_return)
+
+            hit = (pct_return >= jump_percent and price - signal_price >= jump_dollars) if status == "ok" else None
+            if status == "ok":
+                hits_by_horizon[horizon] += int(hit)
+            else:
+                statuses[horizon][status] += 1
+            signal_result[f"jump_{horizon}d"] = hit
 
             signal_result[f"price_{horizon}d"] = price
             signal_result[f"return_{horizon}d"] = pct_return
@@ -698,6 +694,14 @@ def calculate_early_movers_backtest(prices_db_path, signals_db_path, horizons=(3
                 "avg_return": sum(returns) / count,
                 "percent_positive": (sum(1 for r in returns if r > 0) / count) * 100
             }
+        summary[horizon].update({
+            "median_return": median(returns) if count else None,
+            "jump_count": hits_by_horizon[horizon],
+            "jump_rate": 100 * hits_by_horizon[horizon] / count if count else None,
+            "miss_count": count - hits_by_horizon[horizon],
+            **statuses[horizon],
+        })
 
-    return {"signals": signals, "summary": summary}
-
+    return {"signals": signals, "summary": summary, "latest_price_date": max_date_str,
+            "unique_products": len({s[0] for s in signal_rows}),
+            "jump_percent": jump_percent, "jump_dollars": jump_dollars}

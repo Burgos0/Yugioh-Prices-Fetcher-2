@@ -2,6 +2,15 @@
 
 {% block content %}
 <div class="content-wrapper">
+    <h2>Early alert results</h2>
+    <p>A target hit means the exact-date market price rose at least 20% AND $1 after the alert.
+       This is an experimental target, not a validated probability or a trading profit.</p>
+    <p>Returns exclude fees, shipping, taxes, and availability of stock. Repeated alerts for
+       the same card overlap and are not independent predictions.</p>
+    {% if evaluation %}
+    <p>Price data through {{ evaluation.latest_price_date or 'unknown' }} ·
+       {{ evaluation.unique_products }} distinct products</p>
+    {% endif %}
     {% if error %}
     <div class="error-box">
         <strong>Error:</strong> {{ error }}
@@ -17,9 +26,15 @@
             <p>{{ summary[horizon].count }} completed signals</p>
             <p>Avg return: {{ "%.2f"|format(summary[horizon].avg_return) }}%</p>
             <p>{{ "%.2f"|format(summary[horizon].percent_positive) }}% positive</p>
+            <p>Median return: {{ "%.2f"|format(summary[horizon].median_return) }}%</p>
+            <p>Target hits: {{ summary[horizon].jump_count }} / {{ summary[horizon].count }}
+               ({{ "%.1f"|format(summary[horizon].jump_rate) }}%)</p>
+            <p>{{ summary[horizon].miss_count }} completed alerts below target</p>
             {% else %}
             <p>No completed signals yet</p>
             {% endif %}
+            <p>{{ summary[horizon].pending }} awaiting future data ·
+               {{ summary[horizon].unavailable }} missing or invalid</p>
         </div>
         {% endfor %}
     </div>
@@ -83,8 +98,8 @@
                         {{ "%.2f"|format(signal['return_' ~ horizon ~ 'd']) }}%
                     </td>
                     {% else %}
-                    <td class="price pending">Pending</td>
-                    <td class="percent pending">Pending</td>
+                    <td class="price pending">{{ status|capitalize }}</td>
+                    <td class="percent pending">{{ status|capitalize }}</td>
                     {% endif %}
                     {% endfor %}
 
