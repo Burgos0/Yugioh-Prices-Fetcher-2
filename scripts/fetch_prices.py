@@ -13,7 +13,7 @@ import tempfile
 import json
 import sqlite3
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import requests
 
 # Constants
@@ -37,7 +37,7 @@ def check_7z_available():
 
 
 def parse_target_date(date_arg=None):
-    """Determine target date in YYYY-MM-DD format (defaults to UTC today)."""
+    """Determine target date in YYYY-MM-DD format (defaults to UTC yesterday)."""
     if date_arg:
         try:
             parsed = datetime.strptime(date_arg, "%Y-%m-%d").date()
@@ -45,7 +45,7 @@ def parse_target_date(date_arg=None):
         except ValueError:
             print(f"ERROR: Invalid date format '{date_arg}'. Expected YYYY-MM-DD.")
             sys.exit(1)
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    return (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%d")
 
 
 def fetch_json(url):
