@@ -1,164 +1,342 @@
-import requests
-import sqlite3
-from datetime import date
+"""
+Yu-Gi-Oh daily price fetcher using TCGCSV daily archive.
+
+Downloads the official TCGCSV daily archive (prices-YYYY-MM-DD.ppmd.7z),
+extracts category ID 2 (Yu-Gi-Oh) prices, matches them with set and card metadata,
+and performs an atomic batch update into SQLite (data/prices.db).
+"""
+import sys
 import os
+import shutil
+import subprocess
+import tempfile
+import json
+import sqlite3
 import time
+from datetime import datetime, timezone
+import requests
 
-os.makedirs("data", exist_ok=True)
-
-CATEGORY_ID = 2
-BASE = "https://tcgcsv.com/tcgplayer"
+# Constants
+CATEGORY_ID = 2  # Yu-Gi-Oh on TCGplayer/TCGCSV
+BASE_API = "https://tcgcsv.com/tcgplayer"
+ARCHIVE_URL_TEMPLATE = "https://tcgcsv.com/archive/tcgplayer/prices-{date}.ppmd.7z"
+DB_PATH = "data/prices.db"
+MIN_EXPECTED_DAILY_ROWS = 40000  # Normal daily count is ~47,000+
+REQUEST_TIMEOUT = 30
 MAX_RETRIES = 5
 RETRY_DELAY = 1  # seconds, doubled each retry (exponential backoff)
-SET_DELAY = 0.5  # seconds to wait between sets, to reduce rate-limit/server pressure
-MIN_EXPECTED_DAILY_ROWS = 40000  # normal daily count is ~47,000
-MAX_FAILED_SET_RATIO = 0.10  # fail the run if more than 10% of sets failed
+USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 yugioh-price-fetcher/2.0"
 
-conn = sqlite3.connect("data/prices.db")
-cur = conn.cursor()
 
-cur.execute("""
-CREATE TABLE IF NOT EXISTS prices (
-    product_id INTEGER,
-    card_name TEXT,
-    set_name TEXT,
-    low_price REAL,
-    mid_price REAL,
-    high_price REAL,
-    market_price REAL,
-    direct_low_price REAL,
-    date TEXT,
-    PRIMARY KEY (product_id, date)
-)
-""")
+def check_7z_available():
+    """Confirm the `7z` CLI is available on PATH."""
+    if shutil.which("7z") is None:
+        print("ERROR: The `7z` command is not available in this environment.")
+        print("Install it with: sudo apt-get update && sudo apt-get install -y p7zip-full")
+        sys.exit(1)
+
+
+def parse_target_date(date_arg=None):
+    """Determine target date in YYYY-MM-DD format (defaults to UTC today)."""
+    if date_arg:
+        try:
+            parsed = datetime.strptime(date_arg, "%Y-%m-%d").date()
+            return parsed.strftime("%Y-%m-%d")
+        except ValueError:
+            print(f"ERROR: Invalid date format '{date_arg}'. Expected YYYY-MM-DD.")
+            sys.exit(1)
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
 
 def fetch_json(url):
-    """Fetch JSON from URL with retry logic and exponential backoff.
-    
-    Retries on: request timeouts, connection errors, HTTP 429, and HTTP 5xx.
-    Does NOT retry other HTTP errors (e.g. 404) since those won't succeed on retry.
-    """
-    headers = {
-        "User-Agent": "Mozilla/5.0 yugioh-price-fetcher/1.0"
-    }
-    
+    """Fetch JSON with retry logic and exponential backoff."""
+    headers = {"User-Agent": USER_AGENT}
     last_error = None
-    
+
     for attempt in range(MAX_RETRIES):
         try:
-            r = requests.get(url, headers=headers, timeout=30)
-        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+            r = requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT)
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError, requests.exceptions.RequestException) as e:
             last_error = e
         else:
             if r.status_code == 200:
                 try:
                     data = r.json()
-                    if "results" not in data:
-                        raise ValueError("Missing 'results' in response")
-                    return data["results"]
+                    if "results" in data:
+                        return data["results"]
+                    return data
                 except ValueError as e:
                     last_error = e
             elif r.status_code == 429 or r.status_code >= 500:
-                # Rate-limited or server error - retryable
                 last_error = requests.HTTPError(f"HTTP {r.status_code} (retryable)")
             else:
-                # Non-retryable client error - fail immediately
-                r.raise_for_status()
-        
+                last_error = requests.HTTPError(f"HTTP {r.status_code}")
+                # For 404 or other 4xx, stop retrying unless 429
+                if r.status_code != 429:
+                    break
+
         if attempt < MAX_RETRIES - 1:
             sleep_time = RETRY_DELAY * (2 ** attempt)
-            print(f"  {last_error}. Retrying in {sleep_time}s...")
+            print(f"  Request failed ({last_error}). Retrying in {sleep_time}s...")
             time.sleep(sleep_time)
-    
-    raise RuntimeError(f"Failed after {MAX_RETRIES} retries: {last_error}")
+
+    raise RuntimeError(f"Failed to fetch {url}: {last_error}")
 
 
-def get_groups():
-    return fetch_json(f"{BASE}/{CATEGORY_ID}/groups")
+def download_archive(target_date_str, dest_path):
+    """Download daily archive for target date."""
+    url = ARCHIVE_URL_TEMPLATE.format(date=target_date_str)
+    print(f"Downloading daily archive from: {url}")
+    headers = {"User-Agent": USER_AGENT}
+
+    last_error = None
+    for attempt in range(MAX_RETRIES):
+        try:
+            r = requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT, stream=True)
+            if r.status_code == 200:
+                with open(dest_path, "wb") as f:
+                    for chunk in r.iter_content(chunk_size=1024 * 1024):
+                        f.write(chunk)
+                download_size = os.path.getsize(dest_path)
+                print(f"Archive downloaded successfully ({download_size:,} bytes).")
+                return
+            elif r.status_code == 404:
+                last_error = f"HTTP 404 Not Found (archive not published yet for {target_date_str})"
+            elif r.status_code == 429 or r.status_code >= 500:
+                last_error = f"HTTP {r.status_code} (server error / rate limit)"
+            else:
+                last_error = f"HTTP {r.status_code}"
+        except requests.exceptions.RequestException as e:
+            last_error = str(e)
+
+        if attempt < MAX_RETRIES - 1:
+            sleep_time = RETRY_DELAY * (2 ** attempt)
+            print(f"  Download attempt {attempt + 1} failed ({last_error}). Retrying in {sleep_time}s...")
+            time.sleep(sleep_time)
+
+    print(f"\nERROR: Failed to download archive for {target_date_str}: {last_error}")
+    sys.exit(1)
 
 
-def get_products(group_id):
-    return fetch_json(f"{BASE}/{CATEGORY_ID}/{group_id}/products")
+def extract_archive(archive_path, extract_dir):
+    """Extract .7z archive to target directory."""
+    print(f"Extracting archive with 7-Zip...")
+    result = subprocess.run(
+        ["7z", "x", archive_path, f"-o{extract_dir}", "-y"],
+        capture_output=True,
+        text=True
+    )
+    if result.returncode != 0:
+        print("ERROR: 7-Zip extraction failed.")
+        if result.stdout:
+            print(result.stdout)
+        if result.stderr:
+            print(result.stderr)
+        sys.exit(1)
 
 
-def get_prices(group_id):
-    return fetch_json(f"{BASE}/{CATEGORY_ID}/{group_id}/prices")
+def find_category_dir(extract_dir, category_id=CATEGORY_ID):
+    """Locate the directory for category ID (2) inside extracted archive."""
+    cat_str = str(category_id)
+    for root, dirs, files in os.walk(extract_dir):
+        rel = os.path.relpath(root, extract_dir)
+        parts = rel.split(os.sep)
+        # Direct category folder or inside date subfolder (<date>/<category_id>)
+        if (len(parts) == 1 and parts[0] == cat_str) or (len(parts) == 2 and parts[1] == cat_str):
+            return root
+
+    print(f"ERROR: Category {category_id} directory not found in extracted archive.")
+    sys.exit(1)
 
 
-def get_record_count():
-    """Get current row count in prices table."""
-    cur.execute("SELECT COUNT(*) FROM prices")
-    return cur.fetchone()[0]
+def init_db(db_path=DB_PATH):
+    """Ensure database directory and prices table exist."""
+    os.makedirs(os.path.dirname(db_path), exist_ok=True)
+    conn = sqlite3.connect(db_path)
+    cur = conn.cursor()
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS prices (
+        product_id INTEGER,
+        card_name TEXT,
+        set_name TEXT,
+        low_price REAL,
+        mid_price REAL,
+        high_price REAL,
+        market_price REAL,
+        direct_low_price REAL,
+        date TEXT,
+        PRIMARY KEY (product_id, date)
+    )
+    """)
+    conn.commit()
+    return conn
 
 
-def get_daily_row_count(day):
-    """Get row count in prices table for a specific date."""
-    cur.execute("SELECT COUNT(*) FROM prices WHERE date = ?", (day,))
-    return cur.fetchone()[0]
+def load_known_metadata(db_path=DB_PATH):
+    """Load known card names and set names from existing database."""
+    card_names = {}
+    set_names_by_card = {}
+
+    if os.path.exists(db_path):
+        try:
+            conn = sqlite3.connect(db_path)
+            cur = conn.cursor()
+            cur.execute("SELECT product_id, card_name, set_name FROM prices WHERE card_name IS NOT NULL GROUP BY product_id")
+            for pid, cname, sname in cur.fetchall():
+                card_names[pid] = cname
+                if sname:
+                    set_names_by_card[pid] = sname
+            conn.close()
+        except Exception as e:
+            print(f"Warning: Could not read existing metadata from {db_path}: {e}")
+
+    return card_names, set_names_by_card
 
 
-
-# ===== MAIN EXECUTION =====
-start_time = time.time()
-
-# Track statistics
-stats = {
-    'attempted': 0,
-    'succeeded': 0,
-    'failed': 0,
-    'records_inserted': 0,
-    'failed_sets': []
-}
-
-print("Starting Yu-Gi-Oh price fetch...\n")
-
-try:
-    groups = get_groups()
-    print(f"Found {len(groups)} card sets\n")
-except Exception as e:
-    print(f"ERROR: Failed to fetch groups: {e}")
-    conn.close()
-    exit(1)
-
-today = str(date.today())
-
-for g in groups:
+def fetch_set_names():
+    """Fetch current set/group mappings from TCGCSV API."""
     try:
-        stats['attempted'] += 1
-        gid = g["groupId"]
-        set_name = g["name"]
-        
-        print(f"[{stats['attempted']}/{len(groups)}] Fetching: {set_name}...", end=" ")
-        
-        # Get products and prices for this set
-        products = get_products(gid)
-        product_lookup = {}
-        
-        for prod in products:
-            product_lookup[prod["productId"]] = prod.get("name")
-        
-        prices = get_prices(gid)
-        
-        # Count records before insert
-        records_before = get_record_count()
-        
-        # Insert price records
-        for p in prices:
-            product_id = p["productId"]
-            card_name = product_lookup.get(product_id)
-            
-            low_price = p.get("lowPrice")
-            mid_price = p.get("midPrice")
-            high_price = p.get("highPrice")
-            market_price = p.get("marketPrice")
-            direct_low_price = p.get("directLowPrice")
-            
-            values = [v for v in [low_price, mid_price, high_price, market_price, direct_low_price] if v is not None]
-            
-            if not values:
+        groups = fetch_json(f"{BASE_API}/{CATEGORY_ID}/groups")
+        return {str(g["groupId"]): g.get("name") for g in groups if "groupId" in g}
+    except Exception as e:
+        print(f"Warning: Failed to fetch live groups list: {e}")
+        return {}
+
+
+def parse_and_build_records(cat_dir, target_date_str, known_cards, set_names):
+    """
+    Parse price files for all groups under the category directory.
+    Fetches missing product metadata for new cards when needed.
+    """
+    records = []
+    group_dirs = [d for d in os.listdir(cat_dir) if os.path.isdir(os.path.join(cat_dir, d))]
+    print(f"Found {len(group_dirs)} Yu-Gi-Oh set directories in archive.")
+
+    # Identify groups that might have unknown products
+    groups_with_unknown_products = {}
+    parsed_group_prices = {}
+
+    for gid in group_dirs:
+        gpath = os.path.join(cat_dir, gid)
+        pfile = os.path.join(gpath, "prices")
+        if not os.path.isfile(pfile):
+            pfile = os.path.join(gpath, "prices.json")
+        if not os.path.isfile(pfile):
+            continue
+
+        try:
+            with open(pfile, "r") as f:
+                data = json.load(f)
+            items = data.get("results", data) if isinstance(data, dict) else data
+            if not isinstance(items, list):
                 continue
-                
-            cur.execute(
+            parsed_group_prices[gid] = items
+
+            # Check for unknown product IDs in this group
+            for p in items:
+                pid = p.get("productId")
+                if pid and pid not in known_cards:
+                    groups_with_unknown_products.setdefault(gid, []).append(pid)
+        except Exception as e:
+            print(f"Warning: Failed to parse price file in group {gid}: {e}")
+
+    # For the few groups with unknown products, fetch product names
+    if groups_with_unknown_products:
+        print(f"Resolving names for {sum(len(v) for v in groups_with_unknown_products.values())} new products across {len(groups_with_unknown_products)} sets...")
+        for gid in groups_with_unknown_products:
+            try:
+                products = fetch_json(f"{BASE_API}/{CATEGORY_ID}/{gid}/products")
+                for prod in products:
+                    pid = prod.get("productId")
+                    pname = prod.get("name")
+                    if pid and pname:
+                        known_cards[pid] = pname
+            except Exception as e:
+                print(f"  Warning: Could not fetch product names for group {gid}: {e}")
+
+    # Build DB records
+    for gid, items in parsed_group_prices.items():
+        set_name = set_names.get(str(gid))
+        for p in items:
+            pid = p.get("productId")
+            if pid is None:
+                continue
+
+            low = p.get("lowPrice")
+            mid = p.get("midPrice")
+            high = p.get("highPrice")
+            market = p.get("marketPrice")
+            dlow = p.get("directLowPrice")
+
+            # Match existing behavior: skip records where all prices are None
+            if not any(v is not None for v in [low, mid, high, market, dlow]):
+                continue
+
+            card_name = known_cards.get(pid)
+            records.append((
+                pid,
+                card_name,
+                set_name,
+                low,
+                mid,
+                high,
+                market,
+                dlow,
+                target_date_str
+            ))
+
+    return records, len(parsed_group_prices)
+
+
+def main():
+    start_time = time.time()
+    target_date_str = parse_target_date(sys.argv[1] if len(sys.argv) > 1 else None)
+    print("=" * 60)
+    print(f"Yu-Gi-Oh Price Fetcher (Archive Mode)")
+    print(f"Target Date: {target_date_str}")
+    print("=" * 60)
+
+    check_7z_available()
+
+    # Preload metadata from existing DB
+    known_cards, set_names_by_card = load_known_metadata(DB_PATH)
+    print(f"Loaded {len(known_cards):,} known cards from existing database.")
+
+    # Fetch set names from live API (single request)
+    set_names = fetch_set_names()
+    print(f"Loaded {len(set_names):,} set names from API.")
+
+    # Work in temporary directory
+    tmp_dir = tempfile.mkdtemp(prefix="yugioh_fetch_")
+    try:
+        archive_path = os.path.join(tmp_dir, f"prices-{target_date_str}.ppmd.7z")
+        download_archive(target_date_str, archive_path)
+
+        extract_dir = os.path.join(tmp_dir, "extracted")
+        os.makedirs(extract_dir, exist_ok=True)
+        extract_archive(archive_path, extract_dir)
+
+        cat_dir = find_category_dir(extract_dir, CATEGORY_ID)
+        records, sets_processed = parse_and_build_records(cat_dir, target_date_str, known_cards, set_names)
+
+        print(f"Parsed {len(records):,} valid price records across {sets_processed} sets.")
+
+        # Validation: Check minimum expected rows before touching DB
+        if len(records) < MIN_EXPECTED_DAILY_ROWS:
+            print(f"\nERROR: Daily dataset is INCOMPLETE. Parsed {len(records):,} rows "
+                  f"(expected at least {MIN_EXPECTED_DAILY_ROWS:,}).")
+            print("Refusing to commit incomplete dataset to database.")
+            sys.exit(1)
+
+        # Atomic commit to SQLite
+        conn = init_db(DB_PATH)
+        cur = conn.cursor()
+
+        try:
+            cur.execute("SELECT COUNT(*) FROM prices WHERE date = ?", (target_date_str,))
+            rows_before = cur.fetchone()[0]
+
+            cur.executemany(
                 """
                 INSERT OR REPLACE INTO prices(
                     product_id,
@@ -172,81 +350,42 @@ for g in groups:
                     date
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (
-                    product_id,
-                    card_name,
-                    set_name,
-                    low_price,
-                    mid_price,
-                    high_price,
-                    market_price,
-                    direct_low_price,
-                    today
-                )
+                records
             )
-        
-        conn.commit()
-        
-        # Count records after insert
-        records_after = get_record_count()
-        records_added = records_after - records_before
-        stats['records_inserted'] += records_added
-        stats['succeeded'] += 1
-        
-        print(f"✓ ({records_added} records)")
-        
-    except Exception as e:
-        stats['failed'] += 1
-        stats['failed_sets'].append((set_name, str(e)))
-        print(f"✗ FAILED: {e}")
-    
+            conn.commit()
+
+            cur.execute("SELECT COUNT(*) FROM prices WHERE date = ?", (target_date_str,))
+            daily_rows = cur.fetchone()[0]
+        except Exception as e:
+            conn.rollback()
+            conn.close()
+            print(f"\nERROR: Database transaction failed: {e}")
+            sys.exit(1)
+
+        conn.close()
+
+        # Final verification
+        if daily_rows < MIN_EXPECTED_DAILY_ROWS:
+            print(f"\nERROR: Daily fetch validation failed. Database row count for {target_date_str}: "
+                  f"{daily_rows:,} (expected at least {MIN_EXPECTED_DAILY_ROWS:,}).")
+            sys.exit(1)
+
+        elapsed = time.time() - start_time
+        print("\n" + "=" * 60)
+        print("DAILY FETCH SUMMARY")
+        print("=" * 60)
+        print(f"Date:                {target_date_str}")
+        print(f"Sets processed:      {sets_processed}")
+        print(f"Records parsed:      {len(records):,}")
+        print(f"Rows before update:  {rows_before:,}")
+        print(f"Rows for date in DB: {daily_rows:,}")
+        print(f"Runtime:             {elapsed:.2f} seconds")
+        print(f"Status:              SUCCESS (>= {MIN_EXPECTED_DAILY_ROWS:,} rows)")
+        print("=" * 60)
+
     finally:
-        # Small delay between sets to reduce rate-limit/server pressure
-        time.sleep(SET_DELAY)
+        shutil.rmtree(tmp_dir, ignore_errors=True)
 
-conn.commit()
 
-# Final row count for today, queried before closing the connection
-daily_rows = get_daily_row_count(today)
-conn.close()
-
-# ===== SUMMARY REPORT =====
-elapsed = time.time() - start_time
-
-print("\n" + "="*50)
-print("DAILY FETCH SUMMARY")
-print("="*50)
-print(f"Date: {today}")
-print(f"Sets attempted:  {stats['attempted']}")
-print(f"Sets succeeded:  {stats['succeeded']}")
-print(f"Sets failed:     {stats['failed']}")
-print(f"Records inserted: {stats['records_inserted']}")
-print(f"Runtime:         {elapsed:.2f} seconds")
-print(f"Rows for {today}: {daily_rows}")
-
-if stats['failed_sets']:
-    print(f"\n⚠️  Failed sets ({len(stats['failed_sets'])}):")
-    for set_name, error in stats['failed_sets']:
-        print(f"  • {set_name}")
-        print(f"    └─ {error[:100]}")
-
-print("="*50)
-
-# ===== COMPLETENESS CHECK =====
-# GitHub Actions must FAIL if the dataset is incomplete, instead of looking green.
-failed_ratio = (stats['failed'] / stats['attempted']) if stats['attempted'] else 0
-incomplete = False
-
-if daily_rows < MIN_EXPECTED_DAILY_ROWS:
-    print(f"\nERROR: Daily fetch is INCOMPLETE. Rows for {today}: {daily_rows} "
-          f"(expected at least {MIN_EXPECTED_DAILY_ROWS})")
-    print(f"Failed sets: {stats['failed']} / {stats['attempted']}")
-    incomplete = True
-
-if failed_ratio > MAX_FAILED_SET_RATIO:
-    print(f"\nERROR: Too many sets failed ({stats['failed']} / {stats['attempted']} "
-          f"= {failed_ratio * 100:.1f}%, max allowed is {MAX_FAILED_SET_RATIO * 100:.0f}%)")
-    incomplete = True
-
-if incomplete:
-    exit(1)
+if __name__ == "__main__":
+    main()
