@@ -8,6 +8,13 @@ on:
 permissions:
   contents: write
 
+# Serialize runs so two overlapping schedule/dispatch triggers can never
+# race to restore/persist the DB snapshot at the same time. Queue rather
+# than cancel, so a run is never dropped.
+concurrency:
+  group: yugioh-price-fetcher-daily
+  cancel-in-progress: false
+
 jobs:
   run:
     runs-on: ubuntu-latest
@@ -28,25 +35,54 @@ jobs:
       - name: install python packages
         run: |
           pip install -r requirements.txt
-    
+
+      - name: restore latest database snapshot
+        id: restore_snapshot
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python -m scripts.restore_snapshot
+
       - name: run yugioh fetcher
+        id: fetch
         run: |
           python -m scripts.fetch_prices
       
       - name: Calculate top gainers
+        id: top_gainers
         run: |
           python -m scripts.top_gainers
         continue-on-error: true
 
       - name: Calculate early movers
+        id: early_movers
         run: |
           python -m scripts.early_movers
         continue-on-error: true
 
-      - name: Commit results to repo
+      - name: publish database snapshot
+        id: publish_snapshot
         if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python -m scripts.publish_snapshot --source-commit "${{ github.sha }}"
+
+      - name: Commit results to repo
+        if: success() && steps.top_gainers.outcome == 'success' && steps.early_movers.outcome == 'success'
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add data/prices.db data/top_gainers.json data/early_movers_all_years.json data/early_movers_2007_onward.json data/signals.db
-          git diff --cached --quiet || (git commit -m "Update prices.db (incl. subtype provenance), top_gainers.json, early_movers caches, and signals.db" && git push)
+          git add data/top_gainers.json data/early_movers_all_years.json data/early_movers_2007_onward.json
+          git diff --cached --quiet || (git commit -m "Update top_gainers.json and early_movers caches" && git push)
+
+      # Fetch succeeding is enough to publish a database snapshot (data is
+      # valuable even if analysis fails), but an analysis failure must still
+      # mark the WORKFLOW itself failed -- continue-on-error above only
+      # keeps the job running long enough to publish the snapshot and skip
+      # the commit step; a warning alone is not sufficient signal.
+      - name: fail workflow if analysis steps did not succeed
+        if: always() && steps.fetch.outcome == 'success' && (steps.top_gainers.outcome != 'success' || steps.early_movers.outcome != 'success')
+        run: |
+          echo "::error::Analysis failed (top_gainers=${{ steps.top_gainers.outcome }}, early_movers=${{ steps.early_movers.outcome }}). The fetched database snapshot was still published, but stale/partial display caches were NOT committed. Marking this workflow run as failed."
+          exit 1

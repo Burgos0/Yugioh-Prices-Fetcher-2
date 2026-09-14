@@ -38,12 +38,48 @@ class DailyWorkflowWiringTests(unittest.TestCase):
         # on sys.path, which breaks its `from app.subtype_policy import ...`.
         self.assertIn('python -m scripts.fetch_prices', self.workflow_text)
 
-    def test_commit_step_includes_both_caches_and_the_provenance_database(self):
+    def test_commit_step_includes_only_code_and_small_display_caches(self):
         commit_section = self.workflow_text[self.workflow_text.index('Commit results to repo'):]
-        self.assertIn('data/prices.db', commit_section)  # carries product_subtypes provenance too
         self.assertIn('data/early_movers_all_years.json', commit_section)
         self.assertIn('data/early_movers_2007_onward.json', commit_section)
-        self.assertIn('data/signals.db', commit_section)
+        # The databases are now persisted via Release snapshots, not ordinary commits.
+        self.assertNotIn('data/prices.db', commit_section)
+        self.assertNotIn('data/signals.db', commit_section)
+
+    def test_restore_precedes_fetch_precedes_publish_snapshot(self):
+        restore_pos = self.workflow_text.index('scripts.restore_snapshot')
+        fetch_pos = self.workflow_text.index('scripts.fetch_prices')
+        publish_pos = self.workflow_text.index('scripts.publish_snapshot')
+        self.assertLess(restore_pos, fetch_pos)
+        self.assertLess(fetch_pos, publish_pos)
+
+    def test_runs_are_serialized_via_concurrency_group(self):
+        self.assertIn('concurrency:', self.workflow_text)
+        self.assertIn('cancel-in-progress: false', self.workflow_text)
+
+    def test_continue_on_error_step_outcomes_are_explicitly_checked(self):
+        self.assertIn('steps.top_gainers.outcome', self.workflow_text)
+        self.assertIn('steps.early_movers.outcome', self.workflow_text)
+
+    def test_snapshot_is_published_even_if_analysis_steps_fail(self):
+        # publish_snapshot's `if:` must depend only on success() (i.e. the
+        # required restore/fetch steps), not on the analysis outcomes --
+        # the fetched database must be preserved even if analysis fails.
+        publish_section_start = self.workflow_text.index('id: publish_snapshot')
+        publish_if_line = self.workflow_text[publish_section_start:publish_section_start + 200]
+        self.assertNotIn('top_gainers.outcome', publish_if_line)
+        self.assertNotIn('early_movers.outcome', publish_if_line)
+
+    def test_commit_step_requires_both_analysis_steps_to_have_succeeded(self):
+        commit_section_start = self.workflow_text.index('Commit results to repo')
+        commit_if_line = self.workflow_text[commit_section_start:commit_section_start + 300]
+        self.assertIn("steps.top_gainers.outcome == 'success'", commit_if_line)
+        self.assertIn("steps.early_movers.outcome == 'success'", commit_if_line)
+
+    def test_analysis_failure_hard_fails_the_workflow_not_just_a_warning(self):
+        self.assertIn('exit 1', self.workflow_text)
+        self.assertIn("steps.top_gainers.outcome != 'success'", self.workflow_text)
+        self.assertIn("steps.early_movers.outcome != 'success'", self.workflow_text)
 
 
 class FetchAtomicityTests(unittest.TestCase):
