@@ -1,33 +1,63 @@
 import json
 import os
 import sqlite3
-from app.analysis import calculate_early_movers
+from app.analysis import (
+    calculate_early_movers,
+    calculate_early_mover_candidates,
+    early_movers_cache_path,
+    RELEASE_SCOPE_ALL_YEARS,
+    RELEASE_SCOPE_2007_ONWARD,
+    SUBTYPE_MODE_VERIFIED,
+)
 
-# Connect to database and calculate early movers
-movers = calculate_early_movers("data/prices.db", limit=50)
+# Production alerts must never mix unverified legacy prices with newly
+# subtype-tracked prices (see app.analysis.calculate_early_mover_candidates).
+# "all_years" is the default, live signal-generating scope; "2007_onward" is
+# only an optional display filter and is never fed into signal history.
+PRODUCTION_SCOPE = RELEASE_SCOPE_ALL_YEARS
 
-# Save results to JSON (always, even if empty)
 os.makedirs("data", exist_ok=True)
-json_path = "data/early_movers.json"
+
+movers = calculate_early_movers("data/prices.db", limit=50, release_scope=PRODUCTION_SCOPE,
+                                 subtype_mode=SUBTYPE_MODE_VERIFIED)
+movers_2007_onward = calculate_early_movers("data/prices.db", limit=50, release_scope=RELEASE_SCOPE_2007_ONWARD,
+                                             subtype_mode=SUBTYPE_MODE_VERIFIED)
+
+# Save both scope-labeled display caches (always, even if empty) so a page
+# can never load results generated under the other scope by mistake. Each
+# cache also records whether ANY product currently satisfies the full
+# verified-subtype history requirement, so the empty-state UI can tell
+# "still collecting verified history" apart from "history is available, but
+# nothing currently qualifies as a momentum alert".
+for scope, scope_movers in [(RELEASE_SCOPE_ALL_YEARS, movers), (RELEASE_SCOPE_2007_ONWARD, movers_2007_onward)]:
+    candidates = calculate_early_mover_candidates(
+        "data/prices.db", release_scope=scope, subtype_mode=SUBTYPE_MODE_VERIFIED)
+    scope_path = early_movers_cache_path(scope)
+    scope_list = [] if scope_movers.empty else scope_movers.to_dict('records')
+    with open(scope_path, 'w') as f:
+        json.dump({
+            "scope": scope,
+            "subtype_mode": SUBTYPE_MODE_VERIFIED,
+            "candidates_available": not candidates.empty,
+            "movers": scope_list,
+        }, f, indent=2)
+    print(f"Saved {len(scope_list)} {scope} Early Movers to {scope_path} "
+          f"(candidates_available={not candidates.empty})")
 
 if movers.empty:
-    # Save empty list if no early movers found
-    with open(json_path, 'w') as f:
-        json.dump([], f, indent=2)
-    print("No early movers found. Data may not be available yet.")
-    print(f"Saved empty results to {json_path}")
+    print("No early movers found under the production (all_years, verified-subtype) scope. "
+          "Data may not be available yet -- this is expected until enough subtype-tracked "
+          "price history accumulates (see app.subtype_policy).")
     exit(0)
 
-# Convert DataFrame to list of dicts and save
 movers_list = movers.to_dict('records')
-with open(json_path, 'w') as f:
-    json.dump(movers_list, f, indent=2)
 
 # ===== SAVE SIGNAL HISTORY =====
 # Use the latest date present in the price data, not the system/UTC date
 prices_conn = sqlite3.connect("data/prices.db")
 signal_date = prices_conn.execute("SELECT MAX(date) FROM prices").fetchone()[0]
 prices_conn.close()
+
 
 print(f"Using signal_date from prices.db: {signal_date}")
 
@@ -101,4 +131,5 @@ print("="*130)
 print(f"Analysis: latest price vs price 2 days ago, requiring building momentum")
 print(f"Early movers shown: {len(movers)}")
 print("="*130)
-print(f"\nResults saved to: {json_path}")
+print(f"\nResults saved to: {early_movers_cache_path(RELEASE_SCOPE_ALL_YEARS)} and "
+      f"{early_movers_cache_path(RELEASE_SCOPE_2007_ONWARD)}")

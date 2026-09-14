@@ -1,6 +1,7 @@
 import sqlite3
 import tempfile
 import unittest
+import json
 import pandas as pd
 from pathlib import Path
 from unittest.mock import patch
@@ -20,6 +21,16 @@ class EarlyAlertTests(unittest.TestCase):
         with sqlite3.connect(self.signals) as conn:
             conn.execute('CREATE TABLE early_mover_signals (product_id INTEGER, '
                          'card_name TEXT, set_name TEXT, signal_date TEXT, signal_price REAL)')
+        # Isolated release-date cache: these tests use a fake 'Test' set name,
+        # not a real TCGCSV group, so give it a valid in-scope release date
+        # rather than depend on (or pollute) the real production cache.
+        self.release_cache = str(Path(self.tmp.name) / 'set_release_dates.json')
+        with open(self.release_cache, 'w') as f:
+            json.dump({'1': {'group_id': '1', 'name': 'Test', 'release_date': '2007-01-01',
+                             'source': 'test-fixture', 'fetched_at': '2026-01-01T00:00:00Z'}}, f)
+
+    def early_movers(self, as_of=None):
+        return calculate_early_movers(self.prices, as_of=as_of, release_date_cache_path=self.release_cache)
 
     def prices_for(self, product, readings):
         with sqlite3.connect(self.prices) as conn:
@@ -36,7 +47,7 @@ class EarlyAlertTests(unittest.TestCase):
             self.assertLessEqual(str(df.date.max().date()), '2026-09-04')
             return {'Test'}
         with patch('app.analysis.calculate_relevant_sets', side_effect=relevant):
-            result = calculate_early_movers(self.prices, as_of='2026-09-04')
+            result = self.early_movers(as_of='2026-09-04')
         self.assertEqual(result.product_id.tolist(), [1])
         self.assertEqual(result.latest_price.tolist(), [12])
 
@@ -62,7 +73,7 @@ class EarlyAlertTests(unittest.TestCase):
         result = calculate_early_movers_backtest(self.prices, self.signals)
         self.assertEqual(result['summary'][3]['count'], 0)
         self.assertEqual(result['summary'][3]['pending'], 0)
-        self.assertTrue(calculate_early_movers(self.prices).empty)
+        self.assertTrue(self.early_movers().empty)
 
     def test_relevance_uses_median_for_dense_and_latest_for_sparse(self):
         rows = []

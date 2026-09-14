@@ -1,8 +1,205 @@
 import sqlite3
 import pandas as pd
 import math
+import os
+import json
 from statistics import median
 from datetime import timedelta, datetime
+
+DEFAULT_RELEASE_DATE_CACHE_PATH = "data/set_release_dates.json"
+RELEASE_SCOPE_START_DATE = "2007-01-01"
+
+RELEASE_SCOPE_ALL_YEARS = "all_years"
+RELEASE_SCOPE_2007_ONWARD = "2007_onward"
+VALID_RELEASE_SCOPES = (RELEASE_SCOPE_ALL_YEARS, RELEASE_SCOPE_2007_ONWARD)
+DEFAULT_RELEASE_SCOPE = RELEASE_SCOPE_ALL_YEARS
+
+# Labeled, separate display-cache paths per scope so a page can never load
+# results generated under the other scope by accident.
+EARLY_MOVERS_CACHE_PATHS = {
+    RELEASE_SCOPE_ALL_YEARS: "data/early_movers_all_years.json",
+    RELEASE_SCOPE_2007_ONWARD: "data/early_movers_2007_onward.json",
+}
+
+
+def early_movers_cache_path(release_scope):
+    """Return the labeled cache file path for a given release scope. Raises on an unknown scope."""
+    if release_scope not in EARLY_MOVERS_CACHE_PATHS:
+        raise ValueError(f"Unknown release_scope: {release_scope!r}")
+    return EARLY_MOVERS_CACHE_PATHS[release_scope]
+
+
+SUBTYPE_MODE_LEGACY_UNVERIFIED = "legacy_unverified"
+SUBTYPE_MODE_VERIFIED = "verified"
+VALID_SUBTYPE_MODES = (SUBTYPE_MODE_LEGACY_UNVERIFIED, SUBTYPE_MODE_VERIFIED)
+
+
+def fetch_group_release_dates(category_id=2, base_url="https://tcgcsv.com/tcgplayer", timeout=30):
+    """
+    Fetch genuine set (group) release dates from the live TCGCSV groups API.
+
+    Uses each group's `publishedOn` field, which TCGCSV documents as the
+    set's real release date. Deliberately does NOT use `modifiedOn`, which
+    is only an API/catalog record-update timestamp, not a release date.
+
+    Returns a list of dicts keyed by the stable `group_id`:
+    [{"group_id": str, "name": str, "release_date": "YYYY-MM-DD" or None,
+      "source": "tcgcsv_groups_api.publishedOn", "fetched_at": iso8601}, ...]
+    """
+    import requests
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                              "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 yugioh-price-fetcher/2.0"}
+    resp = requests.get(f"{base_url}/{category_id}/groups", timeout=timeout, headers=headers)
+    resp.raise_for_status()
+    payload = resp.json()
+    groups = payload.get("results", payload) if isinstance(payload, dict) else payload
+    fetched_at = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    records = []
+    for g in groups:
+        group_id = g.get("groupId")
+        if group_id is None:
+            continue
+        published_on = g.get("publishedOn")
+        release_date = None
+        if published_on:
+            try:
+                release_date = datetime.strptime(published_on[:10], "%Y-%m-%d").strftime("%Y-%m-%d")
+            except ValueError:
+                release_date = None
+        records.append({
+            "group_id": str(group_id),
+            "name": g.get("name"),
+            "release_date": release_date,
+            "source": "tcgcsv_groups_api.publishedOn",
+            "fetched_at": fetched_at,
+        })
+    return records
+
+
+def save_release_date_cache(records, cache_path=DEFAULT_RELEASE_DATE_CACHE_PATH):
+    """Persist verified release-date records, keyed by stable group_id, with their source."""
+    directory = os.path.dirname(cache_path)
+    if directory:
+        os.makedirs(directory, exist_ok=True)
+    with open(cache_path, "w") as f:
+        json.dump({r["group_id"]: r for r in records}, f, indent=2, sort_keys=True)
+
+
+def load_release_date_cache(cache_path=DEFAULT_RELEASE_DATE_CACHE_PATH):
+    """Load the cached release dates. Returns {} (explicit unknown state) if no cache exists yet."""
+    if not os.path.exists(cache_path):
+        return {}
+    with open(cache_path) as f:
+        return json.load(f)
+
+
+def _build_set_name_index(cache):
+    """
+    Group cached group-id records by set name, since prices.db only stores
+    set_name (not group_id) per row. A name is "known" only if it maps to
+    exactly one cached group id with a parseable release date; a name
+    shared by more than one group id is "ambiguous" and a name with no
+    cached/parseable date is "unknown" -- neither is ever guessed.
+    """
+    by_name = {}
+    for record in cache.values():
+        name = record.get("name")
+        if not name:
+            continue
+        by_name.setdefault(name, []).append(record)
+
+    index = {}
+    for name, records in by_name.items():
+        if len(records) > 1:
+            index[name] = {"status": "ambiguous", "release_date": None}
+            continue
+        release_date = records[0].get("release_date")
+        if not release_date:
+            index[name] = {"status": "unknown", "release_date": None}
+            continue
+        index[name] = {"status": "known", "release_date": release_date}
+    return index
+
+
+def apply_release_scope(candidates_df, as_of, release_scope=DEFAULT_RELEASE_SCOPE,
+                         cache_path=DEFAULT_RELEASE_DATE_CACHE_PATH,
+                         scope_start_date=RELEASE_SCOPE_START_DATE):
+    """
+    Restrict candidates by release date, per the selected scope:
+
+    - "all_years" (default): does NOT require a known release date to
+      include a product; a set with no verified release date is still
+      included, but counted separately as a research limitation (never
+      silently excluded just for being unverified). A KNOWN future release
+      date (after `as_of`) is still excluded -- that protection against
+      look-ahead applies regardless of scope.
+    - "2007_onward": additionally requires a verified release date on or
+      after `scope_start_date`; sets with no cached entry, an unparseable
+      date, or an ambiguous (duplicate) name are excluded and counted.
+
+    A name shared by more than one cached group id ("ambiguous") is always
+    excluded in both scopes -- it is never guessed or silently joined.
+
+    Returns (scoped_df, stats). stats reports per-row counts: total,
+    eligible (= eligible_known_date + eligible_unknown_date), excluded_pre_scope,
+    excluded_future, excluded_unknown, excluded_ambiguous, plus the distinct
+    set names behind the unknown/ambiguous buckets for follow-up.
+    """
+    if release_scope not in VALID_RELEASE_SCOPES:
+        raise ValueError(f"Unknown release_scope: {release_scope!r}")
+
+    cache = load_release_date_cache(cache_path)
+    name_index = _build_set_name_index(cache)
+
+    stats = {
+        "release_scope": release_scope,
+        "scope_start_date": scope_start_date,
+        "as_of": as_of,
+        "cache_path": cache_path,
+        "cache_present": os.path.exists(cache_path),
+        "total_candidates": int(len(candidates_df)),
+        "eligible": 0,
+        "eligible_known_date": 0,
+        "eligible_unknown_date": 0,
+        "excluded_pre_scope": 0,
+        "excluded_future": 0,
+        "excluded_unknown": 0,
+        "excluded_ambiguous": 0,
+        "unknown_set_names": [],
+        "ambiguous_set_names": [],
+    }
+
+    if candidates_df.empty:
+        return candidates_df, stats
+
+    def classify(set_name):
+        entry = name_index.get(set_name)
+        if entry is None or entry["status"] == "unknown":
+            return "eligible_unknown_date" if release_scope == RELEASE_SCOPE_ALL_YEARS else "excluded_unknown"
+        if entry["status"] == "ambiguous":
+            return "excluded_ambiguous"
+        release_date = entry["release_date"]
+        # A known future release date is never included, in either scope.
+        if release_date > as_of:
+            return "excluded_future"
+        if release_scope == RELEASE_SCOPE_2007_ONWARD and release_date < scope_start_date:
+            return "excluded_pre_scope"
+        return "eligible_known_date"
+
+    classifications = candidates_df["set_name"].map(classify)
+    for bucket in ("eligible_known_date", "eligible_unknown_date", "excluded_pre_scope",
+                   "excluded_future", "excluded_unknown", "excluded_ambiguous"):
+        stats[bucket] = int((classifications == bucket).sum())
+    stats["eligible"] = stats["eligible_known_date"] + stats["eligible_unknown_date"]
+
+    stats["unknown_set_names"] = sorted(set(candidates_df.loc[classifications == "excluded_unknown", "set_name"]))
+    stats["ambiguous_set_names"] = sorted(set(candidates_df.loc[classifications == "excluded_ambiguous", "set_name"]))
+
+    eligible_mask = classifications.isin(["eligible_known_date", "eligible_unknown_date"])
+    scoped_df = candidates_df[eligible_mask].reset_index(drop=True)
+    return scoped_df, stats
+
 
 def calculate_relevant_sets(df):
     """
@@ -456,7 +653,156 @@ def calculate_penny_movers(db_path, limit=50):
     return results_df
 
 
-def calculate_early_movers(db_path, limit=50, as_of=None):
+def _load_subtype_established_dates(db_path):
+    """
+    Load each product's tracked-subtype establishment date from
+    `product_subtypes` (see scripts/fetch_prices.py), keyed by product_id.
+    Returns {} if the table doesn't exist (older/pre-tracking database) --
+    an explicit "nothing verified yet" state, never guessed.
+    """
+    with sqlite3.connect(db_path) as conn:
+        exists = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='product_subtypes'"
+        ).fetchone()
+        if not exists:
+            return {}
+        return dict(conn.execute("SELECT product_id, established_date FROM product_subtypes"))
+
+
+def calculate_early_mover_candidates(db_path, as_of=None, release_date_cache_path=DEFAULT_RELEASE_DATE_CACHE_PATH,
+                                      release_scope=DEFAULT_RELEASE_SCOPE, scope_start_date=RELEASE_SCOPE_START_DATE,
+                                      subtype_mode=SUBTYPE_MODE_LEGACY_UNVERIFIED, return_scope_stats=False):
+    """
+    Build the full pool of products eligible for Early Mover evaluation on a
+    given date: relevant-set membership, 3 valid consecutive calendar dates
+    ending on `as_of` (the same history requirement the detector uses), the
+    selected release-date scope (see apply_release_scope), and the selected
+    subtype-provenance mode, regardless of whether a candidate ends up
+    passing the momentum/gain rule.
+
+    subtype_mode:
+    - "legacy_unverified" (default here; used for historical research/replay):
+      uses whatever price is stored for each date, with no requirement that
+      it come from a subtype-tracked import. Necessary because most existing
+      history predates subtype tracking; results using this mode must be
+      labeled unverified by the caller.
+    - "verified": requires the detector's FULL minimum-history requirement
+      (all 4 of the most recent valid readings used to qualify a product,
+      not just the 3 used in the momentum comparison) to come from on/after
+      the date a stable subtype was first established for that product (see
+      scripts/fetch_prices.py's product_subtypes table). This guarantees the
+      comparison never mixes an unverified legacy price with a newly
+      subtype-tracked price, and never admits a product with less verified
+      history than the original detector requires; a product with no
+      tracked subtype at all is excluded outright. This is the mode
+      production alert generation must use.
+
+    This is the shared base used by both calculate_early_movers() (which
+    additionally requires momentum + gain thresholds) and historical replay
+    control-group selection, so both draw from an identical, leak-free,
+    identically-scoped pool.
+
+    Returns DataFrame with columns:
+    [product_id, card_name, set_name, price_2_days_ago, previous_price,
+     latest_price, dollar_gain, percent_gain, is_alert]
+    (empty DataFrame if no data / no eligible products), or, if
+    return_scope_stats=True, a (DataFrame, stats) tuple -- see
+    apply_release_scope for the stats fields.
+    """
+    if subtype_mode not in VALID_SUBTYPE_MODES:
+        raise ValueError(f"Unknown subtype_mode: {subtype_mode!r}")
+
+    empty_result = (pd.DataFrame(), None) if return_scope_stats else pd.DataFrame()
+
+    # Cut off data BEFORE any filters to prevent future data entering a replay.
+    with sqlite3.connect(db_path) as conn:
+        if as_of is None:
+            as_of = conn.execute("SELECT MAX(date) FROM prices").fetchone()[0]
+        if as_of is None:
+            return empty_result
+        as_of = datetime.strptime(as_of, "%Y-%m-%d").strftime("%Y-%m-%d")
+        df = pd.read_sql("SELECT * FROM prices WHERE date <= ?", conn, params=(as_of,))
+    if df.empty:
+        return empty_result
+    df["date"] = pd.to_datetime(df["date"])
+
+    # Calculate relevant sets
+    relevant_sets = calculate_relevant_sets(df)
+
+    # Ignore null or zero market prices
+    df_valid = df[df["market_price"].map(lambda p: pd.notna(p) and math.isfinite(p) and p > 0)].sort_values(["product_id", "date"])
+
+    # Need enough recent data to evaluate at least the last 4 days
+    valid_counts = df_valid.groupby("product_id").size()
+    products_with_history = valid_counts[valid_counts >= 4].index
+
+    if subtype_mode == SUBTYPE_MODE_VERIFIED:
+        # The detector's real minimum-history gate is 4 valid readings, not
+        # the 3 used in the momentum comparison. Require ALL 4 of the most
+        # recent valid readings to be on/after the date a stable subtype was
+        # established for that product, so a product can never qualify on a
+        # mix of unverified legacy readings and newly-tracked ones, and never
+        # with less verified history than the original detector requires.
+        established = _load_subtype_established_dates(db_path)
+        last_4 = df_valid[df_valid["product_id"].isin(products_with_history)].groupby("product_id").tail(4)
+        earliest_of_4 = last_4.groupby("product_id")["date"].min()
+        verified_product_ids = {
+            pid for pid, earliest in earliest_of_4.items()
+            if established.get(pid) is not None and earliest.strftime("%Y-%m-%d") >= established[pid]
+        }
+        products_with_history = products_with_history[products_with_history.isin(verified_product_ids)]
+
+    # Take each card's last 3 valid readings: price_2_days_ago, previous_price, latest_price
+    last_3 = df_valid[df_valid["product_id"].isin(products_with_history)].groupby("product_id").tail(3)
+    last_3 = last_3.copy()
+    # Require three consecutive calendar dates ending on the analysis date.
+    expected = pd.date_range(end=as_of, periods=3)
+    last_3 = last_3[last_3["date"].isin(expected)]
+    counts = last_3.groupby("product_id")["date"].nunique()
+    last_3 = last_3[last_3["product_id"].isin(counts[counts == 3].index)]
+    if last_3.empty:
+        return empty_result
+    last_3["position"] = last_3.groupby("product_id").cumcount()
+
+
+    prices = last_3.pivot(index="product_id", columns="position", values="market_price")
+    prices.columns = ["price_2_days_ago", "previous_price", "latest_price"]
+
+    prices["dollar_gain"] = prices["latest_price"] - prices["price_2_days_ago"]
+    prices["percent_gain"] = (prices["dollar_gain"] / prices["price_2_days_ago"]) * 100
+
+    momentum = (prices["latest_price"] > prices["previous_price"]) & \
+               (prices["previous_price"] >= prices["price_2_days_ago"])
+    prices["is_alert"] = momentum & \
+        (prices["dollar_gain"] >= 0.25) & \
+        (prices["percent_gain"] >= 10) & \
+        (prices["percent_gain"] <= 50)
+
+    # Attach card_name/set_name (one row per product_id) and apply relevant-set filtering
+    card_info = df.drop_duplicates("product_id").set_index("product_id")[["card_name", "set_name"]]
+    candidates = prices.join(card_info, how="left")
+    candidates = candidates[candidates["set_name"].isin(relevant_sets)]
+
+    if candidates.empty:
+        return empty_result
+
+    candidates = candidates.reset_index()
+
+    # Apply the selected release-date scope BEFORE any ranking/selection
+    # happens downstream, so Early Movers and its control pool see the
+    # identical eligible population.
+    candidates, scope_stats = apply_release_scope(
+        candidates, as_of, release_scope=release_scope, cache_path=release_date_cache_path,
+        scope_start_date=scope_start_date)
+
+    if return_scope_stats:
+        return candidates, scope_stats
+    return candidates
+
+
+def calculate_early_movers(db_path, limit=50, as_of=None, release_date_cache_path=DEFAULT_RELEASE_DATE_CACHE_PATH,
+                            release_scope=DEFAULT_RELEASE_SCOPE, scope_start_date=RELEASE_SCOPE_START_DATE,
+                            subtype_mode=SUBTYPE_MODE_LEGACY_UNVERIFIED):
     """
     Calculate "Early Movers" - cards showing the start of upward momentum,
     before they become major Top Gainers.
@@ -468,6 +814,11 @@ def calculate_early_movers(db_path, limit=50, as_of=None):
     - percent_gain = (latest_price - price_2_days_ago) / price_2_days_ago * 100
     - Keep only 10% <= percent_gain <= 50% (bigger moves belong in Top Gainers)
     - Require at least $0.25 of dollar movement to reduce penny-price noise
+    - release_scope defaults to "all_years" (2007_onward is an optional
+      filter); see apply_release_scope. subtype_mode defaults to
+      "legacy_unverified"; PRODUCTION alert generation must explicitly pass
+      subtype_mode="verified" so it never mixes unverified legacy prices
+      with newly subtype-tracked prices (see calculate_early_mover_candidates).
     
     Returns DataFrame with columns:
     [rank, product_id, card_name, set_name, price_2_days_ago, previous_price,
@@ -480,80 +831,23 @@ def calculate_early_movers(db_path, limit=50, as_of=None):
     Returns:
         DataFrame sorted by percent_gain descending
     """
-    # Cut off data BEFORE any filters to prevent future data entering a replay.
-    with sqlite3.connect(db_path) as conn:
-        if as_of is None:
-            as_of = conn.execute("SELECT MAX(date) FROM prices").fetchone()[0]
-        if as_of is None:
-            return pd.DataFrame()
-        as_of = datetime.strptime(as_of, "%Y-%m-%d").strftime("%Y-%m-%d")
-        df = pd.read_sql("SELECT * FROM prices WHERE date <= ?", conn, params=(as_of,))
-    if df.empty:
+    candidates = calculate_early_mover_candidates(
+        db_path, as_of=as_of, release_date_cache_path=release_date_cache_path,
+        release_scope=release_scope, scope_start_date=scope_start_date, subtype_mode=subtype_mode)
+    if candidates.empty:
         return pd.DataFrame()
-    df["date"] = pd.to_datetime(df["date"])
 
-    # Calculate relevant sets
-    relevant_sets = calculate_relevant_sets(df)
-    
-    # Ignore null or zero market prices
-    df_valid = df[df["market_price"].map(lambda p: pd.notna(p) and math.isfinite(p) and p > 0)].sort_values(["product_id", "date"])
-    
-    # Need enough recent data to evaluate at least the last 4 days
-    valid_counts = df_valid.groupby("product_id").size()
-    products_with_history = valid_counts[valid_counts >= 4].index
-    
-    # Take each card's last 3 valid readings: price_2_days_ago, previous_price, latest_price
-    last_3 = df_valid[df_valid["product_id"].isin(products_with_history)].groupby("product_id").tail(3)
-    last_3 = last_3.copy()
-    # Require three consecutive calendar dates ending on the analysis date.
-    expected = pd.date_range(end=as_of, periods=3)
-    last_3 = last_3[last_3["date"].isin(expected)]
-    counts = last_3.groupby("product_id")["date"].nunique()
-    last_3 = last_3[last_3["product_id"].isin(counts[counts == 3].index)]
-    if last_3.empty:
-        return pd.DataFrame()
-    last_3["position"] = last_3.groupby("product_id").cumcount()
-    
-    prices = last_3.pivot(index="product_id", columns="position", values="market_price")
-    prices.columns = ["price_2_days_ago", "previous_price", "latest_price"]
-    
-    # Look for recent upward momentum
-    momentum = (prices["latest_price"] > prices["previous_price"]) & \
-               (prices["previous_price"] >= prices["price_2_days_ago"])
-    prices = prices[momentum]
-    
-    if prices.empty:
-        return pd.DataFrame()
-    
-    # Calculate gain
-    prices["dollar_gain"] = prices["latest_price"] - prices["price_2_days_ago"]
-    prices["percent_gain"] = (prices["dollar_gain"] / prices["price_2_days_ago"]) * 100
-    
-    # Anti-junk filtering
-    prices = prices[
-        (prices["dollar_gain"] >= 0.25) &
-        (prices["percent_gain"] >= 10) &
-        (prices["percent_gain"] <= 50)
-    ]
-    
-    if prices.empty:
-        return pd.DataFrame()
-    
-    # Attach card_name/set_name (one row per product_id) and apply relevant-set filtering
-    card_info = df.drop_duplicates("product_id").set_index("product_id")[["card_name", "set_name"]]
-    results_df = prices.join(card_info, how="left")
-    results_df = results_df[results_df["set_name"].isin(relevant_sets)]
-    
+    results_df = candidates[candidates["is_alert"]].drop(columns=["is_alert"])
     if results_df.empty:
         return pd.DataFrame()
-    
-    results_df = results_df.reset_index()
-    
+
     # Sort (highest recent percent gain first) and limit
     results_df = results_df.sort_values('percent_gain', ascending=False).head(limit)
+    results_df = results_df.reset_index(drop=True)
     results_df.insert(0, 'rank', range(1, len(results_df) + 1))
-    
+
     return results_df
+
 
 
 def get_product_history_info(db_path, product_id):
@@ -586,6 +880,47 @@ def get_product_history_info(db_path, product_id):
         "last_seen_date": last_seen_date,
         "days_of_history": days_of_history or 0
     }
+
+
+def evaluate_horizon_outcome(prices_conn, product_id, start_date, start_price, horizon,
+                              max_date, jump_percent, jump_dollars):
+    """
+    Look up the exact-date outcome for one product/start_price/horizon combination.
+
+    Args:
+        prices_conn: open sqlite3 connection to a prices.db-shaped table
+        product_id: card id to look up
+        start_date: datetime of the starting observation (signal or control date)
+        start_price: price at start_date
+        horizon: number of days ahead to evaluate
+        max_date: datetime of the latest date present in prices (or None)
+        jump_percent: percent-gain threshold for a "hit"
+        jump_dollars: dollar-gain threshold for a "hit"
+
+    Returns:
+        (status, price, pct_return, hit) where status is "ok", "pending", or
+        "unavailable"; price/pct_return/hit are None unless status == "ok".
+    """
+    target_date = start_date + timedelta(days=horizon)
+    target_date_str = target_date.strftime("%Y-%m-%d")
+
+    if not start_price or not math.isfinite(start_price) or start_price <= 0:
+        return "unavailable", None, None, None
+    if max_date is None or target_date > max_date:
+        return "pending", None, None, None
+
+    row = prices_conn.execute(
+        "SELECT market_price FROM prices WHERE product_id = ? AND date = ?",
+        (product_id, target_date_str)
+    ).fetchone()
+    price = row[0] if row and row[0] is not None else None
+
+    if price is None or not math.isfinite(price) or price <= 0:
+        return "unavailable", None, None, None
+
+    pct_return = ((price - start_price) / start_price) * 100
+    hit = pct_return >= jump_percent and price - start_price >= jump_dollars
+    return "ok", price, pct_return, hit
 
 
 def calculate_early_movers_backtest(prices_db_path, signals_db_path, horizons=(3, 7, 14),
@@ -646,29 +981,12 @@ def calculate_early_movers_backtest(prices_db_path, signals_db_path, horizons=(3
         }
 
         for horizon in horizons:
-            target_date = signal_date + timedelta(days=horizon)
-            target_date_str = target_date.strftime("%Y-%m-%d")
+            status, price, pct_return, hit = evaluate_horizon_outcome(
+                prices_conn, product_id, signal_date, signal_price, horizon,
+                max_date, jump_percent, jump_dollars)
 
-            if not signal_price or not math.isfinite(signal_price) or signal_price <= 0:
-                status, price, pct_return = "unavailable", None, None
-            elif max_date is None or target_date > max_date:
-                status, price, pct_return = "pending", None, None
-            else:
-                row = prices_conn.execute(
-                    "SELECT market_price FROM prices WHERE product_id = ? AND date = ?",
-                    (product_id, target_date_str)
-                ).fetchone()
-                price = row[0] if row and row[0] is not None else None
-
-                if price is None or not math.isfinite(price) or price <= 0:
-                    status, pct_return = "unavailable", None
-                else:
-                    status = "ok"
-                    pct_return = ((price - signal_price) / signal_price) * 100
-                    returns_by_horizon[horizon].append(pct_return)
-
-            hit = (pct_return >= jump_percent and price - signal_price >= jump_dollars) if status == "ok" else None
             if status == "ok":
+                returns_by_horizon[horizon].append(pct_return)
                 hits_by_horizon[horizon] += int(hit)
             else:
                 statuses[horizon][status] += 1

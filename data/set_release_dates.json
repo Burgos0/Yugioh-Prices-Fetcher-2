@@ -1,0 +1,4608 @@
+{
+  "1110": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1110",
+    "name": "Hidden Arsenal 7: Knight of Stars",
+    "release_date": "2013-04-26",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1112": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1112",
+    "name": "Lord of the Tachyon Galaxy",
+    "release_date": "2013-05-17",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1128": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1128",
+    "name": "Super Starter: V for Victory",
+    "release_date": "2013-06-14",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1129": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1129",
+    "name": "Super Starter: V for Victory Power-Up Pack",
+    "release_date": "2013-06-14",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1130": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1130",
+    "name": "Battle Pack 2: War of the Giants",
+    "release_date": "2013-07-28",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1131": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1131",
+    "name": "Number Hunters",
+    "release_date": "2013-07-12",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1142": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1142",
+    "name": "Judgment of the Light",
+    "release_date": "2013-08-09",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1149": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1149",
+    "name": "2013 Collectors Tins",
+    "release_date": "2013-08-30",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1153": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1153",
+    "name": "Structure Deck: Saga of Blue-Eyes White Dragon",
+    "release_date": "2013-09-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1154": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1154",
+    "name": "Silver Dragon Value Box",
+    "release_date": "2013-09-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1155": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1155",
+    "name": "Poseidra Value Box",
+    "release_date": "2013-09-15",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1156": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1156",
+    "name": "Shadow Specters",
+    "release_date": "2013-11-08",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1157": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1157",
+    "name": "Legendary Collection 4: Joey's World",
+    "release_date": "2013-10-11",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1158": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1158",
+    "name": "Shadow Samurai Value Box",
+    "release_date": "2013-12-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1159": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1159",
+    "name": "Toys \"R\" Us Throwdown Promo",
+    "release_date": "2007-04-07",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1162": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1162",
+    "name": "Judgment of the Light: Deluxe Edition",
+    "release_date": "2013-09-27",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "126": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "126",
+    "name": "2003 Collectors Tin",
+    "release_date": "2003-09-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "127": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "127",
+    "name": "2004 Collectors Tin",
+    "release_date": "2004-09-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1279": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1279",
+    "name": "Dark Revelation Volume 4",
+    "release_date": "2007-11-14",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "128": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "128",
+    "name": "2005 Collectors Tin",
+    "release_date": "2005-09-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1280": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1280",
+    "name": "GX Next Generation Blister Pack Promo",
+    "release_date": "2007-11-03",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1281": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1281",
+    "name": "Star Pack 2013",
+    "release_date": "2013-03-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1282": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1282",
+    "name": "Starter Deck: Kaiba Reloaded",
+    "release_date": "2013-12-06",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1283": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1283",
+    "name": "Starter Deck: Yugi Reloaded",
+    "release_date": "2013-12-06",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1285": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1285",
+    "name": "Twilight Edition",
+    "release_date": "2010-01-05",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1286": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1286",
+    "name": "Legacy of the Valiant",
+    "release_date": "2014-01-24",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1287": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1287",
+    "name": "Astral Pack 1",
+    "release_date": "2012-11-30",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1288": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1288",
+    "name": "Astral Pack 2",
+    "release_date": "2013-04-19",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1289": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1289",
+    "name": "Astral Pack 3",
+    "release_date": "2013-09-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "129": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "129",
+    "name": "2006 Collectors Tin",
+    "release_date": "2006-09-11",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1290": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1290",
+    "name": "Legendary Collection 1",
+    "release_date": "2010-10-05",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1291": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1291",
+    "name": "Retro Pack",
+    "release_date": "2008-07-08",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1292": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1292",
+    "name": "Retro Pack 2",
+    "release_date": "2009-07-28",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "130": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "130",
+    "name": "2007 Collectors Tin",
+    "release_date": "2007-08-29",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1300": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1300",
+    "name": "Battle Pack 2: War of the Giants Round 2",
+    "release_date": "2014-01-17",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1301": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1301",
+    "name": "Exclusive Tin 2009",
+    "release_date": "2026-09-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1302": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1302",
+    "name": "Elemental Hero Collection 1",
+    "release_date": "2007-11-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1303": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1303",
+    "name": "Elemental Hero Collection 2",
+    "release_date": "2007-11-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1304": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1304",
+    "name": "Anniversary Pack",
+    "release_date": "2008-12-08",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1307": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1307",
+    "name": "Structure Deck: Cyber Dragon Revolution",
+    "release_date": "2014-02-07",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1309": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1309",
+    "name": "Astral Pack 4",
+    "release_date": "2014-02-07",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "131": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "131",
+    "name": "2008 Collectors Tin",
+    "release_date": "2008-08-18",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1310": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1310",
+    "name": "Premium Gold",
+    "release_date": "2014-03-28",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1313": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1313",
+    "name": "The Valuable Book Volume 5",
+    "release_date": "2002-10-04",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1315": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1315",
+    "name": "Sneak Preview Series 5",
+    "release_date": "2009-05-12",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1317": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1317",
+    "name": "Mattel Action Figure Promos: Series 2",
+    "release_date": "2006-08-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1318": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1318",
+    "name": "Yu-Gi-Oh! 5D's Tag Force 4 Promo",
+    "release_date": "2026-09-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1319": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1319",
+    "name": "Star Pack 2014",
+    "release_date": "2014-02-21",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "132": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "132",
+    "name": "2009 Collectors Tin",
+    "release_date": "2009-08-18",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1320": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1320",
+    "name": "X-Saber Power-Up",
+    "release_date": "2010-11-23",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1322": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1322",
+    "name": "Yu-Gi-Oh! Tokens",
+    "release_date": "2006-07-20",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1323": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1323",
+    "name": "Mattel Action Figure Promos: Series 1",
+    "release_date": "2006-01-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1325": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1325",
+    "name": "Duel Terminal",
+    "release_date": "2008-07-24",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1327": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1327",
+    "name": "Duel Terminal 1",
+    "release_date": "2010-01-29",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1328": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1328",
+    "name": "Duel Terminal 2",
+    "release_date": "2010-05-25",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1329": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1329",
+    "name": "Duel Terminal 3",
+    "release_date": "2010-09-25",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "133": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "133",
+    "name": "2010 Collectors Tins",
+    "release_date": "2010-08-31",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1330": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1330",
+    "name": "Duel Terminal 4",
+    "release_date": "2011-01-25",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1331": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1331",
+    "name": "Duel Terminal 5",
+    "release_date": "2011-05-29",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1332": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1332",
+    "name": "Duel Terminal 6",
+    "release_date": "2012-02-03",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1333": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1333",
+    "name": "Duel Terminal 7",
+    "release_date": "2012-09-28",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1337": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1337",
+    "name": "Yu-Gi-Oh! 5D's Wheelie Breakers Promotional Cards",
+    "release_date": "2009-05-19",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1338": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1338",
+    "name": "Yu-Gi-Oh! GX Tag Force Evolution Promo",
+    "release_date": "2006-11-14",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1339": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1339",
+    "name": "Fire Fists Special Editon",
+    "release_date": "2014-04-04",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "134": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "134",
+    "name": "2010 Duelist Pack Collection Tin",
+    "release_date": "2010-03-05",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1340": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1340",
+    "name": "Battle Pack Tournament Prize Cards",
+    "release_date": "2012-05-29",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1341": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1341",
+    "name": "2002 Collectors Tin",
+    "release_date": "2002-10-04",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1342": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1342",
+    "name": "Lost Millennium SE",
+    "release_date": "2026-09-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1343": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1343",
+    "name": "Duel Disk - Yusei Version",
+    "release_date": "2009-11-21",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1344": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1344",
+    "name": "Sneak Preview Series 4",
+    "release_date": "2009-03-03",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1347": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1347",
+    "name": "Yu-Gi-Oh! Championship Series Prize Cards",
+    "release_date": "2010-05-15",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "135": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "135",
+    "name": "2011 Collectors Tins",
+    "release_date": "2011-08-30",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1353": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1353",
+    "name": "Primal Origin",
+    "release_date": "2014-05-16",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1354": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1354",
+    "name": "Dragons of Legend",
+    "release_date": "2014-04-25",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "136": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "136",
+    "name": "2011 Duelist Pack Tin",
+    "release_date": "2011-04-05",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1363": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1363",
+    "name": "Yu-Gi-Oh! 5D's Over the Nexus Promo Cards",
+    "release_date": "2011-05-10",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "137": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "137",
+    "name": "2012 Premium Collection Tin",
+    "release_date": "2012-03-20",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "138": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "138",
+    "name": "5D's 2008 English Starter Deck",
+    "release_date": "2008-08-05",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "139": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "139",
+    "name": "5D's 2008 Starter Deck",
+    "release_date": "2008-08-05",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "140": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "140",
+    "name": "5D's Starter Deck 2009",
+    "release_date": "2009-06-09",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "141": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "141",
+    "name": "Absolute Powerforce",
+    "release_date": "2010-02-16",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "142": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "142",
+    "name": "Absolute Powerforce: Special Edition",
+    "release_date": "2010-02-16",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "143": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "143",
+    "name": "Yu-Gi-Oh! Duel Monsters International: Worldwide Edition",
+    "release_date": "2003-04-17",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "144": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "144",
+    "name": "Ancient Prophecy",
+    "release_date": "2009-09-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "145": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "145",
+    "name": "Ancient Prophecy SE",
+    "release_date": "2009-09-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "146": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "146",
+    "name": "Ancient Sanctuary",
+    "release_date": "2004-06-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1462": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1462",
+    "name": "Structure Deck: Realm of Light",
+    "release_date": "2014-06-27",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1466": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1466",
+    "name": "Super Starter: Space-Time Showdown",
+    "release_date": "2014-07-11",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1467": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1467",
+    "name": "Super Starter: Space-Time Showdown Power-Up Pack",
+    "release_date": "2014-07-11",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "147": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "147",
+    "name": "Bonds Beyond Time Movie Pack",
+    "release_date": "2011-02-22",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1470": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1470",
+    "name": "Battle Pack 3: Monster League",
+    "release_date": "2014-08-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1474": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1474",
+    "name": "Demo Pack",
+    "release_date": "2011-02-12",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1479": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1479",
+    "name": "Astral Pack 5",
+    "release_date": "2014-07-25",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "148": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "148",
+    "name": "Capsule Monster Coliseum",
+    "release_date": "2004-11-26",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1480": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1480",
+    "name": "Duelist Alliance",
+    "release_date": "2014-08-15",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1484": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1484",
+    "name": "2014 Mega-Tins",
+    "release_date": "2014-08-29",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1485": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1485",
+    "name": "2014 Mega-Tins Mega Pack",
+    "release_date": "2014-08-29",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1488": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1488",
+    "name": "Duelist Alliance: Deluxe Edition",
+    "release_date": "2014-09-12",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1489": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1489",
+    "name": "Structure Deck: Geargia Rampage",
+    "release_date": "2014-10-17",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "149": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "149",
+    "name": "Champion Pack 1",
+    "release_date": "2006-11-11",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1491": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1491",
+    "name": "Legendary Collection 5D's",
+    "release_date": "2014-10-24",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1492": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1492",
+    "name": "Noble Knights of the Round Table Box Set",
+    "release_date": "2014-11-21",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1493": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1493",
+    "name": "The New Challengers",
+    "release_date": "2014-11-07",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1495": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1495",
+    "name": "Structure Deck: HERO Strike",
+    "release_date": "2015-01-30",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "150": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "150",
+    "name": "Champion Pack 2",
+    "release_date": "2007-02-06",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1505": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1505",
+    "name": "Secrets of Eternity",
+    "release_date": "2015-01-16",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1506": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1506",
+    "name": "Astral Pack 6",
+    "release_date": "2014-12-12",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "151": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "151",
+    "name": "Champion Pack 3",
+    "release_date": "2007-05-15",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1510": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1510",
+    "name": "The New Challengers: Super Edition",
+    "release_date": "2014-12-05",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1513": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1513",
+    "name": "The Secret Forces",
+    "release_date": "2015-02-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "152": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "152",
+    "name": "Champion Pack 4",
+    "release_date": "2007-09-06",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1523": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1523",
+    "name": "Premium Gold: Return of the Bling",
+    "release_date": "2015-03-20",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1529": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1529",
+    "name": "World Superstars",
+    "release_date": "2015-04-17",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "153": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "153",
+    "name": "Champion Pack 5",
+    "release_date": "2008-01-08",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1537": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1537",
+    "name": "Crossed Souls",
+    "release_date": "2015-05-15",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "154": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "154",
+    "name": "Champion Pack 6",
+    "release_date": "2008-05-12",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1544": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1544",
+    "name": "Starter Deck: Dark Legion",
+    "release_date": "2015-05-29",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1545": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1545",
+    "name": "Starter Deck: Saber Force",
+    "release_date": "2015-05-29",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1547": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1547",
+    "name": "Star Pack ARC-V",
+    "release_date": "2015-06-12",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "155": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "155",
+    "name": "Champion Pack 7",
+    "release_date": "2008-09-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1550": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1550",
+    "name": "Duelist Pack: Battle City",
+    "release_date": "2015-06-19",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "156": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "156",
+    "name": "Champion Pack 8",
+    "release_date": "2009-01-05",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "157": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "157",
+    "name": "Crimson Crisis",
+    "release_date": "2009-03-03",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1572": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1572",
+    "name": "Astral Pack 7",
+    "release_date": "2015-06-05",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1574": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1574",
+    "name": "Dragons of Legend 2",
+    "release_date": "2015-07-17",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "158": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "158",
+    "name": "Crossroads of Chaos",
+    "release_date": "2008-11-18",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "159": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "159",
+    "name": "Cyberdark Impact",
+    "release_date": "2006-11-15",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1592": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1592",
+    "name": "Crossed Souls: Advanced Edition",
+    "release_date": "2015-07-03",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "160": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "160",
+    "name": "Cybernetic Revolution",
+    "release_date": "2005-08-17",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1600": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1600",
+    "name": "Clash of Rebellions",
+    "release_date": "2015-08-07",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "163": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "163",
+    "name": "Dark Beginning 1",
+    "release_date": "2017-12-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "164": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "164",
+    "name": "Dark Beginning 2",
+    "release_date": "2005-07-25",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1648": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1648",
+    "name": "Structure Deck: Synchron Extreme",
+    "release_date": "2015-08-28",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "165": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "165",
+    "name": "Dark Crisis",
+    "release_date": "2007-10-12",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1652": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1652",
+    "name": "2015 Mega-Tins",
+    "release_date": "2015-09-18",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1653": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1653",
+    "name": "2015 Mega-Tins Mega Pack",
+    "release_date": "2015-09-18",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1655": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1655",
+    "name": "Structure Deck: Deluxe Edition",
+    "release_date": "2005-01-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1659": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1659",
+    "name": "High-Speed Riders",
+    "release_date": "2015-10-02",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "166": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "166",
+    "name": "Dark Duel Stories",
+    "release_date": "2002-03-19",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1660": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1660",
+    "name": "Dimension of Chaos",
+    "release_date": "2015-11-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "167": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "167",
+    "name": "Dark Legends",
+    "release_date": "2008-11-21",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1671": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1671",
+    "name": "Astral Pack 8",
+    "release_date": "2015-10-23",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1672": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1672",
+    "name": "King of Games: Yugi's Legendary Decks",
+    "release_date": "2015-11-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1674": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1674",
+    "name": "Structure Deck: Master of Pendulum",
+    "release_date": "2015-12-04",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "168": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "168",
+    "name": "Dark Legends Promo Card",
+    "release_date": "2008-11-21",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1684": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1684",
+    "name": "Duelist League Demo 2010",
+    "release_date": "2009-08-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1686": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1686",
+    "name": "Yu-Gi-Oh! The Movie Ani-Manga Promo",
+    "release_date": "2004-11-23",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1695": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1695",
+    "name": "Clash of Rebellions: Special Edition",
+    "release_date": "2015-12-11",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1698": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1698",
+    "name": "Breakers of Shadow",
+    "release_date": "2016-01-15",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1704": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1704",
+    "name": "Structure Deck: Emperor of Darkness",
+    "release_date": "2016-01-29",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1707": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1707",
+    "name": "Wing Raiders",
+    "release_date": "2016-02-12",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "172": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "172",
+    "name": "Dark Revelation Volume 1",
+    "release_date": "2005-03-19",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "173": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "173",
+    "name": "Dark Revelation Volume 2",
+    "release_date": "2005-10-20",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1736": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1736",
+    "name": "Breakers of Shadow: Special Edition",
+    "release_date": "2016-02-26",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "174": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "174",
+    "name": "Dark Revelation Volume 3",
+    "release_date": "2006-11-25",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1743": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1743",
+    "name": "Yu-Gi-Oh! ZEXAL World Duel Carnival Promos",
+    "release_date": "2016-03-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1745": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1745",
+    "name": "Premium Gold: Infinite Gold",
+    "release_date": "2016-03-18",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "175": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "175",
+    "name": "Dawn of Destiny Xbox",
+    "release_date": "2004-03-23",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1759": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1759",
+    "name": "OTS Tournament Pack 1",
+    "release_date": "2016-03-18",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "176": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "176",
+    "name": "Destiny Board Traveler Promo",
+    "release_date": "2004-09-26",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1760": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1760",
+    "name": "Millennium Pack",
+    "release_date": "2016-04-15",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1761": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1761",
+    "name": "Shining Victories",
+    "release_date": "2016-05-06",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "17657": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "17657",
+    "name": "OTS Tournament Pack 20",
+    "release_date": "2022-10-26",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "17663": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "17663",
+    "name": "Amazing Defenders",
+    "release_date": "2023-01-20",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "17680": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "17680",
+    "name": "Photon Hypernova",
+    "release_date": "2023-02-10",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "17682": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "17682",
+    "name": "Structure Deck: Beware of Traptrix",
+    "release_date": "2023-02-24",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "17700": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "17700",
+    "name": "Speed Duel GX: Duelists of Shadows",
+    "release_date": "2023-03-31",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "17701": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "17701",
+    "name": "Maze of Memories",
+    "release_date": "2023-03-10",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "178": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "178",
+    "name": "Duel Master's Guide",
+    "release_date": "2003-10-28",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "179": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "179",
+    "name": "Duel Terminal - Preview",
+    "release_date": "2009-06-20",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1795": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1795",
+    "name": "Starter Deck: Yuya",
+    "release_date": "2016-05-27",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "180": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "180",
+    "name": "Duel Transer Promo Cards",
+    "release_date": "2026-09-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1802": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1802",
+    "name": "Structure Deck: Rise of the True Dragons",
+    "release_date": "2016-07-08",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1803": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1803",
+    "name": "Shining Victories: Special Edition",
+    "release_date": "2016-06-17",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1807": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1807",
+    "name": "The Dark Illusion",
+    "release_date": "2016-08-05",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "181": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "181",
+    "name": "Duelist Genesis",
+    "release_date": "2026-09-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1819": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1819",
+    "name": "Spell Ruler",
+    "release_date": "2002-09-16",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "182": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "182",
+    "name": "Duelist League Promo",
+    "release_date": "2003-01-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1820": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1820",
+    "name": "The Dark Side of Dimensions Movie Pack",
+    "release_date": "2016-07-22",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1822": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1822",
+    "name": "OTS Tournament Pack 2",
+    "release_date": "2016-07-22",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1828": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1828",
+    "name": "Dragons of Legend: Unleashed",
+    "release_date": "2016-08-19",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "183": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "183",
+    "name": "Duelist of the Roses",
+    "release_date": "2003-02-16",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1833": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1833",
+    "name": "2016 Mega-Tins",
+    "release_date": "2016-09-02",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1834": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1834",
+    "name": "2016 Mega-Tins Mega Pack",
+    "release_date": "2016-09-02",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1838": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1838",
+    "name": "Duelist Pack: Rivals of the Pharaoh",
+    "release_date": "2016-09-16",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "184": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "184",
+    "name": "Duelist Pack: Yugi",
+    "release_date": "2009-07-11",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1841": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1841",
+    "name": "Legendary Decks II",
+    "release_date": "2016-10-07",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1844": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1844",
+    "name": "The Dark Illusion: Special Edition (EU)",
+    "release_date": "2016-10-15",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1845": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1845",
+    "name": "Structure Deck: Seto Kaiba",
+    "release_date": "2016-10-21",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1846": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1846",
+    "name": "Structure Deck: Yugi Muto",
+    "release_date": "2016-10-21",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1849": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1849",
+    "name": "Invasion: Vengeance",
+    "release_date": "2016-11-04",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "185": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "185",
+    "name": "Duelist Pack 10: Yusei 3",
+    "release_date": "2011-01-25",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1854": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1854",
+    "name": "Destiny Soldiers",
+    "release_date": "2016-11-18",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1855": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1855",
+    "name": "OTS Tournament Pack 3",
+    "release_date": "2016-11-18",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "186": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "186",
+    "name": "Duelist Pack 11: Crow",
+    "release_date": "2011-05-31",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1860": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1860",
+    "name": "Invasion: Vengeance: Special Edition",
+    "release_date": "2016-12-09",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "187": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "187",
+    "name": "Duelist Pack 7",
+    "release_date": "2026-09-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1877": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1877",
+    "name": "The Dark Side of Dimensions Movie Pack: Gold Edition",
+    "release_date": "2017-01-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1878": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1878",
+    "name": "Structure Deck: Pendulum Domination",
+    "release_date": "2017-01-20",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "188": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "188",
+    "name": "Duelist Pack 8: Yusei Fudo",
+    "release_date": "2009-02-24",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1880": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1880",
+    "name": "Raging Tempest",
+    "release_date": "2017-02-10",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "189": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "189",
+    "name": "Duelist Pack 9: Yusei 2",
+    "release_date": "2010-01-26",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1890": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1890",
+    "name": "Fusion Enforcers",
+    "release_date": "2017-02-24",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "190": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "190",
+    "name": "Duelist Pack 5: Aster Phoenix",
+    "release_date": "2007-02-07",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1903": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1903",
+    "name": "Star Pack - Battle Royal",
+    "release_date": "2017-03-10",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1907": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1907",
+    "name": "Raging Tempest: Special Edition",
+    "release_date": "2017-03-17",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "191": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "191",
+    "name": "Duelist Pack 2: Chazz Princeton",
+    "release_date": "2006-02-08",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1911": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1911",
+    "name": "Structure Deck: Dinosmasher's Fury",
+    "release_date": "2017-04-14",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1912": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1912",
+    "name": "Structure Deck: Machine Reactor",
+    "release_date": "2017-04-14",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1917": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1917",
+    "name": "Duelist Saga",
+    "release_date": "2017-03-31",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1918": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1918",
+    "name": "Yu-Gi-Oh! ARC-V Promo Cards",
+    "release_date": "2017-04-04",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "192": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "192",
+    "name": "Duelist Pack Collection Tin",
+    "release_date": "2008-03-23",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1920": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1920",
+    "name": "OTS Tournament Pack 4",
+    "release_date": "2017-04-07",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1921": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1921",
+    "name": "Yu-Gi-Oh! Video Game Promotional Cards",
+    "release_date": "2026-09-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1922": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1922",
+    "name": "Maximum Crisis",
+    "release_date": "2017-05-05",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1929": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1929",
+    "name": "World Championship 2011 Card Pack",
+    "release_date": "2011-08-05",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "193": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "193",
+    "name": "Duelist Pack 1: Jaden Yuki",
+    "release_date": "2006-02-08",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1931": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1931",
+    "name": "Duelist Pack: Dimensional Guardians",
+    "release_date": "2017-05-26",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1936": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1936",
+    "name": "Pendulum Evolution",
+    "release_date": "2017-06-23",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "194": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "194",
+    "name": "Duelist Pack 3: Jaden Yuki 2",
+    "release_date": "2007-02-07",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1948": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1948",
+    "name": "Battles of Legend: Light's Revenge",
+    "release_date": "2017-07-07",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "195": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "195",
+    "name": "Duelist Pack Special Edition",
+    "release_date": "2006-03-09",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1954": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1954",
+    "name": "Starter Deck: Link Strike",
+    "release_date": "2017-07-21",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "196": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "196",
+    "name": "Duelist Pack 4: Zane Truesdale",
+    "release_date": "2007-03-07",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "197": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "197",
+    "name": "Duelist Pack: Kaiba",
+    "release_date": "2010-04-16",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "198": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "198",
+    "name": "Duelist Revolution",
+    "release_date": "2010-04-17",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1989": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1989",
+    "name": "Code of the Duelist",
+    "release_date": "2017-08-04",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "199": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "199",
+    "name": "Duelist Revolution SE",
+    "release_date": "2010-04-17",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1990": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1990",
+    "name": "2017 Mega-Tins",
+    "release_date": "2017-08-25",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "1991": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "1991",
+    "name": "2017 Mega-Tins Mega Pack",
+    "release_date": "2017-08-25",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "200": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "200",
+    "name": "Elemental Energy",
+    "release_date": "2005-11-16",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "201": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "201",
+    "name": "Enemy of Justice",
+    "release_date": "2006-05-17",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2019": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2019",
+    "name": "OTS Tournament Pack 5",
+    "release_date": "2017-08-04",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "202": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "202",
+    "name": "Eternal Duelist Soul",
+    "release_date": "2002-10-15",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "203": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "203",
+    "name": "Extreme Victory",
+    "release_date": "2011-05-10",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "204": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "204",
+    "name": "Flaming Eternity",
+    "release_date": "2005-03-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2049": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2049",
+    "name": "Legendary Duelists",
+    "release_date": "2017-09-08",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "205": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "205",
+    "name": "Forbidden Legacy",
+    "release_date": "2005-10-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2051": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2051",
+    "name": "Demo Deck 2015",
+    "release_date": "2015-03-30",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2052": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2052",
+    "name": "Collector's Boxes",
+    "release_date": "2017-09-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2055": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2055",
+    "name": "Legendary Dragon Decks",
+    "release_date": "2017-10-06",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2056": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2056",
+    "name": "Circuit Break",
+    "release_date": "2017-10-20",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "206": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "206",
+    "name": "Forbidden Legacy 1",
+    "release_date": "2026-09-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "207": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "207",
+    "name": "Forbidden Memories",
+    "release_date": "2002-03-20",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2072": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2072",
+    "name": "Structure Deck: Cyberse Link",
+    "release_date": "2017-11-03",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2073": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2073",
+    "name": "Spirit Warriors",
+    "release_date": "2017-11-10",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "208": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "208",
+    "name": "Force of the Breaker",
+    "release_date": "2007-05-16",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "209": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "209",
+    "name": "Generation Force",
+    "release_date": "2011-08-16",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "210": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "210",
+    "name": "Gladiator's Assault",
+    "release_date": "2007-11-14",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "211": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "211",
+    "name": "Gladiator's Assault SE",
+    "release_date": "2007-11-14",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "213": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "213",
+    "name": "Gold Series 2",
+    "release_date": "2009-04-21",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "214": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "214",
+    "name": "Gold Series 2008",
+    "release_date": "2008-04-02",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2146": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2146",
+    "name": "Structure Deck: Wave of Light",
+    "release_date": "2018-01-19",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2149": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2149",
+    "name": "Judge Promotional Cards",
+    "release_date": "2017-11-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "215": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "215",
+    "name": "Gold Series 2009",
+    "release_date": "2009-04-21",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2151": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2151",
+    "name": "Extreme Force",
+    "release_date": "2018-02-02",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2157": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2157",
+    "name": "OTS Tournament Pack 6",
+    "release_date": "2017-12-07",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "216": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "216",
+    "name": "Gold Series 3",
+    "release_date": "2010-06-23",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "217": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "217",
+    "name": "Gold Series 4: Pyramids Edition",
+    "release_date": "2011-07-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2179": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2179",
+    "name": "Legendary Duelists: Ancient Millennium",
+    "release_date": "2018-02-23",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "218": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "218",
+    "name": "GX Duel Academy GBA Promo",
+    "release_date": "2006-01-10",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2194": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2194",
+    "name": "Star Pack VRAINS",
+    "release_date": "2018-03-30",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2195": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2195",
+    "name": "Legendary Collection Kaiba",
+    "release_date": "2018-03-09",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2196": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2196",
+    "name": "The Lost Art Promotion",
+    "release_date": "2026-09-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2197": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2197",
+    "name": "Mattel Action Figure Promos: Series 3",
+    "release_date": "2026-09-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "220": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "220",
+    "name": "GX Spirit Caller Promo",
+    "release_date": "2007-01-02",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "221": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "221",
+    "name": "GX Tag Force 2 Promo",
+    "release_date": "2026-09-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2211": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2211",
+    "name": "Structure Deck: Lair of Darkness",
+    "release_date": "2018-04-20",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2212": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2212",
+    "name": "Flames of Destruction",
+    "release_date": "2018-05-04",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2215": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2215",
+    "name": "Pharaoh Tour Promos",
+    "release_date": "2026-09-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "222": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "222",
+    "name": "GX Tag Force Promo",
+    "release_date": "2006-11-16",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2227": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2227",
+    "name": "World Championship 2010 Card Pack",
+    "release_date": "2010-08-14",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2228": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2228",
+    "name": "OTS Tournament Pack 7",
+    "release_date": "2018-04-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "223": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "223",
+    "name": "GX Ultimate Beginner's Pack 1",
+    "release_date": "2006-07-19",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2231": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2231",
+    "name": "Dark Saviors",
+    "release_date": "2018-05-25",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "224": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "224",
+    "name": "Hidden Arsenal",
+    "release_date": "2009-11-10",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "225": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "225",
+    "name": "Hidden Arsenal 2",
+    "release_date": "2010-07-20",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2253": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2253",
+    "name": "Battles of Legend: Relentless Revenge",
+    "release_date": "2018-06-29",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "226": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "226",
+    "name": "Hidden Arsenal 3",
+    "release_date": "2010-12-07",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2266": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2266",
+    "name": "Starter Deck: Codebreaker",
+    "release_date": "2018-07-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2267": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2267",
+    "name": "Cybernetic Horizon",
+    "release_date": "2018-07-27",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "227": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "227",
+    "name": "Hidden Arsenal 4",
+    "release_date": "2011-04-19",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "228": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "228",
+    "name": "Hidden Arsenal 5: Steelswarm Invasion",
+    "release_date": "2011-12-06",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2284": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2284",
+    "name": "2018 Mega-Tins",
+    "release_date": "2018-08-31",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "22881": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "22881",
+    "name": "Legend of Blue Eyes White Dragon (Worldwide English)",
+    "release_date": "2005-10-05",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "22882": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "22882",
+    "name": "Metal Raiders (Worldwide English)",
+    "release_date": "2004-12-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "22883": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "22883",
+    "name": "Pharaoh's Servant (Worldwide English)",
+    "release_date": "2002-10-20",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "22884": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "22884",
+    "name": "Labyrinth of Nightmare (Worldwide English)",
+    "release_date": "2003-03-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "22885": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "22885",
+    "name": "Legacy of Darkness (Worldwide English)",
+    "release_date": "2004-12-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "22886": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "22886",
+    "name": "Dark Crisis (Worldwide English)",
+    "release_date": "2007-12-12",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "22887": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "22887",
+    "name": "Invasion of Chaos (Worldwide English)",
+    "release_date": "2007-06-25",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "22895": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "22895",
+    "name": "Legendary Collection: 25th Anniversary Edition",
+    "release_date": "2023-04-21",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "22896": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "22896",
+    "name": "Cyberstorm Access",
+    "release_date": "2023-05-05",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "229": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "229",
+    "name": "Hidden Arsenal 5: Steelswarm Invasion SE",
+    "release_date": "2011-12-06",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "22905": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "22905",
+    "name": "Spell Ruler (Worldwide English)",
+    "release_date": "2004-12-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2291": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2291",
+    "name": "Structure Deck: Powercode Link",
+    "release_date": "2018-08-10",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2292": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2292",
+    "name": "Shadows in Valhalla",
+    "release_date": "2018-08-17",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "22936": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "22936",
+    "name": "OTS Tournament Pack 21",
+    "release_date": "2023-02-08",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "22955": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "22955",
+    "name": "Wild Survivors",
+    "release_date": "2023-06-02",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "22964": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "22964",
+    "name": "2009 Duelist Pack Collection Tin",
+    "release_date": "2009-03-10",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2300": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2300",
+    "name": "Legendary Duelists: White Dragon Abyss",
+    "release_date": "2018-09-28",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23031": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23031",
+    "name": "Battles of Legend: Monstrous Revenge",
+    "release_date": "2023-06-23",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23050": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23050",
+    "name": "Legend of Blue Eyes White Dragon (25th Anniversary Edition)",
+    "release_date": "2023-04-21",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23052": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23052",
+    "name": "Metal Raiders (25th Anniversary Edition)",
+    "release_date": "2023-04-21",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23053": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23053",
+    "name": "Spell Ruler (25th Anniversary Edition)",
+    "release_date": "2023-04-21",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23054": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23054",
+    "name": "Pharaoh's Servant (25th Anniversary Edition)",
+    "release_date": "2023-04-21",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23055": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23055",
+    "name": "Dark Crisis (25th Anniversary Edition)",
+    "release_date": "2023-04-21",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23056": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23056",
+    "name": "Invasion of Chaos (25th Anniversary Edition)",
+    "release_date": "2023-04-21",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23058": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23058",
+    "name": "Speed Duel: Tournament Pack 5",
+    "release_date": "2023-03-08",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23068": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23068",
+    "name": "The Pot Collection",
+    "release_date": "2023-09-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23073": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23073",
+    "name": "Speed Duel: Streets of Battle City",
+    "release_date": "2023-08-25",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23086": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23086",
+    "name": "Duelist Nexus",
+    "release_date": "2023-07-28",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "231": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "231",
+    "name": "Hidden Arsenal: Special Edition",
+    "release_date": "2011-07-26",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23110": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23110",
+    "name": "25th Anniversary Tin: Dueling Heroes",
+    "release_date": "2023-09-08",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23111": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23111",
+    "name": "Legendary Duelists: Soulburning Volcano",
+    "release_date": "2023-08-11",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2312": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2312",
+    "name": "OTS Tournament Pack 8",
+    "release_date": "2018-08-17",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2317": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2317",
+    "name": "2018 Mega-Tins Mega Pack",
+    "release_date": "2018-08-31",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23186": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23186",
+    "name": "Advent Calendar 2014 (Adventskalender ZEXAL-Edition)",
+    "release_date": "2014-10-16",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "232": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "232",
+    "name": "Hobby League 1",
+    "release_date": "2004-10-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23207": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23207",
+    "name": "Structure Deck: The Crimson King",
+    "release_date": "2023-09-22",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2322": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2322",
+    "name": "The Dark Side of Dimensions Movie Pack: Special Edition",
+    "release_date": "2018-09-07",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23225": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23225",
+    "name": "Speed Duel Demo Deck 2020",
+    "release_date": "2020-01-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23231": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23231",
+    "name": "Age of Overlord",
+    "release_date": "2023-10-20",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23233": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23233",
+    "name": "25th Anniversary Rarity Collection",
+    "release_date": "2023-11-03",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23260": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23260",
+    "name": "OTS Tournament Pack 22",
+    "release_date": "2023-07-19",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23269": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23269",
+    "name": "2-Player Starter Set",
+    "release_date": "2024-01-26",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2327": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2327",
+    "name": "Soul Fusion",
+    "release_date": "2018-10-19",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23284": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23284",
+    "name": "Valiant Smashers",
+    "release_date": "2023-11-17",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23291": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23291",
+    "name": "25th Anniversary Tin: Dueling Heroes Mega Pack",
+    "release_date": "2023-09-08",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23292": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23292",
+    "name": "Speed Duel: Tournament Pack 6",
+    "release_date": "2023-09-06",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "233": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "233",
+    "name": "Hobby League 2",
+    "release_date": "2006-01-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23310": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23310",
+    "name": "Structure Deck: Fire Kings",
+    "release_date": "2023-12-08",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23314": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23314",
+    "name": "Battles of Legend: Chapter 1",
+    "release_date": "2024-02-23",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23315": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23315",
+    "name": "Maze of Millennia",
+    "release_date": "2024-01-19",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23321": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23321",
+    "name": "Phantom Nightmare",
+    "release_date": "2024-02-09",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23334": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23334",
+    "name": "OTS Tournament Pack 23",
+    "release_date": "2023-10-25",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23355": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23355",
+    "name": "Speed Duel GX: Midterm Destruction",
+    "release_date": "2024-03-29",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2336": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2336",
+    "name": "Legendary Hero Decks",
+    "release_date": "2018-10-12",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23366": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23366",
+    "name": "25th Anniversary Ultimate Kaiba Set",
+    "release_date": "2024-03-29",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2337": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2337",
+    "name": "Advent Calendar 2018",
+    "release_date": "2018-11-02",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23383": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23383",
+    "name": "Legacy of Destruction",
+    "release_date": "2024-04-26",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2339": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2339",
+    "name": "Structure Deck: Zombie Horde",
+    "release_date": "2018-11-02",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "234": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "234",
+    "name": "Hobby League 3",
+    "release_date": "2006-07-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23416": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23416",
+    "name": "25th Anniversary Rarity Collection II",
+    "release_date": "2024-05-24",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23427": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23427",
+    "name": "OTS Tournament Pack 24",
+    "release_date": "2024-02-14",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2343": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2343",
+    "name": "Hidden Summoners",
+    "release_date": "2018-11-16",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23441": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23441",
+    "name": "Battles of Legend: Terminal Revenge",
+    "release_date": "2024-06-21",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23458": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23458",
+    "name": "The Infinite Forbidden",
+    "release_date": "2024-07-19",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23469": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23469",
+    "name": "Legendary Decks II (2020 Reprint)",
+    "release_date": "2024-03-15",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23481": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23481",
+    "name": "25th Anniversary Tin: Dueling Mirrors",
+    "release_date": "2024-09-20",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23484": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23484",
+    "name": "Speed Duel: Tournament Pack 7",
+    "release_date": "2024-04-03",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "235": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "235",
+    "name": "Hobby League 4",
+    "release_date": "2007-04-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2353": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2353",
+    "name": "World Championship JPP Cards",
+    "release_date": "2026-09-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23535": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23535",
+    "name": "OTS Tournament Pack 25",
+    "release_date": "2024-06-12",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23539": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23539",
+    "name": "Rage of the Abyss",
+    "release_date": "2024-10-11",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23579": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23579",
+    "name": "Light of Destruction (2020 Date Reprint)",
+    "release_date": "2024-08-08",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23592": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23592",
+    "name": "Retro Pack (2020 Date Reprint)",
+    "release_date": "2024-08-23",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "236": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "236",
+    "name": "Hobby League 5",
+    "release_date": "2007-07-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23648": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23648",
+    "name": "Structure Deck: Saga of Blue Eyes White Dragon (2020 Date Reprint)",
+    "release_date": "2022-11-24",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2365": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2365",
+    "name": "Legendary Duelists: Sisters of the Rose",
+    "release_date": "2019-01-11",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23652": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23652",
+    "name": "Speed Duel: Battle City Finals",
+    "release_date": "2024-12-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23653": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23653",
+    "name": "Crossover Breakers",
+    "release_date": "2024-12-06",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23656": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23656",
+    "name": "Quarter Century Bonanza",
+    "release_date": "2024-11-08",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23657": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23657",
+    "name": "OTS Tournament Pack 26",
+    "release_date": "2024-10-16",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "237": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "237",
+    "name": "Invasion of Chaos",
+    "release_date": "2007-06-25",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2371": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2371",
+    "name": "Speed Duel Decks: Duelists of Tomorrow",
+    "release_date": "2019-01-25",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2372": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2372",
+    "name": "Speed Duel Decks: Destiny Masters",
+    "release_date": "2019-01-25",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2373": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2373",
+    "name": "Yu-Gi-Oh! Value Boxes",
+    "release_date": "2011-11-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23758": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23758",
+    "name": "Supreme Darkness",
+    "release_date": "2025-01-24",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23768": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23768",
+    "name": "Structure Deck: Blue-Eyes White Destiny",
+    "release_date": "2025-02-14",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2378": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2378",
+    "name": "OTS Tournament Pack 9",
+    "release_date": "2018-12-08",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23786": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23786",
+    "name": "OTS Tournament Pack 27",
+    "release_date": "2025-02-26",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "238": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "238",
+    "name": "Duelist Pack 6: Jaden Yuki 3",
+    "release_date": "2008-01-26",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2380": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2380",
+    "name": "Savage Strike",
+    "release_date": "2019-02-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23849": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23849",
+    "name": "Maze of the Master",
+    "release_date": "2025-03-14",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2389": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2389",
+    "name": "Structure Deck: Soulburner",
+    "release_date": "2019-02-15",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23891": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23891",
+    "name": "Quarter Century Stampede",
+    "release_date": "2025-04-11",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "239": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "239",
+    "name": "Duelist Pack 7: Jesse Anderson",
+    "release_date": "2008-01-26",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2398": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2398",
+    "name": "The Infinity Chasers",
+    "release_date": "2019-03-22",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23984": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23984",
+    "name": "Legendary Dragon Decks (2020 Date Reprint)",
+    "release_date": "2026-09-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2399": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2399",
+    "name": "Speed Duel: Arena of Lost Souls",
+    "release_date": "2019-03-29",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "23995": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "23995",
+    "name": "Alliance Insight",
+    "release_date": "2025-05-02",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "240": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "240",
+    "name": "Jump Award",
+    "release_date": "2026-09-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2400": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2400",
+    "name": "Duel Power",
+    "release_date": "2019-04-05",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2401": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2401",
+    "name": "Structure Deck: Order of the Spellcasters",
+    "release_date": "2019-04-19",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "24012": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "24012",
+    "name": "Structure Deck: Realm of Light (2020 Date Reprint)",
+    "release_date": "2024-06-07",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "241": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "241",
+    "name": "Labyrinth of Nightmare",
+    "release_date": "2004-12-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "24189": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "24189",
+    "name": "King of Games: Yugi's Legendary Decks (2020 Date Reprint)",
+    "release_date": "2021-06-17",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "242": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "242",
+    "name": "Labyrinth_of_Nightmare",
+    "release_date": "2026-09-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2421": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2421",
+    "name": "Dark Neostorm",
+    "release_date": "2019-05-03",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2425": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2425",
+    "name": "Speed Duel: Attack from the Deep",
+    "release_date": "2019-05-29",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "24250": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "24250",
+    "name": "Early Days Collection Promotional Cards",
+    "release_date": "2025-02-28",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "24263": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "24263",
+    "name": "Battles of Legend: Monster Mayhem",
+    "release_date": "2025-06-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "24264": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "24264",
+    "name": "OTS Tournament Pack 28",
+    "release_date": "2025-06-18",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "24265": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "24265",
+    "name": "Duelist's Advance",
+    "release_date": "2025-07-04",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "243": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "243",
+    "name": "Legacy of Darkness",
+    "release_date": "2017-12-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "24308": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "24308",
+    "name": "2025 Mega-Pack",
+    "release_date": "2025-09-05",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "24320": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "24320",
+    "name": "Justice Hunters",
+    "release_date": "2025-08-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "24351": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "24351",
+    "name": "Yu-Gi-Oh! Championship Series 2025 Prize Cards",
+    "release_date": "2025-06-08",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "24352": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "24352",
+    "name": "Retro Pack 2 (2020 Date Reprint)",
+    "release_date": "2025-08-22",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "24353": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "24353",
+    "name": "Limited Pack World Championship 2025",
+    "release_date": "2025-08-30",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "24357": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "24357",
+    "name": "Doom of Dimensions",
+    "release_date": "2025-09-26",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "24358": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "24358",
+    "name": "OTS Tournament Pack 29",
+    "release_date": "2025-10-15",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "24392": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "24392",
+    "name": "THE CHRONICLES DECK: The Fallen & The Virtuous (All-Foil Edition)",
+    "release_date": "2025-10-24",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "24396": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "24396",
+    "name": "Legendary 5D's Decks",
+    "release_date": "2025-11-21",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2443": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2443",
+    "name": "Yu-Gi-Oh! Day Promos",
+    "release_date": "2019-01-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2445": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2445",
+    "name": "OTS Tournament Pack 10",
+    "release_date": "2019-04-19",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2446": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2446",
+    "name": "Speed Duel: Tournament Pack 1",
+    "release_date": "2019-04-18",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "24460": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "24460",
+    "name": "eFootball Collaboration Promos",
+    "release_date": "2025-09-27",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "24475": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "24475",
+    "name": "Phantom Revenge",
+    "release_date": "2025-12-19",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "24486": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "24486",
+    "name": "THE CHRONICLES DECK: Spirit Charmers (All-Foil Edition)",
+    "release_date": "2026-01-23",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "245": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "245",
+    "name": "Legendary Collection 2",
+    "release_date": "2017-12-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "24506": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "24506",
+    "name": "Legendary Collection Kaiba (2020 Date Reprint)",
+    "release_date": "2025-10-09",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "24542": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "24542",
+    "name": "OTS Tournament Pack 30",
+    "release_date": "2026-02-11",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "24549": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "24549",
+    "name": "Legendary Modern Decks 2026",
+    "release_date": "2026-03-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "24555": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "24555",
+    "name": "Rarity Collection 5",
+    "release_date": "2026-04-17",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "24558": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "24558",
+    "name": "Burst Protocol",
+    "release_date": "2026-02-06",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "24559": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "24559",
+    "name": "Maze of Muertos",
+    "release_date": "2026-02-20",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "24581": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "24581",
+    "name": "Blazing Dominion",
+    "release_date": "2026-05-08",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2459": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2459",
+    "name": "Battles of Legend: Hero's Revenge",
+    "release_date": "2019-07-12",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "246": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "246",
+    "name": "Light and Darkness Power Pack",
+    "release_date": "2026-09-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2462": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2462",
+    "name": "Rising Rampage",
+    "release_date": "2019-07-26",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "24621": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "24621",
+    "name": "Battles of Legend: Glorious Gallery",
+    "release_date": "2026-06-05",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "24675": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "24675",
+    "name": "Chaos Origins",
+    "release_date": "2026-07-03",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "24679": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "24679",
+    "name": "Legendary Arc-V Decks",
+    "release_date": "2026-08-07",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2468": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2468",
+    "name": "Speed Duel: Scars of Battle",
+    "release_date": "2019-08-02",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2469": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2469",
+    "name": "Speed Duel Decks: Ultimate Predators",
+    "release_date": "2019-08-02",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "247": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "247",
+    "name": "Light of Destruction",
+    "release_date": "2008-02-23",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2470": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2470",
+    "name": "Structure Deck: Rokket Revolt",
+    "release_date": "2019-08-16",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "24703": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "24703",
+    "name": "Limited Pack World Championship 2026",
+    "release_date": "2026-08-29",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "24704": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "24704",
+    "name": "Ultimate Tournament Pack 1",
+    "release_date": "2026-07-08",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "24707": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "24707",
+    "name": "Magnificent Monsters",
+    "release_date": "2026-09-04",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2471": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2471",
+    "name": "Fists of the Gadgets",
+    "release_date": "2019-08-23",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "24789": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "24789",
+    "name": "Winner's Pack 2026-2027",
+    "release_date": "2026-07-15",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "248": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "248",
+    "name": "The Lost Millennium",
+    "release_date": "2005-06-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "24806": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "24806",
+    "name": "Ultimate Tournament Pack 2",
+    "release_date": "2026-11-04",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "24808": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "24808",
+    "name": "Magnificent Maestros",
+    "release_date": "2026-11-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "24815": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "24815",
+    "name": "Beyond the Brave",
+    "release_date": "2026-10-09",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "24822": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "24822",
+    "name": "Glorious Victors",
+    "release_date": "2026-12-04",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2488": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2488",
+    "name": "2019 Gold Sarcophagus Tin",
+    "release_date": "2019-08-30",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2489": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2489",
+    "name": "2019 Gold Sarcophagus Tin Mega Pack",
+    "release_date": "2019-08-30",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "249": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "249",
+    "name": "Magic Ruler",
+    "release_date": "2002-09-16",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "250": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "250",
+    "name": "Magician's Force",
+    "release_date": "2003-10-10",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2505": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2505",
+    "name": "Duel Devastator",
+    "release_date": "2019-10-11",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "251": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "251",
+    "name": "Master Collection Volume 1",
+    "release_date": "2005-03-17",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2512": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2512",
+    "name": "OTS Tournament Pack 11",
+    "release_date": "2019-08-15",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2514": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2514",
+    "name": "Speed Duel: Trials of the Kingdom",
+    "release_date": "2019-12-06",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2518": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2518",
+    "name": "Advent Calendar 2019",
+    "release_date": "2019-09-27",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2519": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2519",
+    "name": "Legendary Duelists: Immortal Destiny",
+    "release_date": "2019-09-27",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "252": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "252",
+    "name": "Master Collection Volume 2",
+    "release_date": "2005-10-18",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2527": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2527",
+    "name": "Chaos Impact",
+    "release_date": "2019-10-25",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2528": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2528",
+    "name": "Mystic Fighters",
+    "release_date": "2019-11-22",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "253": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "253",
+    "name": "McDonald's Promo",
+    "release_date": "2002-12-10",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "254": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "254",
+    "name": "McDonald's Promo Series 2",
+    "release_date": "2006-12-10",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "255": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "255",
+    "name": "Metal Raiders",
+    "release_date": "2004-12-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2558": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2558",
+    "name": "Advanced Demo Deck Extra Pack",
+    "release_date": "2018-01-06",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2559": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2559",
+    "name": "Speed Duel: Tournament Pack 2",
+    "release_date": "2019-10-10",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "256": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "256",
+    "name": "Nintendo DS Nightmare of Troubadour",
+    "release_date": "2005-08-30",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2561": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2561",
+    "name": "Event Pack Speed Duel",
+    "release_date": "2019-08-02",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2567": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2567",
+    "name": "Legendary Duelists: Magical Hero",
+    "release_date": "2020-01-17",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "257": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "257",
+    "name": "Order of Chaos",
+    "release_date": "2012-01-24",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2577": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2577",
+    "name": "The Dark Side of Dimensions Movie Pack: Secret Edition",
+    "release_date": "2020-01-24",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2578": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2578",
+    "name": "Ignition Assault",
+    "release_date": "2020-01-31",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "258": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "258",
+    "name": "Phantom Darkness",
+    "release_date": "2008-02-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2582": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2582",
+    "name": "OTS Tournament Pack 12",
+    "release_date": "2019-12-05",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "259": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "259",
+    "name": "Pharaoh's Servant",
+    "release_date": "2004-12-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2591": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2591",
+    "name": "Structure Deck: Shaddoll Showdown",
+    "release_date": "2020-02-14",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "260": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "260",
+    "name": "Pharaonic Guardian",
+    "release_date": "2003-07-18",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "261": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "261",
+    "name": "Photon Shockwave",
+    "release_date": "2011-11-15",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2610": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2610",
+    "name": "Duel Overload",
+    "release_date": "2020-03-20",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2613": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2613",
+    "name": "Secret Slayers",
+    "release_date": "2020-04-03",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2617": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2617",
+    "name": "Structure Deck: Mechanized Madness",
+    "release_date": "2020-04-17",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "262": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "262",
+    "name": "Power of Chaos: Joey the Passion",
+    "release_date": "2004-06-29",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2625": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2625",
+    "name": "Eternity Code",
+    "release_date": "2020-05-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "263": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "263",
+    "name": "Power of Chaos: Kaiba the Revenge",
+    "release_date": "2004-04-06",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2637": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2637",
+    "name": "Speed Duel Decks: Match of the Millennium",
+    "release_date": "2020-05-15",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2638": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2638",
+    "name": "Speed Duel Decks: Twisted Nightmares",
+    "release_date": "2020-05-15",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "264": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "264",
+    "name": "Power of Chaos: Yugi the Destiny",
+    "release_date": "2003-11-18",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "265": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "265",
+    "name": "Power of the Duelist",
+    "release_date": "2006-11-16",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2652": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2652",
+    "name": "Toon Chaos",
+    "release_date": "2020-06-19",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2658": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2658",
+    "name": "Legendary Duelists: Season 1",
+    "release_date": "2020-07-03",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2659": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2659",
+    "name": "Structure Deck: Sacred Beasts",
+    "release_date": "2020-07-10",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "266": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "266",
+    "name": "Premium Pack 1",
+    "release_date": "2007-10-08",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2660": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2660",
+    "name": "Battles of Legend: Armageddon",
+    "release_date": "2020-07-24",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "267": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "267",
+    "name": "Premium Pack 2",
+    "release_date": "2008-07-31",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2672": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2672",
+    "name": "OTS Tournament Pack 13",
+    "release_date": "2020-06-15",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2674": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2674",
+    "name": "Rise of the Duelist",
+    "release_date": "2020-08-07",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2679": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2679",
+    "name": "Genesis Impact",
+    "release_date": "2020-12-04",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "268": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "268",
+    "name": "PS2 Yugioh GX The Beginning of Destiny",
+    "release_date": "2008-01-08",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2680": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2680",
+    "name": "2020 Tin of Lost Memories",
+    "release_date": "2020-08-28",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2681": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2681",
+    "name": "Speed Duel Demo Deck",
+    "release_date": "2019-06-08",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2682": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2682",
+    "name": "Demo Deck 2016",
+    "release_date": "2016-01-24",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2689": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2689",
+    "name": "Dragons of Legend: The Complete Series",
+    "release_date": "2020-09-11",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "269": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "269",
+    "name": "Ra Yellow Mega Pack",
+    "release_date": "2012-02-21",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2690": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2690",
+    "name": "Legendary Duelists: Rage of Ra",
+    "release_date": "2020-09-25",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2693": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2693",
+    "name": "Maximum Gold",
+    "release_date": "2020-10-09",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2694": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2694",
+    "name": "Phantom Rage",
+    "release_date": "2020-11-06",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2695": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2695",
+    "name": "Structure Deck: Spirit Charmers",
+    "release_date": "2020-11-20",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "270": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "270",
+    "name": "Raging Battle",
+    "release_date": "2009-05-12",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2700": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2700",
+    "name": "Speed Duel: Battle City Box",
+    "release_date": "2020-11-20",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "271": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "271",
+    "name": "Raging Battle SE",
+    "release_date": "2009-05-12",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2718": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2718",
+    "name": "Miscellaneous Promotional Cards",
+    "release_date": "2020-09-22",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "272": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "272",
+    "name": "Reshef of Destruction",
+    "release_date": "2004-06-29",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2723": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2723",
+    "name": "OTS Tournament Pack 14",
+    "release_date": "2020-10-09",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "274": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "274",
+    "name": "Rise of Destiny",
+    "release_date": "2004-12-03",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2743": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2743",
+    "name": "Legendary Duelists: Season 2",
+    "release_date": "2021-01-22",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2749": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2749",
+    "name": "Blazing Vortex",
+    "release_date": "2021-02-05",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "275": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "275",
+    "name": "Rise of Destiny Special Edition",
+    "release_date": "2005-02-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2751": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2751",
+    "name": "Structure Deck: Freezing Chains",
+    "release_date": "2021-02-19",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2752": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2752",
+    "name": "Ghosts From the Past",
+    "release_date": "2021-03-26",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "276": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "276",
+    "name": "Samurai Assault",
+    "release_date": "2011-12-06",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2767": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2767",
+    "name": "Ancient Guardians",
+    "release_date": "2021-04-30",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "277": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "277",
+    "name": "Shadow of Infinity",
+    "release_date": "2006-02-18",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2779": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2779",
+    "name": "Lightning Overdrive",
+    "release_date": "2021-06-04",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "279": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "279",
+    "name": "Shonen Jump Championship Series Prize Cards",
+    "release_date": "2004-09-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2790": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2790",
+    "name": "OTS Tournament Pack 15",
+    "release_date": "2021-02-17",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "280": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "280",
+    "name": "Shonen Jump Championship Series Promos",
+    "release_date": "2004-12-04",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2808": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2808",
+    "name": "King's Court",
+    "release_date": "2021-07-09",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "281": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "281",
+    "name": "Shonen Jump Magazine Promos",
+    "release_date": "2017-12-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2810": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2810",
+    "name": "Egyptian God Deck: Obelisk the Tormentor",
+    "release_date": "2021-06-11",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2811": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2811",
+    "name": "Egyptian God Deck: Slifer the Sky Dragon",
+    "release_date": "2021-06-11",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "282": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "282",
+    "name": "Sneak Preview Series 1",
+    "release_date": "2005-03-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2829": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2829",
+    "name": "Legendary Duelists: Synchro Storm",
+    "release_date": "2021-11-05",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "283": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "283",
+    "name": "Sneak Preview Series 2",
+    "release_date": "2006-02-18",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2830": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2830",
+    "name": "Structure Deck: Cyber Strike",
+    "release_date": "2021-10-08",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "284": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "284",
+    "name": "Sneak Preview Series 3",
+    "release_date": "2006-02-28",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2843": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2843",
+    "name": "Dawn of Majesty",
+    "release_date": "2021-08-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2847": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2847",
+    "name": "2021 Tin of Ancient Battles",
+    "release_date": "2021-10-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "285": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "285",
+    "name": "Soul of the Duelist",
+    "release_date": "2004-10-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2850": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2850",
+    "name": "OTS Tournament Pack 16",
+    "release_date": "2021-06-12",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "286": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "286",
+    "name": "Structure Deck: Spellcaster's Command",
+    "release_date": "2009-03-31",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "287": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "287",
+    "name": "Stairway to the Destined Duel",
+    "release_date": "2003-04-15",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2877": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2877",
+    "name": "Brothers of Legend",
+    "release_date": "2021-10-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2879": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2879",
+    "name": "Burst of Destiny",
+    "release_date": "2021-10-22",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "288": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "288",
+    "name": "Stardust Accelerator Promos",
+    "release_date": "2009-05-19",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2889": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2889",
+    "name": "Redemption Replacement",
+    "release_date": "2008-01-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "289": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "289",
+    "name": "Stardust Overdrive",
+    "release_date": "2009-11-17",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2896": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2896",
+    "name": "Maximum Gold: El Dorado",
+    "release_date": "2021-11-19",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "290": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "290",
+    "name": "Starstrike Blast",
+    "release_date": "2010-11-16",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "291": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "291",
+    "name": "Starter Deck 2006",
+    "release_date": "2006-03-23",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "292": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "292",
+    "name": "Starter Deck: Jaden Yuki",
+    "release_date": "2007-07-25",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "293": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "293",
+    "name": "Starter Deck: Joey",
+    "release_date": "2003-03-30",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2934": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2934",
+    "name": "OTS Tournament Pack 17",
+    "release_date": "2021-10-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2937": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2937",
+    "name": "Advent Calendar 2011 (Adventskalender)",
+    "release_date": "2011-10-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "294": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "294",
+    "name": "Starter Deck: Kaiba",
+    "release_date": "2002-03-29",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2941": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2941",
+    "name": "Hidden Arsenal: Chapter 1",
+    "release_date": "2022-03-11",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "295": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "295",
+    "name": "Starter Deck: Kaiba Evolution",
+    "release_date": "2004-03-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "296": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "296",
+    "name": "Starter Deck: Pegasus",
+    "release_date": "2003-03-30",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2961": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2961",
+    "name": "Structure Deck: Albaz Strike",
+    "release_date": "2022-04-15",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2964": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2964",
+    "name": "The Grand Creators",
+    "release_date": "2022-01-28",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2969": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2969",
+    "name": "Battle of Chaos",
+    "release_date": "2022-02-11",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "297": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "297",
+    "name": "Starter Deck: Syrus Truesdale",
+    "release_date": "2007-07-05",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "2970": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "2970",
+    "name": "Speed Duel GX: Duel Academy Box",
+    "release_date": "2022-04-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "298": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "298",
+    "name": "Starter Deck: Yugi",
+    "release_date": "2002-03-29",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "299": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "299",
+    "name": "Starter Deck: Yugi Evolution",
+    "release_date": "2004-03-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "300": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "300",
+    "name": "Starter Deck: Dawn of the Xyz",
+    "release_date": "2011-07-12",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "3000": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "3000",
+    "name": "OTS Tournament Pack 18",
+    "release_date": "2022-02-23",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "301": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "301",
+    "name": "Starter Deck: Duelist Toolbox",
+    "release_date": "2010-06-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "3011": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "3011",
+    "name": "Ghosts From the Past: The 2nd Haunting",
+    "release_date": "2022-05-06",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "3013": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "3013",
+    "name": "Legendary Duelists: Duels From the Deep",
+    "release_date": "2022-06-17",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "302": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "302",
+    "name": "Storm of Ragnarok",
+    "release_date": "2011-02-08",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "3029": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "3029",
+    "name": "Dimension Force",
+    "release_date": "2022-05-20",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "303": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "303",
+    "name": "Storm of Ragnarok SE",
+    "release_date": "2011-03-22",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "304": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "304",
+    "name": "Strike of Neos",
+    "release_date": "2007-02-28",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "305": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "305",
+    "name": "Structure Deck: Blaze of Destruction",
+    "release_date": "2005-05-09",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "3050": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "3050",
+    "name": "Speed Duel: Tournament Pack 3",
+    "release_date": "2022-03-30",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "306": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "306",
+    "name": "Structure Deck: Dinosaur's Rage",
+    "release_date": "2006-10-20",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "3066": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "3066",
+    "name": "Tactical Masters",
+    "release_date": "2022-08-26",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "307": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "307",
+    "name": "Structure Deck: Dragon's Roar",
+    "release_date": "2005-01-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "3073": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "3073",
+    "name": "OTS Tournament Pack 19",
+    "release_date": "2022-06-15",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "3076": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "3076",
+    "name": "Legendary Duelists: Season 3",
+    "release_date": "2022-07-22",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "308": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "308",
+    "name": "Structure Deck: Fury from the Deep",
+    "release_date": "2005-05-09",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "309": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "309",
+    "name": "Structure Deck: Invincible Fortress",
+    "release_date": "2006-05-15",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "3096": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "3096",
+    "name": "Structure Deck: Legend of the Crystal Beasts",
+    "release_date": "2022-09-30",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "3098": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "3098",
+    "name": "Speed Duel GX: Midterm Paradox",
+    "release_date": "2022-10-07",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "310": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "310",
+    "name": "Structure Deck: Lord of the Storm",
+    "release_date": "2006-07-12",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "3101": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "3101",
+    "name": "2022 Tin of the Pharaoh's Gods",
+    "release_date": "2022-09-16",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "3104": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "3104",
+    "name": "Power of the Elements",
+    "release_date": "2022-08-05",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "311": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "311",
+    "name": "Structure Deck: Machine Re-Volt",
+    "release_date": "2007-01-17",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "3111": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "3111",
+    "name": "Darkwing Blast",
+    "release_date": "2022-10-21",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "312": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "312",
+    "name": "Structure Deck: Rise of the Dragon Lords",
+    "release_date": "2007-10-24",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "313": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "313",
+    "name": "Structure Deck: Spellcaster's Judgment",
+    "release_date": "2006-01-18",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "314": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "314",
+    "name": "Structure Deck: Warrior's Triumph",
+    "release_date": "2005-10-28",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "315": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "315",
+    "name": "Structure Deck: Zombie Madness",
+    "release_date": "2005-01-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "3154": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "3154",
+    "name": "Magnificent Mavens",
+    "release_date": "2022-11-04",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "3155": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "3155",
+    "name": "Battles of Legend: Crystal Revenge",
+    "release_date": "2022-11-18",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "3156": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "3156",
+    "name": "Structure Deck: Dark World",
+    "release_date": "2022-12-02",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "316": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "316",
+    "name": "Structure Deck: Dragons Collide",
+    "release_date": "2012-02-03",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "317": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "317",
+    "name": "Structure Deck: Dragunity Legion",
+    "release_date": "2011-03-08",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "318": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "318",
+    "name": "Structure Deck: Gates of the Underworld",
+    "release_date": "2011-10-18",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "3180": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "3180",
+    "name": "Speed Duel: Tournament Pack 4",
+    "release_date": "2022-09-28",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "319": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "319",
+    "name": "Structure Deck: Lost Sanctuary",
+    "release_date": "2011-06-14",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "320": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "320",
+    "name": "Structure Deck: Machina Mayhem",
+    "release_date": "2010-02-23",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "321": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "321",
+    "name": "Structure Deck: Marik",
+    "release_date": "2010-10-19",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "322": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "322",
+    "name": "Structure Deck: The Dark Emperor",
+    "release_date": "2008-04-02",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "323": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "323",
+    "name": "Structure Deck: Warriors' Strike",
+    "release_date": "2009-10-27",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "324": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "324",
+    "name": "Structure Deck: Zombie World",
+    "release_date": "2008-10-21",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "325": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "325",
+    "name": "Tactical Evolution",
+    "release_date": "2007-08-15",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "326": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "326",
+    "name": "Tactical Evolution: Special Edition",
+    "release_date": "2007-09-12",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "328": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "328",
+    "name": "The Duelist Genesis",
+    "release_date": "2008-09-02",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "329": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "329",
+    "name": "The Falsebound Kingdom",
+    "release_date": "2003-11-04",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "330": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "330",
+    "name": "The Legend of Blue Eyes White Dragon",
+    "release_date": "2002-03-08",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "331": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "331",
+    "name": "The Sacred Cards",
+    "release_date": "2026-09-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "332": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "332",
+    "name": "The Shining Darkness",
+    "release_date": "2010-05-11",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "333": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "333",
+    "name": "Tournament Pack 1",
+    "release_date": "2002-09-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "334": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "334",
+    "name": "Tournament Pack 2",
+    "release_date": "2002-10-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "335": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "335",
+    "name": "Tournament Pack 3",
+    "release_date": "2003-03-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "336": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "336",
+    "name": "Tournament Pack 4",
+    "release_date": "2003-10-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "337": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "337",
+    "name": "Tournament Pack 5",
+    "release_date": "2004-11-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "338": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "338",
+    "name": "Tournament Pack 6",
+    "release_date": "2005-06-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "339": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "339",
+    "name": "Tournament Pack 7",
+    "release_date": "2005-11-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "340": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "340",
+    "name": "Tournament Pack 8",
+    "release_date": "2006-04-28",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "341": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "341",
+    "name": "Turbo Pack Booster One Pack",
+    "release_date": "2009-09-12",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "342": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "342",
+    "name": "Turbo Pack: Booster Four",
+    "release_date": "2010-11-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "343": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "343",
+    "name": "Ultimate Edition 2",
+    "release_date": "2006-11-11",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "345": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "345",
+    "name": "World Championship 2004: GBA Promo",
+    "release_date": "2004-02-10",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "346": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "346",
+    "name": "World Championship 2005: 7 Trials to Glory",
+    "release_date": "2005-02-15",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "347": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "347",
+    "name": "World Championship 2006: Ultimate Masters",
+    "release_date": "2006-03-14",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "348": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "348",
+    "name": "World Championship 2007",
+    "release_date": "2007-03-20",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "349": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "349",
+    "name": "World Championship 2008",
+    "release_date": "2007-12-04",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "351": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "351",
+    "name": "World Championship Series",
+    "release_date": "2003-07-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "352": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "352",
+    "name": "Yu-Gi-Oh! 5D's Manga Promotional Cards",
+    "release_date": "2011-07-05",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "353": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "353",
+    "name": "Yu-Gi-Oh! 5D's Tag Force Promotional Cards",
+    "release_date": "2009-11-17",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "356": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "356",
+    "name": "Yu-Gi-Oh! GX Tag Force Promotional Cards",
+    "release_date": "2006-11-14",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "357": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "357",
+    "name": "Yu-Gi-Oh! Movie Exclusive Pack",
+    "release_date": "2004-08-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "358": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "358",
+    "name": "Yu-Gi-Oh! R Manga Promo",
+    "release_date": "2009-10-06",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "359": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "359",
+    "name": "Yu-Gi-Oh! The Movie Promo Set",
+    "release_date": "2004-08-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "360": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "360",
+    "name": "Yugioh 5D's 2008 Starter Deck",
+    "release_date": "2008-08-05",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "571": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "571",
+    "name": "2012 Collectors Tin",
+    "release_date": "2012-08-14",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "572": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "572",
+    "name": "2013 Zexal Collection Tin",
+    "release_date": "2013-03-08",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "573": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "573",
+    "name": "Abyss Rising",
+    "release_date": "2012-11-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "574": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "574",
+    "name": "Abyss Rising SE",
+    "release_date": "2012-11-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "575": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "575",
+    "name": "Battle Pack: Epic Dawn",
+    "release_date": "2012-05-28",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "576": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "576",
+    "name": "Cosmo Blazer",
+    "release_date": "2013-01-25",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "577": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "577",
+    "name": "Cosmo Blazer SE",
+    "release_date": "2013-01-25",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "578": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "578",
+    "name": "Galactic Overlord",
+    "release_date": "2012-05-08",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "579": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "579",
+    "name": "Generation Force SE",
+    "release_date": "2011-08-16",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "580": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "580",
+    "name": "Gold Series: Haunted Mine",
+    "release_date": "2012-06-12",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "581": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "581",
+    "name": "Hidden Arsenal 6: Omega Xyz",
+    "release_date": "2012-07-24",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "582": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "582",
+    "name": "Hobby League 6",
+    "release_date": "2008-01-21",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "583": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "583",
+    "name": "Hobby League 7",
+    "release_date": "2008-07-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "584": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "584",
+    "name": "Legendary Collection 3: Yugi's World",
+    "release_date": "2012-10-02",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "585": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "585",
+    "name": "Order of Chaos SE",
+    "release_date": "2012-01-24",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "586": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "586",
+    "name": "Ra Yellow Mega Pack SE",
+    "release_date": "2012-06-13",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "587": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "587",
+    "name": "Return of the Duelist",
+    "release_date": "2012-08-28",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "588": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "588",
+    "name": "Return of the Duelist SE",
+    "release_date": "2012-08-28",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "589": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "589",
+    "name": "Starter Deck: Xyz Symphony",
+    "release_date": "2012-04-17",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "590": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "590",
+    "name": "Structure Deck: Onslaught of the Fire Kings",
+    "release_date": "2013-02-08",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "591": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "591",
+    "name": "Structure Deck: Realm of the Sea Emperor",
+    "release_date": "2012-10-16",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "592": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "592",
+    "name": "Structure Deck: Samurai Warlords",
+    "release_date": "2012-06-26",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "593": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "593",
+    "name": "Turbo Pack: Booster Eight",
+    "release_date": "2012-06-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "594": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "594",
+    "name": "Turbo Pack: Booster Five",
+    "release_date": "2011-04-09",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "595": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "595",
+    "name": "Turbo Pack: Booster Seven",
+    "release_date": "2012-01-01",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "596": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "596",
+    "name": "Turbo Pack: Booster Six",
+    "release_date": "2011-08-04",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "597": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "597",
+    "name": "Turbo Pack: Booster Three",
+    "release_date": "2010-07-10",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "598": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "598",
+    "name": "Turbo Pack: Booster Two",
+    "release_date": "2010-01-09",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "599": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "599",
+    "name": "Yu-Gi-Oh! GX Manga Promotional Cards",
+    "release_date": "2005-12-17",
+    "source": "tcgcsv_groups_api.publishedOn"
+  },
+  "600": {
+    "fetched_at": "2026-09-14T05:23:24Z",
+    "group_id": "600",
+    "name": "Yu-Gi-Oh! ZEXAL Manga Promotional Cards",
+    "release_date": "2012-06-05",
+    "source": "tcgcsv_groups_api.publishedOn"
+  }
+}

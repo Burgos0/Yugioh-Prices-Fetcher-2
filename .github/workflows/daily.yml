@@ -31,7 +31,7 @@ jobs:
     
       - name: run yugioh fetcher
         run: |
-          python scripts/fetch_prices.py
+          python -m scripts.fetch_prices
       
       - name: Calculate top gainers
         run: |
@@ -48,5 +48,5 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add data/prices.db data/top_gainers.json data/early_movers.json data/signals.db
-          git diff --cached --quiet || (git commit -m "Update prices.db, top_gainers.json, early_movers.json, and signals.db" && git push)
+          git add data/prices.db data/top_gainers.json data/early_movers_all_years.json data/early_movers_2007_onward.json data/signals.db
+          git diff --cached --quiet || (git commit -m "Update prices.db (incl. subtype provenance), top_gainers.json, early_movers caches, and signals.db" && git push)

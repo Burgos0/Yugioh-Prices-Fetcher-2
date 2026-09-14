@@ -2,6 +2,22 @@
 
 {% block content %}
 <div class="content-wrapper">
+    <div class="scope-badge" style="margin-bottom: 12px; font-size: 0.9em; color: #555;">
+        {% if scope == '2007_onward' %}
+        <strong>Scope: 2007 onward printings.</strong>
+        Only cards printed in sets released on or after January 1, 2007 are included
+        (using the printing's set release date, not the card's original debut).
+        Reprints of older cards in newer sets are included; sets with no verified
+        release date are excluded rather than guessed.
+        <a href="{{ url_for('main.early_movers', scope='all_years') }}">Show all years instead</a>
+        {% else %}
+        <strong>Scope: All years (default).</strong>
+        Includes cards regardless of set release date; products with no verified
+        release date are still included here (unlike the 2007-onward filter).
+        <a href="{{ url_for('main.early_movers', scope='2007_onward') }}">Filter to 2007 onward printings</a>
+        {% endif %}
+    </div>
+
     {% if error %}
     <div class="error-box">
         <strong>Error:</strong> {{ error }}
@@ -88,7 +104,18 @@
     {% else %}
 
     <div class="no-data">
-        <p>No early movers found. Data may not be available yet.</p>
+        {% if not candidates_available %}
+        <p><strong>Collecting verified history.</strong> No product yet has enough
+        consecutive price snapshots from its tracked, verified printing/subtype to be
+        evaluated. This is expected until enough daily fetches accumulate after a
+        product's subtype is first tracked (see app.subtype_policy) -- it does not
+        mean there was no market activity.</p>
+        {% else %}
+        <p><strong>History is available, but no cards currently qualify.</strong>
+        Enough verified-subtype history exists to evaluate candidates; none currently
+        meet the momentum alert criteria (10-50% gain, building over 3 consecutive
+        days, at least $0.25 moved).</p>
+        {% endif %}
     </div>
 
     {% endif %}

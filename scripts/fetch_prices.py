@@ -16,6 +16,12 @@ import time
 from datetime import datetime, timezone, timedelta
 import requests
 
+# Allow `python scripts/fetch_prices.py` (direct script, no repo root on
+# sys.path) as well as `python -m scripts.fetch_prices` to resolve the
+# `app` package, since this script now imports app.subtype_policy.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from app.subtype_policy import select_subtype
+
 # Constants
 CATEGORY_ID = 2  # Yu-Gi-Oh on TCGplayer/TCGCSV
 BASE_API = "https://tcgcsv.com/tcgplayer"
@@ -150,7 +156,7 @@ def find_category_dir(extract_dir, category_id=CATEGORY_ID):
 
 
 def init_db(db_path=DB_PATH):
-    """Ensure database directory and prices table exist."""
+    """Ensure database directory, prices table, and subtype-tracking table exist."""
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
     conn = sqlite3.connect(db_path)
     cur = conn.cursor()
@@ -168,8 +174,47 @@ def init_db(db_path=DB_PATH):
         PRIMARY KEY (product_id, date)
     )
     """)
+    # Tracks which printing/subtype (e.g. "1st Edition" vs "Unlimited") each
+    # product's price row is sourced from, per the explicit subtype policy
+    # in app.subtype_policy. Rows imported before this table existed have no
+    # entry here -- their subtype provenance is unverified, not "none".
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS product_subtypes (
+        product_id INTEGER PRIMARY KEY,
+        subtype TEXT,
+        established_date TEXT
+    )
+    """)
     conn.commit()
     return conn
+
+
+def load_tracked_subtypes(db_path=DB_PATH):
+    """Load each product's previously-established tracked subtype, if any."""
+    tracked = {}
+    if not os.path.exists(db_path):
+        return tracked
+    try:
+        conn = sqlite3.connect(db_path)
+        cur = conn.cursor()
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='product_subtypes'")
+        if cur.fetchone():
+            for pid, subtype in cur.execute("SELECT product_id, subtype FROM product_subtypes"):
+                tracked[pid] = subtype
+        conn.close()
+    except Exception as e:
+        print(f"Warning: Could not read tracked subtypes from {db_path}: {e}")
+    return tracked
+
+
+def save_tracked_subtypes(conn, newly_established, target_date_str):
+    """Persist newly-established product->subtype assignments (first-seen policy)."""
+    if not newly_established:
+        return
+    conn.executemany(
+        "INSERT OR REPLACE INTO product_subtypes (product_id, subtype, established_date) VALUES (?, ?, ?)",
+        [(pid, subtype, target_date_str) for pid, subtype in newly_established.items()]
+    )
 
 
 def load_known_metadata(db_path=DB_PATH):
@@ -203,12 +248,23 @@ def fetch_set_names():
         return {}
 
 
-def parse_and_build_records(cat_dir, target_date_str, known_cards, set_names):
+def parse_and_build_records(cat_dir, target_date_str, known_cards, set_names, tracked_subtypes=None):
     """
     Parse price files for all groups under the category directory.
     Fetches missing product metadata for new cards when needed.
+
+    When a productId has multiple same-day printing rows (subtypes), the
+    explicit policy in app.subtype_policy.select_subtype decides which one
+    to keep -- never "whichever came last in the file". `tracked_subtypes`
+    (product_id -> subtype) records subtypes already established for a
+    product on a prior run; newly established choices are returned so the
+    caller can persist them.
     """
+
     records = []
+    newly_established_subtypes = {}
+    skipped_missing_tracked_subtype = []
+    tracked_subtypes = tracked_subtypes or {}
     group_dirs = [d for d in os.listdir(cat_dir) if os.path.isdir(os.path.join(cat_dir, d))]
     print(f"Found {len(group_dirs)} Yu-Gi-Oh set directories in archive.")
 
@@ -254,14 +310,25 @@ def parse_and_build_records(cat_dir, target_date_str, known_cards, set_names):
             except Exception as e:
                 print(f"  Warning: Could not fetch product names for group {gid}: {e}")
 
-    # Build DB records
+    # Build DB records, resolving one price row per productId per the
+    # explicit subtype policy (never "last item in file order wins").
     for gid, items in parsed_group_prices.items():
         set_name = set_names.get(str(gid))
+        items_by_product = {}
         for p in items:
             pid = p.get("productId")
             if pid is None:
                 continue
+            items_by_product.setdefault(pid, []).append(p)
 
+        for pid, product_items in items_by_product.items():
+            resolution = select_subtype(product_items, tracked_subtypes.get(pid))
+            if resolution["status"] == "missing_tracked":
+                # Never silently switch to a different printing.
+                skipped_missing_tracked_subtype.append(pid)
+                continue
+
+            p = resolution["item"]
             low = p.get("lowPrice")
             mid = p.get("midPrice")
             high = p.get("highPrice")
@@ -271,6 +338,11 @@ def parse_and_build_records(cat_dir, target_date_str, known_cards, set_names):
             # Match existing behavior: skip records where all prices are None
             if not any(v is not None for v in [low, mid, high, market, dlow]):
                 continue
+
+            # Only establish subtype provenance once the price is actually
+            # going to be saved -- never for a row that gets skipped.
+            if resolution["status"] == "established":
+                newly_established_subtypes[pid] = resolution["subtype"]
 
             card_name = known_cards.get(pid)
             records.append((
@@ -285,7 +357,11 @@ def parse_and_build_records(cat_dir, target_date_str, known_cards, set_names):
                 target_date_str
             ))
 
-    return records, len(parsed_group_prices)
+    if skipped_missing_tracked_subtype:
+        print(f"Skipped {len(skipped_missing_tracked_subtype)} product(s) whose tracked "
+              f"subtype is missing from today's data (never auto-switched printings).")
+
+    return records, len(parsed_group_prices), newly_established_subtypes, skipped_missing_tracked_subtype
 
 
 def main():
@@ -302,6 +378,10 @@ def main():
     known_cards, set_names_by_card = load_known_metadata(DB_PATH)
     print(f"Loaded {len(known_cards):,} known cards from existing database.")
 
+    # Preload each product's previously-established tracked subtype/printing
+    tracked_subtypes = load_tracked_subtypes(DB_PATH)
+    print(f"Loaded {len(tracked_subtypes):,} tracked product subtypes from existing database.")
+
     # Fetch set names from live API (single request)
     set_names = fetch_set_names()
     print(f"Loaded {len(set_names):,} set names from API.")
@@ -317,7 +397,8 @@ def main():
         extract_archive(archive_path, extract_dir)
 
         cat_dir = find_category_dir(extract_dir, CATEGORY_ID)
-        records, sets_processed = parse_and_build_records(cat_dir, target_date_str, known_cards, set_names)
+        records, sets_processed, newly_established_subtypes, skipped_subtypes = parse_and_build_records(
+            cat_dir, target_date_str, known_cards, set_names, tracked_subtypes)
 
         print(f"Parsed {len(records):,} valid price records across {sets_processed} sets.")
 
@@ -352,6 +433,7 @@ def main():
                 """,
                 records
             )
+            save_tracked_subtypes(conn, newly_established_subtypes, target_date_str)
             conn.commit()
 
             cur.execute("SELECT COUNT(*) FROM prices WHERE date = ?", (target_date_str,))

@@ -4,13 +4,20 @@ import json
 import sqlite3
 from datetime import datetime
 
-from app.analysis import calculate_penny_movers, calculate_early_movers_backtest, get_product_history_info
+from app.analysis import (
+    calculate_penny_movers,
+    calculate_early_movers_backtest,
+    get_product_history_info,
+    early_movers_cache_path,
+    RELEASE_SCOPE_ALL_YEARS,
+    RELEASE_SCOPE_2007_ONWARD,
+    VALID_RELEASE_SCOPES,
+)
 
 bp = Blueprint('main', __name__)
 
 GAINERS_JSON_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'top_gainers.json')
 LOSERS_JSON_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'top_losers.json')
-EARLY_MOVERS_JSON_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'early_movers.json')
 
 @bp.route('/')
 def index():
@@ -65,20 +72,36 @@ def penny_movers():
 
 @bp.route('/early-movers')
 def early_movers():
+    scope = request.args.get('scope', RELEASE_SCOPE_ALL_YEARS)
+    if scope not in VALID_RELEASE_SCOPES:
+        scope = RELEASE_SCOPE_ALL_YEARS
+    json_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), early_movers_cache_path(scope))
     try:
         # Check if cached JSON exists
-        if not os.path.exists(EARLY_MOVERS_JSON_PATH):
-            return render_template('early_movers.html', movers=[])
-        
-        # Load from cached JSON
-        with open(EARLY_MOVERS_JSON_PATH, 'r') as f:
-            movers_list = json.load(f)
-        
-        return render_template('early_movers.html', movers=movers_list)
+        if not os.path.exists(json_path):
+            # No cache generated yet at all -- treat the same as "still
+            # collecting verified history" rather than a qualifying-alerts miss.
+            return render_template('early_movers.html', movers=[], scope=scope, candidates_available=False)
+
+        # Load from cached JSON. Supports the current {"movers": [...],
+        # "candidates_available": bool, ...} object as well as the older
+        # bare-list format, so a stale cache file doesn't error the page.
+        with open(json_path, 'r') as f:
+            cached = json.load(f)
+        if isinstance(cached, dict):
+            movers_list = cached.get('movers', [])
+            candidates_available = cached.get('candidates_available', bool(movers_list))
+        else:
+            movers_list = cached
+            candidates_available = bool(movers_list)
+
+        return render_template('early_movers.html', movers=movers_list, scope=scope,
+                                candidates_available=candidates_available)
     
     except Exception as e:
         error_msg = f"Error loading early movers: {str(e)}"
-        return render_template('early_movers.html', movers=[], error=error_msg)
+        return render_template('early_movers.html', movers=[], scope=scope,
+                                candidates_available=False, error=error_msg)
 
 @bp.route('/backtest-early-movers')
 def backtest_early_movers():
