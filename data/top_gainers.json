@@ -1,6 +1,17 @@
 [
   {
     "rank": 1,
+    "product_id": 94958,
+    "card_name": "Geargiano Mk-II (Red)",
+    "set_name": "Duelist League Promo",
+    "baseline_value": 1.99,
+    "current_value": 12.0,
+    "dollar_gain": 10.01,
+    "percent_gain": 503.01507537688445,
+    "status": "CONFIRMED"
+  },
+  {
+    "rank": 2,
     "product_id": 56776,
     "card_name": "Destiny HERO - Dasher",
     "set_name": "Legendary Collection 2",
@@ -11,7 +22,7 @@
     "status": "CONFIRMED"
   },
   {
-    "rank": 2,
+    "rank": 3,
     "product_id": 22632,
     "card_name": "Fissure",
     "set_name": "Starter Deck: Yugi",
@@ -22,7 +33,18 @@
     "status": "CONFIRMED"
   },
   {
-    "rank": 3,
+    "rank": 4,
+    "product_id": 58816,
+    "card_name": "Horus the Black Flame Dragon LV8 (UTR)",
+    "set_name": "Soul of the Duelist",
+    "baseline_value": 111.94,
+    "current_value": 599.85,
+    "dollar_gain": 487.91,
+    "percent_gain": 435.8674289798106,
+    "status": "CONFIRMED"
+  },
+  {
+    "rank": 5,
     "product_id": 33677,
     "card_name": "Majestic Star Dragon",
     "set_name": "Stardust Overdrive",
@@ -33,18 +55,7 @@
     "status": "CONFIRMED"
   },
   {
-    "rank": 4,
-    "product_id": 26284,
-    "card_name": "Elemental Hero Plasma Vice",
-    "set_name": "Gladiator's Assault",
-    "baseline_value": 59.99,
-    "current_value": 306.53,
-    "dollar_gain": 246.53999999999996,
-    "percent_gain": 410.9684947491248,
-    "status": "CONFIRMED"
-  },
-  {
-    "rank": 5,
+    "rank": 6,
     "product_id": 25338,
     "card_name": "Granmarg the Rock Monarch",
     "set_name": "Tournament Pack 8",
@@ -52,17 +63,6 @@
     "current_value": 15.21,
     "dollar_gain": 11.59,
     "percent_gain": 320.16574585635357,
-    "status": "CONFIRMED"
-  },
-  {
-    "rank": 6,
-    "product_id": 478892,
-    "card_name": "Toon Mermaid",
-    "set_name": "Spell Ruler (Worldwide English)",
-    "baseline_value": 8.59,
-    "current_value": 35.0,
-    "dollar_gain": 26.41,
-    "percent_gain": 307.4505238649593,
     "status": "CONFIRMED"
   },
   {
@@ -78,17 +78,6 @@
   },
   {
     "rank": 8,
-    "product_id": 58816,
-    "card_name": "Horus the Black Flame Dragon LV8 (UTR)",
-    "set_name": "Soul of the Duelist",
-    "baseline_value": 111.94,
-    "current_value": 355.895,
-    "dollar_gain": 243.95499999999998,
-    "percent_gain": 217.9337144899053,
-    "status": "UNCONFIRMED"
-  },
-  {
-    "rank": 9,
     "product_id": 80802,
     "card_name": "Majestic Mech - Ohka",
     "set_name": "Dark Revelation Volume 4",
@@ -99,7 +88,29 @@
     "status": "CONFIRMED"
   },
   {
+    "rank": 9,
+    "product_id": 33688,
+    "card_name": "Fortune's Future",
+    "set_name": "Stardust Overdrive",
+    "baseline_value": 1.6,
+    "current_value": 4.6,
+    "dollar_gain": 2.9999999999999996,
+    "percent_gain": 187.49999999999994,
+    "status": "CONFIRMED"
+  },
+  {
     "rank": 10,
+    "product_id": 58814,
+    "card_name": "Horus The Black Flame Dragon LV4 (UTR)",
+    "set_name": "Soul of the Duelist",
+    "baseline_value": 39.55,
+    "current_value": 112.27,
+    "dollar_gain": 72.72,
+    "percent_gain": 183.86852085967132,
+    "status": "CONFIRMED"
+  },
+  {
+    "rank": 11,
     "product_id": 77360,
     "card_name": "Big Shield Gardna (Blue)",
     "set_name": "Duelist League Promo",
@@ -110,7 +121,7 @@
     "status": "CONFIRMED"
   },
   {
-    "rank": 11,
+    "rank": 12,
     "product_id": 80803,
     "card_name": "Majestic Mech - Goryu",
     "set_name": "Dark Revelation Volume 4",
@@ -121,7 +132,7 @@
     "status": "CONFIRMED"
   },
   {
-    "rank": 12,
+    "rank": 13,
     "product_id": 592635,
     "card_name": "Salamangreat Circle (Quarter Century Secret Rare)",
     "set_name": "Quarter Century Bonanza",
@@ -132,7 +143,7 @@
     "status": "CONFIRMED"
   },
   {
-    "rank": 13,
+    "rank": 14,
     "product_id": 80302,
     "card_name": "Right Leg of the Forbidden One (Blue)",
     "set_name": "Duelist League Promo",
@@ -143,40 +154,18 @@
     "status": "CONFIRMED"
   },
   {
-    "rank": 14,
-    "product_id": 121276,
-    "card_name": "Magician's Rod",
-    "set_name": "The Dark Illusion",
-    "baseline_value": 9.53,
-    "current_value": 18.34,
-    "dollar_gain": 8.81,
-    "percent_gain": 92.44491080797482,
-    "status": "CONFIRMED"
-  },
-  {
     "rank": 15,
-    "product_id": 58814,
-    "card_name": "Horus The Black Flame Dragon LV4 (UTR)",
-    "set_name": "Soul of the Duelist",
-    "baseline_value": 39.55,
-    "current_value": 75.91,
-    "dollar_gain": 36.36,
-    "percent_gain": 91.93426042983566,
-    "status": "UNCONFIRMED"
-  },
-  {
-    "rank": 16,
     "product_id": 627126,
     "card_name": "Salamangreat Raging Phoenix (Quarter Century Secret Rare)",
     "set_name": "Quarter Century Stampede",
     "baseline_value": 8.64,
-    "current_value": 16.46,
-    "dollar_gain": 7.82,
-    "percent_gain": 90.50925925925925,
+    "current_value": 17.86,
+    "dollar_gain": 9.219999999999999,
+    "percent_gain": 106.71296296296293,
     "status": "CONFIRMED"
   },
   {
-    "rank": 17,
+    "rank": 16,
     "product_id": 33222,
     "card_name": "Elemental Hero Gaia",
     "set_name": "Ancient Prophecy",
@@ -187,7 +176,7 @@
     "status": "CONFIRMED"
   },
   {
-    "rank": 18,
+    "rank": 17,
     "product_id": 515434,
     "card_name": "D.D. Survivor",
     "set_name": "Speed Duel: Tournament Pack 6",
@@ -195,6 +184,17 @@
     "current_value": 42.92,
     "dollar_gain": 19.19,
     "percent_gain": 80.86809945217026,
+    "status": "CONFIRMED"
+  },
+  {
+    "rank": 18,
+    "product_id": 141419,
+    "card_name": "Magician's Rod",
+    "set_name": "2017 Mega-Tins Mega Pack",
+    "baseline_value": 7.62,
+    "current_value": 13.75,
+    "dollar_gain": 6.13,
+    "percent_gain": 80.44619422572178,
     "status": "CONFIRMED"
   },
   {
@@ -221,28 +221,6 @@
   },
   {
     "rank": 21,
-    "product_id": 141419,
-    "card_name": "Magician's Rod",
-    "set_name": "2017 Mega-Tins Mega Pack",
-    "baseline_value": 7.62,
-    "current_value": 13.475,
-    "dollar_gain": 5.8549999999999995,
-    "percent_gain": 76.83727034120734,
-    "status": "CONFIRMED"
-  },
-  {
-    "rank": 22,
-    "product_id": 58670,
-    "card_name": "HERO Flash!! (UTR)",
-    "set_name": "Enemy of Justice",
-    "baseline_value": 24.55,
-    "current_value": 43.16,
-    "dollar_gain": 18.609999999999996,
-    "percent_gain": 75.80448065173114,
-    "status": "CONFIRMED"
-  },
-  {
-    "rank": 23,
     "product_id": 31943,
     "card_name": "Battlestorm",
     "set_name": "Raging Battle",
@@ -253,29 +231,7 @@
     "status": "CONFIRMED"
   },
   {
-    "rank": 24,
-    "product_id": 33688,
-    "card_name": "Fortune's Future",
-    "set_name": "Stardust Overdrive",
-    "baseline_value": 1.81,
-    "current_value": 3.0999999999999996,
-    "dollar_gain": 1.2899999999999996,
-    "percent_gain": 71.27071823204417,
-    "status": "UNCONFIRMED"
-  },
-  {
-    "rank": 25,
-    "product_id": 122719,
-    "card_name": "Caius the Shadow Monarch (Blue)",
-    "set_name": "Duelist League Promo",
-    "baseline_value": 10.76,
-    "current_value": 18.37,
-    "dollar_gain": 7.610000000000001,
-    "percent_gain": 70.72490706319704,
-    "status": "CONFIRMED"
-  },
-  {
-    "rank": 26,
+    "rank": 22,
     "product_id": 66959,
     "card_name": "Millennium Shield",
     "set_name": "Legendary Collection 3: Yugi's World",
@@ -286,7 +242,7 @@
     "status": "CONFIRMED"
   },
   {
-    "rank": 27,
+    "rank": 23,
     "product_id": 26508,
     "card_name": "Infernal Dragon",
     "set_name": "Duelist Pack 4: Zane Truesdale",
@@ -294,21 +250,21 @@
     "current_value": 69.0,
     "dollar_gain": 27.299999999999997,
     "percent_gain": 65.46762589928056,
+    "status": "UNCONFIRMED"
+  },
+  {
+    "rank": 24,
+    "product_id": 33186,
+    "card_name": "Skill Successor",
+    "set_name": "Ancient Prophecy",
+    "baseline_value": 8.98,
+    "current_value": 14.37,
+    "dollar_gain": 5.389999999999999,
+    "percent_gain": 60.022271714922034,
     "status": "CONFIRMED"
   },
   {
-    "rank": 28,
-    "product_id": 639369,
-    "card_name": "Artmage Diactorus",
-    "set_name": "Duelist's Advance",
-    "baseline_value": 2.76,
-    "current_value": 4.52,
-    "dollar_gain": 1.7599999999999998,
-    "percent_gain": 63.76811594202898,
-    "status": "CONFIRMED"
-  },
-  {
-    "rank": 29,
+    "rank": 25,
     "product_id": 215641,
     "card_name": "Toon Page-Flip (CR)",
     "set_name": "Toon Chaos",
@@ -319,7 +275,7 @@
     "status": "CONFIRMED"
   },
   {
-    "rank": 30,
+    "rank": 26,
     "product_id": 81382,
     "card_name": "Senju of the Thousand Hands",
     "set_name": "Duel Terminal 5",
@@ -330,51 +286,29 @@
     "status": "CONFIRMED"
   },
   {
-    "rank": 31,
-    "product_id": 58687,
-    "card_name": "Chainsaw Insect (UTR)",
-    "set_name": "Shadow of Infinity",
-    "baseline_value": 22.49,
-    "current_value": 34.97,
-    "dollar_gain": 12.48,
-    "percent_gain": 55.491329479768794,
+    "rank": 27,
+    "product_id": 125260,
+    "card_name": "Destiny HERO - Dystopia",
+    "set_name": "Destiny Soldiers",
+    "baseline_value": 2.48,
+    "current_value": 3.83,
+    "dollar_gain": 1.35,
+    "percent_gain": 54.43548387096775,
     "status": "CONFIRMED"
   },
   {
-    "rank": 32,
-    "product_id": 629373,
-    "card_name": "Dark Magician Girl the Magician's Apprentice",
-    "set_name": "Alliance Insight",
-    "baseline_value": 45.8,
-    "current_value": 70.75,
-    "dollar_gain": 24.950000000000003,
-    "percent_gain": 54.4759825327511,
+    "rank": 28,
+    "product_id": 70752,
+    "card_name": "Judgment of the Light - Booster Box [1st Edition]",
+    "set_name": "Judgment of the Light",
+    "baseline_value": 77.79,
+    "current_value": 119.0,
+    "dollar_gain": 41.209999999999994,
+    "percent_gain": 52.97596092042678,
     "status": "CONFIRMED"
   },
   {
-    "rank": 33,
-    "product_id": 81181,
-    "card_name": "Ally of Justice Quarantine",
-    "set_name": "Duel Terminal 3",
-    "baseline_value": 3.2,
-    "current_value": 4.9,
-    "dollar_gain": 1.7000000000000002,
-    "percent_gain": 53.125,
-    "status": "CONFIRMED"
-  },
-  {
-    "rank": 34,
-    "product_id": 23372,
-    "card_name": "Mind on Air",
-    "set_name": "Soul of the Duelist",
-    "baseline_value": 4.45,
-    "current_value": 6.77,
-    "dollar_gain": 2.3199999999999994,
-    "percent_gain": 52.13483146067415,
-    "status": "CONFIRMED"
-  },
-  {
-    "rank": 35,
+    "rank": 29,
     "product_id": 136643,
     "card_name": "Dark Magician (JMPS-EN003)",
     "set_name": "Shonen Jump Magazine Promos",
@@ -385,95 +319,62 @@
     "status": "CONFIRMED"
   },
   {
-    "rank": 36,
-    "product_id": 695589,
-    "card_name": "Junk Meister",
-    "set_name": "Battles of Legend: Glorious Gallery",
-    "baseline_value": 10.25,
-    "current_value": 15.48,
-    "dollar_gain": 5.23,
-    "percent_gain": 51.02439024390244,
+    "rank": 30,
+    "product_id": 80849,
+    "card_name": "Macro Cosmos",
+    "set_name": "Dark Revelation Volume 4",
+    "baseline_value": 33.55,
+    "current_value": 50.77,
+    "dollar_gain": 17.220000000000006,
+    "percent_gain": 51.32637853949331,
     "status": "CONFIRMED"
   },
   {
-    "rank": 37,
+    "rank": 31,
     "product_id": 186892,
     "card_name": "Elemental HERO Grandmerge",
     "set_name": "Duel Power",
-    "baseline_value": 2.05,
+    "baseline_value": 2.04,
     "current_value": 3.08,
-    "dollar_gain": 1.0300000000000002,
-    "percent_gain": 50.2439024390244,
+    "dollar_gain": 1.04,
+    "percent_gain": 50.98039215686274,
     "status": "CONFIRMED"
   },
   {
-    "rank": 38,
-    "product_id": 66755,
-    "card_name": "Yellow Gadget",
-    "set_name": "Turbo Pack: Booster Seven",
-    "baseline_value": 13.32,
-    "current_value": 20.0,
-    "dollar_gain": 6.68,
-    "percent_gain": 50.150150150150154,
+    "rank": 32,
+    "product_id": 77403,
+    "card_name": "Iron Blacksmith Kotetsu (Red)",
+    "set_name": "Duelist League Promo",
+    "baseline_value": 5.99,
+    "current_value": 9.02,
+    "dollar_gain": 3.0299999999999994,
+    "percent_gain": 50.584307178631036,
     "status": "CONFIRMED"
   },
   {
-    "rank": 39,
-    "product_id": 125260,
-    "card_name": "Destiny HERO - Dystopia",
-    "set_name": "Destiny Soldiers",
-    "baseline_value": 2.48,
-    "current_value": 3.715,
-    "dollar_gain": 1.2349999999999999,
-    "percent_gain": 49.798387096774185,
+    "rank": 33,
+    "product_id": 121276,
+    "card_name": "Magician's Rod",
+    "set_name": "The Dark Illusion",
+    "baseline_value": 12.65,
+    "current_value": 18.68,
+    "dollar_gain": 6.029999999999999,
+    "percent_gain": 47.66798418972331,
     "status": "CONFIRMED"
   },
   {
-    "rank": 40,
-    "product_id": 678918,
-    "card_name": "The Gaze of Timaeus",
-    "set_name": "Maze of Muertos",
-    "baseline_value": 44.18,
-    "current_value": 65.92,
-    "dollar_gain": 21.740000000000002,
-    "percent_gain": 49.20778632865551,
+    "rank": 34,
+    "product_id": 639369,
+    "card_name": "Artmage Diactorus",
+    "set_name": "Duelist's Advance",
+    "baseline_value": 3.09,
+    "current_value": 4.52,
+    "dollar_gain": 1.4299999999999997,
+    "percent_gain": 46.278317152103554,
     "status": "CONFIRMED"
   },
   {
-    "rank": 41,
-    "product_id": 24733,
-    "card_name": "Invader of Darkness",
-    "set_name": "Dark Revelation Volume 2",
-    "baseline_value": 12.14,
-    "current_value": 17.99,
-    "dollar_gain": 5.849999999999998,
-    "percent_gain": 48.18780889621085,
-    "status": "CONFIRMED"
-  },
-  {
-    "rank": 42,
-    "product_id": 476989,
-    "card_name": "Dark Magician of Chaos",
-    "set_name": "Invasion of Chaos (Worldwide English)",
-    "baseline_value": 67.5,
-    "current_value": 100.0,
-    "dollar_gain": 32.5,
-    "percent_gain": 48.148148148148145,
-    "status": "CONFIRMED"
-  },
-  {
-    "rank": 43,
-    "product_id": 678919,
-    "card_name": "The Gaze of Timaeus (Collector's Rare)",
-    "set_name": "Maze of Muertos",
-    "baseline_value": 46.97,
-    "current_value": 69.38,
-    "dollar_gain": 22.409999999999997,
-    "percent_gain": 47.71130508835426,
-    "status": "CONFIRMED"
-  },
-  {
-    "rank": 44,
+    "rank": 35,
     "product_id": 176961,
     "card_name": "Hidden Summoners Booster Box",
     "set_name": "Hidden Summoners",
@@ -484,7 +385,7 @@
     "status": "CONFIRMED"
   },
   {
-    "rank": 45,
+    "rank": 36,
     "product_id": 198516,
     "card_name": "Mystic Fighters Booster Box",
     "set_name": "Mystic Fighters",
@@ -495,7 +396,7 @@
     "status": "CONFIRMED"
   },
   {
-    "rank": 46,
+    "rank": 37,
     "product_id": 25712,
     "card_name": "Magical Stone Excavation",
     "set_name": "Champion Pack 2",
@@ -506,47 +407,146 @@
     "status": "CONFIRMED"
   },
   {
-    "rank": 47,
+    "rank": 38,
+    "product_id": 678919,
+    "card_name": "The Gaze of Timaeus (Collector's Rare)",
+    "set_name": "Maze of Muertos",
+    "baseline_value": 48.64,
+    "current_value": 69.38,
+    "dollar_gain": 20.739999999999995,
+    "percent_gain": 42.63980263157894,
+    "status": "CONFIRMED"
+  },
+  {
+    "rank": 39,
+    "product_id": 695589,
+    "card_name": "Junk Meister",
+    "set_name": "Battles of Legend: Glorious Gallery",
+    "baseline_value": 10.86,
+    "current_value": 15.48,
+    "dollar_gain": 4.620000000000001,
+    "percent_gain": 42.54143646408841,
+    "status": "CONFIRMED"
+  },
+  {
+    "rank": 40,
+    "product_id": 235886,
+    "card_name": "Vampire Vamp",
+    "set_name": "The Lost Art Promotion",
+    "baseline_value": 4.13,
+    "current_value": 5.87,
+    "dollar_gain": 1.7400000000000002,
+    "percent_gain": 42.13075060532688,
+    "status": "CONFIRMED"
+  },
+  {
+    "rank": 41,
+    "product_id": 199551,
+    "card_name": "Ghost Belle & Haunted Mansion",
+    "set_name": "Duel Devastator",
+    "baseline_value": 2.19,
+    "current_value": 3.09,
+    "dollar_gain": 0.8999999999999999,
+    "percent_gain": 41.0958904109589,
+    "status": "CONFIRMED"
+  },
+  {
+    "rank": 42,
+    "product_id": 22705,
+    "card_name": "Castle Walls",
+    "set_name": "Starter Deck: Kaiba",
+    "baseline_value": 11.51,
+    "current_value": 16.19,
+    "dollar_gain": 4.6800000000000015,
+    "percent_gain": 40.660295395308445,
+    "status": "CONFIRMED"
+  },
+  {
+    "rank": 43,
+    "product_id": 131452,
+    "card_name": "Pendulum Evolution Booster Box",
+    "set_name": "Pendulum Evolution",
+    "baseline_value": 48.15,
+    "current_value": 67.46,
+    "dollar_gain": 19.309999999999995,
+    "percent_gain": 40.10384215991692,
+    "status": "CONFIRMED"
+  },
+  {
+    "rank": 44,
+    "product_id": 58767,
+    "card_name": "Big-Tusked Mammoth (UTR)",
+    "set_name": "Flaming Eternity",
+    "baseline_value": 29.96,
+    "current_value": 41.72,
+    "dollar_gain": 11.759999999999998,
+    "percent_gain": 39.25233644859812,
+    "status": "CONFIRMED"
+  },
+  {
+    "rank": 45,
     "product_id": 645227,
     "card_name": "CookyYummy",
     "set_name": "Justice Hunters",
-    "baseline_value": 2.41,
+    "baseline_value": 2.48,
     "current_value": 3.44,
-    "dollar_gain": 1.0299999999999998,
-    "percent_gain": 42.73858921161825,
+    "dollar_gain": 0.96,
+    "percent_gain": 38.70967741935484,
+    "status": "CONFIRMED"
+  },
+  {
+    "rank": 46,
+    "product_id": 58486,
+    "card_name": "Earthbound Immortal Aslla Piscu (UTR)",
+    "set_name": "Raging Battle",
+    "baseline_value": 71.99,
+    "current_value": 98.98,
+    "dollar_gain": 26.99000000000001,
+    "percent_gain": 37.491318238644276,
+    "status": "CONFIRMED"
+  },
+  {
+    "rank": 47,
+    "product_id": 26122,
+    "card_name": "Elemental Hero Darkbright",
+    "set_name": "Tactical Evolution",
+    "baseline_value": 25.5,
+    "current_value": 35.0,
+    "dollar_gain": 9.5,
+    "percent_gain": 37.254901960784316,
     "status": "CONFIRMED"
   },
   {
     "rank": 48,
-    "product_id": 199551,
-    "card_name": "Ghost Belle & Haunted Mansion",
-    "set_name": "Duel Devastator",
-    "baseline_value": 2.17,
-    "current_value": 3.09,
-    "dollar_gain": 0.9199999999999999,
-    "percent_gain": 42.3963133640553,
+    "product_id": 714704,
+    "card_name": "Kuriboh - Multiply! (Extended Art)",
+    "set_name": "Magnificent Monsters",
+    "baseline_value": 43.18,
+    "current_value": 58.56,
+    "dollar_gain": 15.380000000000003,
+    "percent_gain": 35.61834182491895,
     "status": "CONFIRMED"
   },
   {
     "rank": 49,
-    "product_id": 645228,
-    "card_name": "LollipoYummy",
-    "set_name": "Justice Hunters",
-    "baseline_value": 3.13,
-    "current_value": 4.45,
-    "dollar_gain": 1.3200000000000003,
-    "percent_gain": 42.17252396166135,
+    "product_id": 714706,
+    "card_name": "Dark Magical Curtain (Extended Art)",
+    "set_name": "Magnificent Monsters",
+    "baseline_value": 164.82,
+    "current_value": 223.5,
+    "dollar_gain": 58.68000000000001,
+    "percent_gain": 35.60247542773936,
     "status": "CONFIRMED"
   },
   {
     "rank": 50,
-    "product_id": 235886,
-    "card_name": "Vampire Vamp",
-    "set_name": "The Lost Art Promotion",
-    "baseline_value": 4.15,
-    "current_value": 5.87,
-    "dollar_gain": 1.7199999999999998,
-    "percent_gain": 41.44578313253011,
+    "product_id": 188971,
+    "card_name": "Dark Magician",
+    "set_name": "Speed Duel: Tournament Pack 1",
+    "baseline_value": 9.71,
+    "current_value": 13.16,
+    "dollar_gain": 3.4499999999999993,
+    "percent_gain": 35.530381050463426,
     "status": "CONFIRMED"
   }
 ]
