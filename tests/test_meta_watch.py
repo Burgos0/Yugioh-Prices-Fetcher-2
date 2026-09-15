@@ -333,6 +333,43 @@ class PriceContextTests(unittest.TestCase):
         tech = next(c for c in bl["cards"] if c["card_name"] == "Tech Card")
         self.assertFalse(tech["resolved"])
 
+    def test_missing_prices_db_file_never_crashes_report_generation(self):
+        # A fresh checkout has no data/prices.db (it's gitignored and restored
+        # from a snapshot, not committed -- see scripts/snapshot_storage.py).
+        # Report generation must degrade gracefully, not raise.
+        missing_db_path = str(Path(self.tmp.name) / "does_not_exist.db")
+        obs = [make_obs(f"E{i}", f"P{i}", "Kashtira", [("Tech Card", 1)],
+                         published_at="2026-09-08T00:00:00Z") for i in range(20)]
+        obs += [make_obs(f"EX{i}", f"PX{i}", "Kashtira", [("Filler", 1)] if i else [("Tech Card", 1)],
+                          published_at="2026-08-25T00:00:00Z") for i in range(20)]
+        self._write_dataset(obs)
+        report = build_meta_watch_report(self.dataset_path, missing_db_path, as_of="2026-09-08T00:00:00Z")
+        self.assertFalse(report["price_db_available"])
+        bl = report["banlists"][0]
+        tech = next(c for c in bl["cards"] if c["card_name"] == "Tech Card")
+        self.assertFalse(tech["resolved"])
+        self.assertTrue(tech["price_db_unavailable"])
+
+    def test_missing_prices_db_page_renders_without_error(self):
+        from app import create_app
+        missing_db_path = str(Path(self.tmp.name) / "does_not_exist.db")
+        obs = [make_obs(f"E{i}", f"P{i}", "Kashtira", [("Tech Card", 1)],
+                         published_at="2026-09-08T00:00:00Z") for i in range(20)]
+        obs += [make_obs(f"EX{i}", f"PX{i}", "Kashtira", [("Filler", 1)] if i else [("Tech Card", 1)],
+                          published_at="2026-08-25T00:00:00Z") for i in range(20)]
+        self._write_dataset(obs)
+        app = create_app()
+        app.config["TESTING"] = True
+        client = app.test_client()
+        with unittest.mock.patch("app.routes.META_WATCH_DATASET_PATH", self.dataset_path), \
+             unittest.mock.patch("app.routes.build_meta_watch_report",
+                                  lambda dataset_path, _prices_path, **kw: build_meta_watch_report(
+                                      dataset_path, missing_db_path, as_of="2026-09-08T00:00:00Z")):
+            response = client.get("/meta-watch")
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn(b"Error loading Meta Watch", response.data)
+        self.assertIn(b"Price database unavailable", response.data)
+
 
 class ImporterTests(unittest.TestCase):
     def setUp(self):

@@ -469,8 +469,20 @@ def get_price_context(conn, product_id, flat_pct_threshold=DEFAULT_FLAT_PCT_THRE
 
 
 def attach_price_context(entries, prices_db_path):
-    """Resolve each ranked card entry's identity/printings and attach price context in place."""
+    """
+    Resolve each ranked card entry's identity/printings and attach price
+    context in place. If prices_db_path doesn't exist (e.g. a fresh
+    checkout before the snapshot restore step has run -- prices.db/
+    signals.db are gitignored, not committed), every entry is marked
+    unresolved with an explicit "price_db_unavailable" flag rather than
+    raising, so a missing local database can never crash report
+    generation or the page.
+    """
     if not entries:
+        return
+    if not os.path.exists(prices_db_path):
+        for entry in entries:
+            entry.update({"resolved": False, "printings": [], "price_db_unavailable": True})
         return
     conn = sqlite3.connect(f"file:{prices_db_path}?mode=ro", uri=True)
     try:
@@ -523,6 +535,7 @@ def build_meta_watch_report(dataset_path=DEFAULT_DATASET_PATH, prices_db_path="d
     report = {
         "target_format": target_format,
         "dataset_path": dataset_path,
+        "price_db_available": os.path.exists(prices_db_path),
         "window_days": window_days,
         "min_lists": min_lists,
         "min_events": min_events,

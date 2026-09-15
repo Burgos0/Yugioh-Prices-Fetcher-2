@@ -28,6 +28,15 @@
     </div>
     {% else %}
 
+    {% if not report.price_db_available %}
+    <div class="error-box">
+        <strong>Price database unavailable.</strong> data/prices.db was not found
+        (it's restored from a snapshot, not committed to the repo -- see
+        scripts/snapshot_storage.py). Adoption stats below are unaffected, but no
+        card can show price context until it's restored.
+    </div>
+    {% endif %}
+
     <div class="summary" style="margin-bottom: 16px;">
         <p>
             {{ report.total_raw_observations }} raw imported observations &middot;
@@ -95,7 +104,9 @@
                     <td>{{ card.distinct_events }}</td>
                     <td>{{ card.main_lists }}/{{ card.side_lists }}/{{ card.extra_lists }}</td>
                     <td>
-                        {% if card.resolved and card.price and card.price.has_price %}
+                        {% if card.price_db_unavailable %}
+                            price database unavailable
+                        {% elif card.resolved and card.price and card.price.has_price %}
                             ${{ "%.2f"|format(card.price.latest_price) }}
                             ({{ card.price.latest_date }}, {{ card.price.freshness_days }}d stale)
                             {% if card.price.verified_7d_history %}
@@ -147,7 +158,9 @@
                     <td>{{ card.distinct_events }}</td>
                     <td>{{ card.main_lists }}/{{ card.side_lists }}/{{ card.extra_lists }}</td>
                     <td>
-                        {% if card.resolved and card.price and card.price.has_price %}
+                        {% if card.price_db_unavailable %}
+                            price database unavailable
+                        {% elif card.resolved and card.price and card.price.has_price %}
                             ${{ "%.2f"|format(card.price.latest_price) }} ({{ card.price.freshness_days }}d stale)
                         {% else %}
                             no verified price history
