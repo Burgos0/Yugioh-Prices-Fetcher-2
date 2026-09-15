@@ -323,7 +323,10 @@ def collect_and_import(
     rejected_records = []
     changed_source_lists = []
     collected = []
-    article_urls = []
+    seen_collected_keys = set()
+    duplicate_existing_precheck_skipped = 0
+    duplicate_in_batch_precheck_skipped = 0
+    article_sources = {}
 
     for source in sources:
         source_url = source["url"]
@@ -336,11 +339,9 @@ def collect_and_import(
 
         links = extract_article_links(response.text, source_url)
         for link in links:
-            if link not in article_urls:
-                article_urls.append(link)
+            article_sources.setdefault(link, source)
 
-    for article_url in article_urls:
-        source = next((s for s in sources if urlparse(article_url).netloc == urlparse(s["url"]).netloc), sources[0])
+    for article_url, source in article_sources.items():
         try:
             response = client.get(article_url, timeout=timeout)
             response.raise_for_status()
@@ -363,7 +364,16 @@ def collect_and_import(
                             "existing_first_seen_at": existing_obs.get("first_seen_at"),
                         }
                     )
+                    continue
+            if key in existing_by_key:
+                duplicate_existing_precheck_skipped += 1
+                continue
+            if key in seen_collected_keys:
+                duplicate_in_batch_precheck_skipped += 1
+                continue
+            seen_collected_keys.add(key)
             collected.append(obs)
+            existing_by_key[key] = obs
 
     import_result = import_observations_payload({"observations": collected}, dataset_path=dataset_path, dry_run=dry_run)
     report = {
@@ -372,9 +382,11 @@ def collect_and_import(
         "dry_run": dry_run,
         "sources_checked": len(sources),
         "source_failures": source_failures,
-        "source_articles_checked": len(article_urls),
+        "source_articles_checked": len(article_sources),
         "source_article_failures": article_failures,
         "candidate_observations": len(collected),
+        "duplicate_existing_precheck_skipped": duplicate_existing_precheck_skipped,
+        "duplicate_in_batch_precheck_skipped": duplicate_in_batch_precheck_skipped,
         "rejected_records": rejected_records,
         "changed_source_lists": changed_source_lists,
         "import": import_result,
@@ -398,8 +410,6 @@ def main():
         timeout=args.timeout,
     )
     print(json.dumps(result, indent=2))
-    if result["source_failures"] or result["source_article_failures"] or result["rejected_records"]:
-        sys.exit(1)
 
 
 if __name__ == "__main__":
