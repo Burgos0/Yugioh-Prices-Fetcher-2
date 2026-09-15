@@ -32,6 +32,10 @@
                class="nav-btn {% if request.path == url_for('main.backtest_early_movers') %}active{% endif %}">
                 🧪 Backtest
             </a>
+            <a href="{{ url_for('main.meta_watch') }}"
+               class="nav-btn {% if request.path == url_for('main.meta_watch') %}active{% endif %}">
+                🔬 Meta Watch
+            </a>
         </nav>
     </header>
     

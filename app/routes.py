@@ -13,6 +13,7 @@ from app.analysis import (
     RELEASE_SCOPE_2007_ONWARD,
     VALID_RELEASE_SCOPES,
 )
+from app.meta_watch import build_meta_watch_report, DEFAULT_DATASET_PATH as META_WATCH_DATASET_PATH
 
 bp = Blueprint('main', __name__)
 
@@ -119,6 +120,15 @@ def backtest_early_movers():
     except Exception as e:
         error_msg = f"Error loading backtest results: {str(e)}"
         return render_template('backtest_early_movers.html', signals=[], summary=None, error=error_msg)
+
+@bp.route('/meta-watch')
+def meta_watch():
+    try:
+        report = build_meta_watch_report(META_WATCH_DATASET_PATH, 'data/prices.db')
+        return render_template('meta_watch.html', report=report)
+    except Exception as e:
+        error_msg = f"Error loading Meta Watch: {str(e)}"
+        return render_template('meta_watch.html', report=None, error=error_msg)
 
 @bp.route('/card/<int:product_id>')
 def card_detail(product_id):
