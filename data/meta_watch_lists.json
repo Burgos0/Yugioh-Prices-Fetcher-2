@@ -1,0 +1,1119 @@
+{
+  "observations": [
+    {
+      "archetype": "UNKNOWN",
+      "banlist_id": "UNKNOWN-2026-08",
+      "event_date": "2026-08-16",
+      "event_id": "2026-08-ycs-montreal-advanced",
+      "event_name": "YCS Montr\u00e9al Advanced Format Top 32 Deck Lists",
+      "extra_deck": [
+        {
+          "count": 1,
+          "name": "Ecclesia and the Dark Dragon"
+        },
+        {
+          "count": 1,
+          "name": "The Three Champions of Swordsoul"
+        },
+        {
+          "count": 1,
+          "name": "Storm-Bane Dragon Destorbim"
+        },
+        {
+          "count": 1,
+          "name": "Crystal Wing Synchro Dragon"
+        },
+        {
+          "count": 1,
+          "name": "Junora the Power Patron of Tuning"
+        },
+        {
+          "count": 1,
+          "name": "Ruddy Rose Dragon"
+        },
+        {
+          "count": 1,
+          "name": "Chaos Angel"
+        },
+        {
+          "count": 1,
+          "name": "Elfnote June Pride"
+        },
+        {
+          "count": 1,
+          "name": "Elfnote Seraphim Strelitzia"
+        },
+        {
+          "count": 1,
+          "name": "S:P Little Knight"
+        },
+        {
+          "count": 1,
+          "name": "F.A. Dawn Dragster"
+        },
+        {
+          "count": 1,
+          "name": "Golden Cloud Beast \u2013 Malong"
+        },
+        {
+          "count": 1,
+          "name": "Albion the Branded Dragon"
+        },
+        {
+          "count": 1,
+          "name": "Arcanite Magician"
+        },
+        {
+          "count": 1,
+          "name": "Despian Luluwalilith"
+        }
+      ],
+      "first_seen_at": "2026-09-15T21:42:08Z",
+      "format": "TCG_ADVANCED",
+      "main_deck": [
+        {
+          "count": 3,
+          "name": "Elfnote Lucina"
+        },
+        {
+          "count": 1,
+          "name": "Junoldo the Shadespirit Power Patron"
+        },
+        {
+          "count": 2,
+          "name": "Ghost Belle & Haunted Mansion"
+        },
+        {
+          "count": 3,
+          "name": "Mulcharmy Fuwalos"
+        },
+        {
+          "count": 2,
+          "name": "Medius the Pure"
+        },
+        {
+          "count": 1,
+          "name": "Bystial Magnamhut"
+        },
+        {
+          "count": 2,
+          "name": "Vidolium the Unstable Power Patron of Unity"
+        },
+        {
+          "count": 2,
+          "name": "Elfnote Power Patron"
+        },
+        {
+          "count": 1,
+          "name": "Dogmatika Ecclesia, the Virtuous"
+        },
+        {
+          "count": 3,
+          "name": "Elfnote Regina"
+        },
+        {
+          "count": 3,
+          "name": "Fydraulis Harmonia"
+        },
+        {
+          "count": 3,
+          "name": "Mulcharmy Purulia"
+        },
+        {
+          "count": 3,
+          "name": "Ash Blossom & Joyous Spring"
+        },
+        {
+          "count": 1,
+          "name": "Elfnote Fortuna"
+        },
+        {
+          "count": 3,
+          "name": "Elfnote Tinia"
+        },
+        {
+          "count": 1,
+          "name": "Elfnotes: Welcome Home"
+        },
+        {
+          "count": 3,
+          "name": "Prohibited Power Patron Portal \u2013 Terminus"
+        },
+        {
+          "count": 2,
+          "name": "The Fallen & The Virtuous"
+        },
+        {
+          "count": 1,
+          "name": "Elfnotes: Rhapsodia of Madness"
+        }
+      ],
+      "placement": "1",
+      "player": "Francisco Andres Osorio Bobadilla",
+      "published_at": "2026-08-16T00:00:00Z",
+      "region": "NA",
+      "side_deck": [
+        {
+          "count": 2,
+          "name": "Droll & Lock Bird"
+        },
+        {
+          "count": 1,
+          "name": "Called by the Grave"
+        },
+        {
+          "count": 3,
+          "name": "Pot of Sloth"
+        },
+        {
+          "count": 3,
+          "name": "Contact \"C\""
+        },
+        {
+          "count": 2,
+          "name": "Ghost Ogre & Snow Rabbit"
+        },
+        {
+          "count": 1,
+          "name": "Bystial Druiswurm"
+        },
+        {
+          "count": 1,
+          "name": "Ghost Belle & Haunted Mansion"
+        },
+        {
+          "count": 1,
+          "name": "Triple Tactics Talent"
+        },
+        {
+          "count": 1,
+          "name": "Solemn Judgment"
+        }
+      ],
+      "source_type": "tournament",
+      "source_url": "https://yugiohblog.konami.com/2026/ycs/2026-08-quebec/ycs-montreal-top-32-deck-lists/"
+    },
+    {
+      "archetype": "UNKNOWN",
+      "banlist_id": "UNKNOWN-2026-08",
+      "event_date": "2026-08-16",
+      "event_id": "2026-08-ycs-montreal-advanced",
+      "event_name": "YCS Montr\u00e9al Advanced Format Top 32 Deck Lists",
+      "extra_deck": [
+        {
+          "count": 1,
+          "name": "Kewl Tune B2B"
+        },
+        {
+          "count": 1,
+          "name": "Enigmaster Packbit"
+        },
+        {
+          "count": 1,
+          "name": "Kewl Tune Remix"
+        },
+        {
+          "count": 1,
+          "name": "Zalen the Shackled Dragon"
+        },
+        {
+          "count": 2,
+          "name": "Kewl Tune Loudness War"
+        },
+        {
+          "count": 1,
+          "name": "Super Starslayer TY-PHON \u2013 Sky Crisis"
+        },
+        {
+          "count": 1,
+          "name": "Golden Cloud Beast \u2013 Malong"
+        },
+        {
+          "count": 1,
+          "name": "Wind Pegasus @Ignister"
+        },
+        {
+          "count": 1,
+          "name": "Visas Amritara"
+        },
+        {
+          "count": 1,
+          "name": "Kewl Tune Crackle"
+        },
+        {
+          "count": 2,
+          "name": "Kewl Tune Track Maker"
+        },
+        {
+          "count": 2,
+          "name": "Kewl Tune RS"
+        }
+      ],
+      "first_seen_at": "2026-09-15T21:42:08Z",
+      "format": "TCG_ADVANCED",
+      "main_deck": [
+        {
+          "count": 3,
+          "name": "Fydraulis Harmonia"
+        },
+        {
+          "count": 1,
+          "name": "PSY-Framegear Gamma"
+        },
+        {
+          "count": 3,
+          "name": "Ash Blossom & Joyous Spring"
+        },
+        {
+          "count": 1,
+          "name": "Kewl Tune Clip"
+        },
+        {
+          "count": 1,
+          "name": "PSY-Frame Driver"
+        },
+        {
+          "count": 1,
+          "name": "PSY-Framegear Delta"
+        },
+        {
+          "count": 3,
+          "name": "Ghost Belle & Haunted Mansion"
+        },
+        {
+          "count": 3,
+          "name": "Kewl Tune Cue"
+        },
+        {
+          "count": 2,
+          "name": "Kewl Tune Mix"
+        },
+        {
+          "count": 3,
+          "name": "Kewl Tune Reco"
+        },
+        {
+          "count": 3,
+          "name": "Kewl Tune Rotary"
+        },
+        {
+          "count": 1,
+          "name": "Ghost Ogre & Snow Rabbit"
+        },
+        {
+          "count": 3,
+          "name": "Effect Veiler"
+        },
+        {
+          "count": 1,
+          "name": "Pot of Prosperity"
+        },
+        {
+          "count": 1,
+          "name": "Triple Tactics Talent"
+        },
+        {
+          "count": 2,
+          "name": "Duelist Genesis"
+        },
+        {
+          "count": 1,
+          "name": "JJ \"Kewl Tune\""
+        },
+        {
+          "count": 1,
+          "name": "Synchro Overtake"
+        },
+        {
+          "count": 3,
+          "name": "Kewl Tune Synchro"
+        },
+        {
+          "count": 3,
+          "name": "Infinite Impermanence"
+        }
+      ],
+      "placement": "2",
+      "player": "Julien Leo Kehon",
+      "published_at": "2026-08-16T00:00:00Z",
+      "region": "NA",
+      "side_deck": [
+        {
+          "count": 1,
+          "name": "Lightning Storm"
+        },
+        {
+          "count": 1,
+          "name": "Mannadium Reframing"
+        },
+        {
+          "count": 1,
+          "name": "Harpie's Feather Duster"
+        },
+        {
+          "count": 2,
+          "name": "Pot of Sloth"
+        },
+        {
+          "count": 3,
+          "name": "Mulcharmy Purulia"
+        },
+        {
+          "count": 2,
+          "name": "Droll & Lock Bird"
+        },
+        {
+          "count": 3,
+          "name": "Mulcharmy Fuwalos"
+        },
+        {
+          "count": 1,
+          "name": "Kewl Tune Playlist"
+        },
+        {
+          "count": 1,
+          "name": "Called by the Grave"
+        }
+      ],
+      "source_type": "tournament",
+      "source_url": "https://yugiohblog.konami.com/2026/ycs/2026-08-quebec/ycs-montreal-top-32-deck-lists/"
+    },
+    {
+      "archetype": "UNKNOWN",
+      "banlist_id": "UNKNOWN-2026-07",
+      "event_date": "2026-07-12",
+      "event_id": "2026-07-north-america-wcq",
+      "event_name": "North America WCQ Top 32 Deck Lists",
+      "extra_deck": [
+        {
+          "count": 1,
+          "name": "S:P Little Knight"
+        },
+        {
+          "count": 3,
+          "name": "Sky Striker Ace = Zero"
+        },
+        {
+          "count": 1,
+          "name": "Sky Striker Ace \u2013 Shizuku"
+        },
+        {
+          "count": 1,
+          "name": "Sky Striker Ace \u2013 Camellia"
+        },
+        {
+          "count": 1,
+          "name": "Sky Striker Ace \u2013 Azalea"
+        },
+        {
+          "count": 1,
+          "name": "Albion the Branded Dragon"
+        },
+        {
+          "count": 1,
+          "name": "Sky Striker Ace \u2013 Hayate"
+        },
+        {
+          "count": 1,
+          "name": "Prototype Sky Striker Ace \u2013 Amatsu"
+        },
+        {
+          "count": 1,
+          "name": "Sky Striker Ace \u2013 Zeke"
+        },
+        {
+          "count": 1,
+          "name": "Ecclesia and the Dark Dragon"
+        },
+        {
+          "count": 3,
+          "name": "Sky Striker Ace \u2013 Kagari"
+        }
+      ],
+      "first_seen_at": "2026-09-15T21:42:08Z",
+      "format": "TCG_ADVANCED",
+      "main_deck": [
+        {
+          "count": 2,
+          "name": "Ghost Ogre & Snow Rabbit"
+        },
+        {
+          "count": 2,
+          "name": "Sky Striker Ace \u2013 Roze"
+        },
+        {
+          "count": 1,
+          "name": "Ghost Belle & Haunted Mansion"
+        },
+        {
+          "count": 2,
+          "name": "Droll & Lock Bird"
+        },
+        {
+          "count": 3,
+          "name": "Sky Striker Ace \u2013 Raye"
+        },
+        {
+          "count": 3,
+          "name": "Ash Blossom & Joyous Spring"
+        },
+        {
+          "count": 2,
+          "name": "Sky Striker Special Maneuver \u2013 Lemnisgate!"
+        },
+        {
+          "count": 2,
+          "name": "Forbidden Crown"
+        },
+        {
+          "count": 3,
+          "name": "Pot of Desires"
+        },
+        {
+          "count": 1,
+          "name": "Triple Tactics Talent"
+        },
+        {
+          "count": 3,
+          "name": "Sky Striker Mobilize \u2013 Linkage!"
+        },
+        {
+          "count": 3,
+          "name": "The Fallen & The Virtuous"
+        },
+        {
+          "count": 1,
+          "name": "Mystical Space Typhoon"
+        },
+        {
+          "count": 3,
+          "name": "Sky Striker Mecha \u2013 Widow Anchor"
+        },
+        {
+          "count": 1,
+          "name": "Reinforcement of the Army"
+        },
+        {
+          "count": 1,
+          "name": "Sky Striker Mecha \u2013 Shark Cannon"
+        },
+        {
+          "count": 3,
+          "name": "Sky Striker Mobilize \u2013 Engage!"
+        },
+        {
+          "count": 3,
+          "name": "Radiant Typhoon Vision"
+        },
+        {
+          "count": 1,
+          "name": "Called by the Grave"
+        }
+      ],
+      "placement": "1",
+      "player": "Ryan Linus ON Yu",
+      "published_at": "2026-07-12T00:00:00Z",
+      "region": "NA",
+      "side_deck": [
+        {
+          "count": 3,
+          "name": "Solemn Accusation"
+        },
+        {
+          "count": 3,
+          "name": "Mulcharmy Fuwalos"
+        },
+        {
+          "count": 1,
+          "name": "Solemn Judgment"
+        },
+        {
+          "count": 3,
+          "name": "Evenly Matched"
+        },
+        {
+          "count": 3,
+          "name": "Pot of Sloth"
+        },
+        {
+          "count": 2,
+          "name": "The Winged Dragon of Ra \u2013 Sphere Mode"
+        }
+      ],
+      "source_type": "tournament",
+      "source_url": "https://yugiohblog.konami.com/2026/championships/north-america-wcq-top-32-deck-lists/"
+    },
+    {
+      "archetype": "UNKNOWN",
+      "banlist_id": "UNKNOWN-2026-07",
+      "event_date": "2026-07-12",
+      "event_id": "2026-07-north-america-wcq",
+      "event_name": "North America WCQ Top 32 Deck Lists",
+      "extra_deck": [
+        {
+          "count": 2,
+          "name": "Kewl Tune Track Maker"
+        },
+        {
+          "count": 1,
+          "name": "Golden Cloud Beast \u2013 Malong"
+        },
+        {
+          "count": 1,
+          "name": "Super Starslayer TY-PHON \u2013 Sky Crisis"
+        },
+        {
+          "count": 1,
+          "name": "Wind Pegasus @Ignister"
+        },
+        {
+          "count": 1,
+          "name": "Kewl Tune Loudness War"
+        },
+        {
+          "count": 1,
+          "name": "Visas Amritara"
+        },
+        {
+          "count": 2,
+          "name": "Kewl Tune RS"
+        },
+        {
+          "count": 1,
+          "name": "Kewl Tune Remix"
+        },
+        {
+          "count": 1,
+          "name": "Kewl Tune B2B"
+        },
+        {
+          "count": 1,
+          "name": "Zalen the Shackled Dragon"
+        },
+        {
+          "count": 1,
+          "name": "Kewl Tune Crackle"
+        },
+        {
+          "count": 1,
+          "name": "Deep Sea Prima Donna"
+        },
+        {
+          "count": 1,
+          "name": "Mannadium Trisukta"
+        }
+      ],
+      "first_seen_at": "2026-09-15T21:42:08Z",
+      "format": "TCG_ADVANCED",
+      "main_deck": [
+        {
+          "count": 3,
+          "name": "Kewl Tune Reco"
+        },
+        {
+          "count": 1,
+          "name": "PSY-Framegear Gamma"
+        },
+        {
+          "count": 3,
+          "name": "Kewl Tune Rotary"
+        },
+        {
+          "count": 1,
+          "name": "Kewl Tune Clip"
+        },
+        {
+          "count": 3,
+          "name": "Kewl Tune Cue"
+        },
+        {
+          "count": 1,
+          "name": "Ghost Ogre & Snow Rabbit"
+        },
+        {
+          "count": 3,
+          "name": "Fydraulis Harmonia"
+        },
+        {
+          "count": 3,
+          "name": "Ash Blossom & Joyous Spring"
+        },
+        {
+          "count": 3,
+          "name": "Effect Veiler"
+        },
+        {
+          "count": 1,
+          "name": "PSY-Framegear Delta"
+        },
+        {
+          "count": 3,
+          "name": "Ghost Belle & Haunted Mansion"
+        },
+        {
+          "count": 1,
+          "name": "PSY-Frame Driver"
+        },
+        {
+          "count": 2,
+          "name": "Kewl Tune Mix"
+        },
+        {
+          "count": 3,
+          "name": "Kewl Tune Synchro"
+        },
+        {
+          "count": 1,
+          "name": "Synchro Overtake"
+        },
+        {
+          "count": 1,
+          "name": "JJ \"Kewl Tune\""
+        },
+        {
+          "count": 1,
+          "name": "Duelist Genesis"
+        },
+        {
+          "count": 2,
+          "name": "Pot of Desires"
+        },
+        {
+          "count": 2,
+          "name": "Dominus Purge"
+        },
+        {
+          "count": 3,
+          "name": "Infinite Impermanence"
+        }
+      ],
+      "placement": "2",
+      "player": "Charley Ray Futch III",
+      "published_at": "2026-07-12T00:00:00Z",
+      "region": "NA",
+      "side_deck": [
+        {
+          "count": 1,
+          "name": "Solemn Judgment"
+        },
+        {
+          "count": 1,
+          "name": "Mannadium Reframing"
+        },
+        {
+          "count": 1,
+          "name": "Ghost Ogre & Snow Rabbit"
+        },
+        {
+          "count": 1,
+          "name": "Called by the Grave"
+        },
+        {
+          "count": 2,
+          "name": "Lightning Storm"
+        },
+        {
+          "count": 2,
+          "name": "Droll & Lock Bird"
+        },
+        {
+          "count": 1,
+          "name": "Solemn Warning"
+        },
+        {
+          "count": 3,
+          "name": "Mulcharmy Fuwalos"
+        },
+        {
+          "count": 1,
+          "name": "Harpie's Feather Duster"
+        },
+        {
+          "count": 2,
+          "name": "Retaliating \"C\""
+        }
+      ],
+      "source_type": "tournament",
+      "source_url": "https://yugiohblog.konami.com/2026/championships/north-america-wcq-top-32-deck-lists/"
+    },
+    {
+      "archetype": "UNKNOWN",
+      "banlist_id": "UNKNOWN-2026-02",
+      "event_date": "2026-02-15",
+      "event_id": "2026-02-300th-ycs-virginia-advanced",
+      "event_name": "300th YCS in Virginia Top 32 Deck Lists \u2013 Advanced Format",
+      "extra_deck": [
+        {
+          "count": 1,
+          "name": "S:P Little Knight"
+        },
+        {
+          "count": 1,
+          "name": "Mementotlan Twin Dragon"
+        },
+        {
+          "count": 1,
+          "name": "Sky Striker Ace \u2013 Azalea"
+        },
+        {
+          "count": 1,
+          "name": "Cross-Sheep"
+        },
+        {
+          "count": 1,
+          "name": "Guardian Chimera"
+        },
+        {
+          "count": 1,
+          "name": "Geonator Transverser"
+        },
+        {
+          "count": 2,
+          "name": "I:P Masquerena"
+        },
+        {
+          "count": 3,
+          "name": "Mementomictlan Tecuhtlica \u2013 Creation King"
+        },
+        {
+          "count": 1,
+          "name": "Artemis, the Magistus Moon Maiden"
+        },
+        {
+          "count": 1,
+          "name": "Zoroa, the Magistus Verethragna"
+        },
+        {
+          "count": 1,
+          "name": "Proxy F Magician"
+        },
+        {
+          "count": 1,
+          "name": "Goblin Biker Big Gabonga"
+        }
+      ],
+      "first_seen_at": "2026-09-15T21:42:08Z",
+      "format": "TCG_ADVANCED",
+      "main_deck": [
+        {
+          "count": 1,
+          "name": "Mementoal Tecuhtlica \u2013 Combined Creation"
+        },
+        {
+          "count": 1,
+          "name": "Mementotlan Ghattic"
+        },
+        {
+          "count": 3,
+          "name": "Mulcharmy Fuwalos"
+        },
+        {
+          "count": 2,
+          "name": "Mementotlan Goblin"
+        },
+        {
+          "count": 1,
+          "name": "Radiant Typhoon Swen"
+        },
+        {
+          "count": 1,
+          "name": "Mementotlan Mace"
+        },
+        {
+          "count": 3,
+          "name": "Mementotlan Angwitch"
+        },
+        {
+          "count": 1,
+          "name": "Goblin Biker Dugg Charger"
+        },
+        {
+          "count": 1,
+          "name": "Mementotlan Akihiron"
+        },
+        {
+          "count": 1,
+          "name": "Mementotlan Dark Blade"
+        },
+        {
+          "count": 1,
+          "name": "Mementotlan-Horned Dragon"
+        },
+        {
+          "count": 3,
+          "name": "Mementotlan Tatsunootoshigo"
+        },
+        {
+          "count": 3,
+          "name": "Ash Blossom & Joyous Spring"
+        },
+        {
+          "count": 1,
+          "name": "Radiant Typhoon Eldam"
+        },
+        {
+          "count": 2,
+          "name": "Mementotlan Shleepy"
+        },
+        {
+          "count": 1,
+          "name": "Goblin Biker Grand Entrance"
+        },
+        {
+          "count": 3,
+          "name": "Mementotlan Fusion"
+        },
+        {
+          "count": 1,
+          "name": "Goblin Biker Grand Breakout"
+        },
+        {
+          "count": 2,
+          "name": "Radiant Typhoon Vision"
+        },
+        {
+          "count": 3,
+          "name": "Radiant Typhoon Chant"
+        },
+        {
+          "count": 2,
+          "name": "Mementotlan Bone Party"
+        },
+        {
+          "count": 2,
+          "name": "Mystical Space Typhoon"
+        },
+        {
+          "count": 1,
+          "name": "Mementomictlan"
+        }
+      ],
+      "placement": "3",
+      "player": "Steven John Logan",
+      "published_at": "2026-02-15T00:00:00Z",
+      "region": "NA",
+      "side_deck": [
+        {
+          "count": 3,
+          "name": "Lightning Storm"
+        },
+        {
+          "count": 1,
+          "name": "Mementotlan Bone Party"
+        },
+        {
+          "count": 3,
+          "name": "Forbidden Droplet"
+        },
+        {
+          "count": 1,
+          "name": "Called by the Grave"
+        },
+        {
+          "count": 3,
+          "name": "Mulcharmy Purulia"
+        },
+        {
+          "count": 3,
+          "name": "Forbidden Crown"
+        },
+        {
+          "count": 1,
+          "name": "Harpie's Feather Duster"
+        }
+      ],
+      "source_type": "tournament",
+      "source_url": "https://yugiohblog.konami.com/2026/ycs/2026-02-300th-na/300th-ycs-in-virginia-top-32-deck-lists-advanced-format/"
+    },
+    {
+      "archetype": "UNKNOWN",
+      "banlist_id": "UNKNOWN-2026-02",
+      "event_date": "2026-02-15",
+      "event_id": "2026-02-300th-ycs-virginia-advanced",
+      "event_name": "300th YCS in Virginia Top 32 Deck Lists \u2013 Advanced Format",
+      "extra_deck": [
+        {
+          "count": 1,
+          "name": "Albion the Sanctifire Dragon"
+        },
+        {
+          "count": 1,
+          "name": "Mirrorjade the Iceblade Dragon"
+        },
+        {
+          "count": 1,
+          "name": "Ecclesia and the Dark Dragon"
+        },
+        {
+          "count": 3,
+          "name": "Dracotail Arthalion"
+        },
+        {
+          "count": 1,
+          "name": "S:P Little Knight"
+        },
+        {
+          "count": 1,
+          "name": "Albion the Branded Dragon"
+        },
+        {
+          "count": 1,
+          "name": "Dracotail Gulamel"
+        },
+        {
+          "count": 1,
+          "name": "Alba-Lenatus the Abyss Dragon"
+        },
+        {
+          "count": 1,
+          "name": "Titaniklad the Ash Dragon"
+        },
+        {
+          "count": 1,
+          "name": "Secreterion Dragon"
+        },
+        {
+          "count": 1,
+          "name": "Dracotail Shaulas"
+        },
+        {
+          "count": 1,
+          "name": "The Dragon that Devours the Dogma"
+        },
+        {
+          "count": 1,
+          "name": "Khaos Starsource Dragon"
+        }
+      ],
+      "first_seen_at": "2026-09-15T21:42:08Z",
+      "format": "TCG_ADVANCED",
+      "main_deck": [
+        {
+          "count": 3,
+          "name": "Mulcharmy Purulia"
+        },
+        {
+          "count": 3,
+          "name": "Mulcharmy Fuwalos"
+        },
+        {
+          "count": 2,
+          "name": "Fallen of the White Dragon"
+        },
+        {
+          "count": 1,
+          "name": "Dracotail Phryxul"
+        },
+        {
+          "count": 1,
+          "name": "Dracotail Mululu"
+        },
+        {
+          "count": 3,
+          "name": "Dracotail Lukias"
+        },
+        {
+          "count": 1,
+          "name": "Incredible Ecclesia, the Virtuous"
+        },
+        {
+          "count": 2,
+          "name": "Ghost Belle & Haunted Mansion"
+        },
+        {
+          "count": 2,
+          "name": "Dracotail Urgula"
+        },
+        {
+          "count": 2,
+          "name": "Ghost Mourner & Moonlit Chill"
+        },
+        {
+          "count": 3,
+          "name": "Ash Blossom & Joyous Spring"
+        },
+        {
+          "count": 1,
+          "name": "Fallen of Albaz"
+        },
+        {
+          "count": 1,
+          "name": "Dracotail Pan"
+        },
+        {
+          "count": 1,
+          "name": "Blazing Cartesia, the Virtuous"
+        },
+        {
+          "count": 3,
+          "name": "Dracotail Faimena"
+        },
+        {
+          "count": 1,
+          "name": "Ketu Dracotail"
+        },
+        {
+          "count": 3,
+          "name": "Rahu Dracotail"
+        },
+        {
+          "count": 2,
+          "name": "Branded Fusion"
+        },
+        {
+          "count": 2,
+          "name": "The Fallen & The Virtuous"
+        },
+        {
+          "count": 1,
+          "name": "Dracotail Sting"
+        },
+        {
+          "count": 1,
+          "name": "Dracotail Horn"
+        },
+        {
+          "count": 1,
+          "name": "Dracotail Flame"
+        }
+      ],
+      "placement": "4",
+      "player": "Steven Patrick Gleason",
+      "published_at": "2026-02-15T00:00:00Z",
+      "region": "NA",
+      "side_deck": [
+        {
+          "count": 2,
+          "name": "Dragon's Mind"
+        },
+        {
+          "count": 3,
+          "name": "Forbidden Droplet"
+        },
+        {
+          "count": 2,
+          "name": "Droll & Lock Bird"
+        },
+        {
+          "count": 3,
+          "name": "Mistaken Arrest"
+        },
+        {
+          "count": 3,
+          "name": "Dinowrestler Pankratops"
+        },
+        {
+          "count": 1,
+          "name": "Solemn Judgment"
+        },
+        {
+          "count": 1,
+          "name": "Called by the Grave"
+        }
+      ],
+      "source_type": "tournament",
+      "source_url": "https://yugiohblog.konami.com/2026/ycs/2026-02-300th-na/300th-ycs-in-virginia-top-32-deck-lists-advanced-format/"
+    }
+  ],
+  "schema_version": 1
+}

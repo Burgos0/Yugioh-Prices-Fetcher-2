@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Meta Watch{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="scope-badge" style="margin-bottom: 12px; font-size: 0.9em; color: #555;">
+        <strong>Research only -- not a price prediction or a buy recommendation.</strong>
+        These are "published-list adoption" statistics: the share of imported, deduplicated
+        <em>{{ report.target_format if report else '' }}</em> tournament decklists (from
+        publicly published coverage) containing a card, compared against its recently
+        tracked price. Adoption growth does not imply future price movement, and a flat
+        recent price does not imply a card is undervalued.
+    </div>
+
+    {% if error %}
+    <div class="error-box"><strong>Error:</strong> {{ error }}</div>
+    {% endif %}
+
+    {% if not report %}
+    <div class="no-data"><p>Meta Watch data could not be loaded.</p></div>
+    {% elif report.total_raw_observations == 0 %}
+    <div class="no-data">
+        <p><strong>No tournament decklist observations imported yet.</strong>
+        Meta Watch ships with an empty dataset ({{ report.dataset_path }}) and a validated
+        JSON importer (<code>scripts/import_meta_watch_lists.py</code>) rather than any
+        invented or placeholder decklists. Import a sourced batch to populate this page.</p>
+    </div>
+    {% else %}
+
+    {% if not report.price_db_available %}
+    <div class="error-box">
+        <strong>Price database unavailable.</strong> data/prices.db was not found
+        (it's restored from a snapshot, not committed to the repo -- see
+        scripts/snapshot_storage.py). Adoption stats below are unaffected, but no
+        card can show price context until it's restored.
+    </div>
+    {% endif %}
+
+    <div class="summary" style="margin-bottom: 16px;">
+        <p>
+            {{ report.total_raw_observations }} raw imported observations &middot;
+            {{ report.casual_excluded }} casual (non-tournament) excluded &middot;
+            {{ report.duplicate_observations_skipped }} duplicate player/event lists skipped &middot;
+            {{ report.other_format_excluded }} excluded (different format, tracked separately) &middot;
+            flat-price threshold: &plusmn;{{ report.flat_pct_threshold }}% (experimental, configurable) &middot;
+            windows: {{ report.window_days }} days &middot;
+            minimum sample: {{ report.min_lists }} lists / {{ report.min_events }} events per window
+        </p>
+    </div>
+
+    {% if not report.banlists %}
+    <div class="no-data">
+        <p>No {{ report.target_format }} observations with a known publication or first-seen
+        time were found, so no adoption window could be computed.</p>
+    </div>
+    {% endif %}
+
+    {% for bl in report.banlists %}
+    <div class="table-wrapper" style="margin-bottom: 32px;">
+        <h2>Banlist: {{ bl.banlist_id or 'unknown' }}</h2>
+        <p style="font-size: 0.85em; color: #666;">
+            As of {{ bl.as_of }} &middot;
+            Recent window: {{ bl.recent_window_start }} &rarr; {{ bl.as_of }}
+            ({{ bl.recent_total_lists }} lists / {{ bl.recent_total_events }} events) &middot;
+            Prior window: {{ bl.prior_window_start }} &rarr; {{ bl.recent_window_start }}
+            ({{ bl.prior_total_lists }} lists / {{ bl.prior_total_events }} events)
+        </p>
+
+        {% if bl.insufficient_data %}
+        <div class="no-data">
+            <p><strong>Insufficient data.</strong> {{ bl.reason }}. Thresholds are
+            provisional/configurable ({{ bl.min_lists }} lists, {{ bl.min_events }} events per window).</p>
+        </div>
+        {% else %}
+
+        <table class="gainers-table">
+            <thead>
+                <tr>
+                    <th>Card</th>
+                    <th>Adoption (recent)</th>
+                    <th>Adoption (prior)</th>
+                    <th>Change (pp)</th>
+                    <th>Avg copies</th>
+                    <th>Events</th>
+                    <th>Main/Side/Extra lists</th>
+                    <th>Price context</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for card in bl.cards %}
+                <tr>
+                    <td class="card-name">
+                        {% if card.resolved and card.primary_product_id %}
+                        <a href="{{ url_for('main.card_detail', product_id=card.primary_product_id) }}">{{ card.card_name }}</a>
+                        {% else %}
+                        {{ card.card_name }} <span title="No matching price-tracked printing found">(unresolved)</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ card.recent_lists }}/{{ card.recent_total_lists }} ({{ "%.1f"|format(card.recent_adoption_pct) }}%)</td>
+                    <td>{{ card.prior_lists }}/{{ card.prior_total_lists }} ({{ "%.1f"|format(card.prior_adoption_pct) }}%)</td>
+                    <td>{{ "%+.1f"|format(card.pct_point_change) }}</td>
+                    <td>{{ "%.2f"|format(card.avg_copies) if card.avg_copies is not none else "-" }}</td>
+                    <td>{{ card.distinct_events }}</td>
+                    <td>{{ card.main_lists }}/{{ card.side_lists }}/{{ card.extra_lists }}</td>
+                    <td>
+                        {% if card.price_db_unavailable %}
+                            price database unavailable
+                        {% elif card.resolved and card.price and card.price.has_price %}
+                            ${{ "%.2f"|format(card.price.latest_price) }}
+                            ({{ card.price.latest_date }}, {{ card.price.freshness_days }}d stale)
+                            {% if card.price.verified_7d_history %}
+                                &middot; 7d: {{ "%+.1f"|format(card.price.change_7d_pct) }}%
+                                {% if card.price.is_flat %}<strong>(flat)</strong>{% endif %}
+                            {% else %}
+                                &middot; 7d change unverified
+                            {% endif %}
+                        {% else %}
+                            no verified price history
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="8">No established-baseline cards to rank in this window.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% if bl.new_cards %}
+        <h3>Newly observed cards (not seen in the prior window)</h3>
+        <p style="font-size: 0.85em; color: #666;">
+            Shown separately -- there is no prior-window baseline, so no percentage-point
+            change is calculated for these.
+        </p>
+        <table class="gainers-table">
+            <thead>
+                <tr>
+                    <th>Card</th>
+                    <th>Adoption (recent)</th>
+                    <th>Avg copies</th>
+                    <th>Events</th>
+                    <th>Main/Side/Extra lists</th>
+                    <th>Price context</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for card in bl.new_cards %}
+                <tr>
+                    <td class="card-name">
+                        {% if card.resolved and card.primary_product_id %}
+                        <a href="{{ url_for('main.card_detail', product_id=card.primary_product_id) }}">{{ card.card_name }}</a>
+                        {% else %}
+                        {{ card.card_name }} (unresolved)
+                        {% endif %}
+                    </td>
+                    <td>{{ card.recent_lists }}/{{ card.recent_total_lists }} ({{ "%.1f"|format(card.recent_adoption_pct) }}%)</td>
+                    <td>{{ "%.2f"|format(card.avg_copies) if card.avg_copies is not none else "-" }}</td>
+                    <td>{{ card.distinct_events }}</td>
+                    <td>{{ card.main_lists }}/{{ card.side_lists }}/{{ card.extra_lists }}</td>
+                    <td>
+                        {% if card.price_db_unavailable %}
+                            price database unavailable
+                        {% elif card.resolved and card.price and card.price.has_price %}
+                            ${{ "%.2f"|format(card.price.latest_price) }} ({{ card.price.freshness_days }}d stale)
+                        {% else %}
+                            no verified price history
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% endif %}
+    </div>
+    {% endfor %}
+
+    {% endif %}
+</div>
+{% endblock %}
