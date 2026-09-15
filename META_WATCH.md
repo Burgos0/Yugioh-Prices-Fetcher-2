@@ -129,6 +129,23 @@ collects/parses decklists, validates/imports observations, writes
 source failures, and changed-source flags), and opens/updates an automated
 data-update PR instead of pushing directly to `main`.
 
+## TopDeck coverage check (pre-integration gate)
+
+Before any production integration with a TopDeck source, run the manual
+coverage check workflow `.github/workflows/topdeck_coverage_check.yml`.
+It uses the `TOPDECK_API_KEY` secret, performs a **read-only** query for
+`game="Yu-Gi-Oh"` and `format="Advanced"` over the last 90 days, and
+uploads a sanitized artifact report (no secrets, no production dataset
+writes) with:
+
+- events found (dates + participant counts where present)
+- player decklist completeness split (complete Main/Side/Extra vs external
+  links vs missing/incomplete)
+- paper TCG Advanced distinction assessment
+- explicit publication timestamp availability (never substituted from event
+  date)
+- coverage windows for the last 14/30/90 days
+
 ## Remaining limitations
 
 - Only 6 lists have been imported (well below the unchanged minimum-sample
