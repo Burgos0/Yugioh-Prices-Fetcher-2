@@ -1,0 +1,46 @@
+name: topdeck coverage check
+
+on:
+  workflow_dispatch:
+  # One-shot trigger so the coverage check can produce a live run from a
+  # coverage-only branch without waiting to merge into the default branch.
+  # Scoped to this branch and to the coverage files only.
+  push:
+    branches:
+      - copilot/get-topdeck-coverage-results
+    paths:
+      - .github/workflows/topdeck_coverage_check.yml
+      - scripts/check_topdeck_coverage.py
+      - tests/test_topdeck_coverage.py
+
+permissions:
+  contents: read
+
+jobs:
+  coverage-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: install python packages
+        run: |
+          pip install -r requirements.txt
+
+      - name: run topdeck coverage check
+        env:
+          TOPDECK_API_KEY: ${{ secrets.TOPDECK_API_KEY }}
+        run: |
+          python -m scripts.check_topdeck_coverage \
+            --lookback-days 90 \
+            --output "${{ runner.temp }}/topdeck_coverage_report.json"
+
+      - name: upload sanitized coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: topdeck-coverage-report
+          path: ${{ runner.temp }}/topdeck_coverage_report.json
+          if-no-files-found: error
