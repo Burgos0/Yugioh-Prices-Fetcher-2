@@ -9,24 +9,14 @@ production database snapshot pipeline in any way.
 
 ## Data source
 
-Automated (unattended, non-interactive) retrieval of official Konami TCG
-tournament decklist coverage was investigated for this feature. The
-official Konami blog (`yugiohblog.konami.com`) *does* publish structured
-"Top N Deck Lists" articles per event, but:
+Meta Watch now includes an unattended collector that starts from official
+Konami blog index pages and follows decklist article links:
 
-- In this sandboxed environment, HTTPS requests to `yugiohblog.konami.com`
-  fail TLS verification (`curl: (60) SSL certificate problem: unable to
-  get local issuer certificate`) with the container's default CA trust
-  store. Read-only research fetches during manual investigation used
-  `curl -k` to work around this locally; production/unattended import does
-  **not** do this (see "Remaining limitations" below).
-- There is still no documented, stable JSON/API endpoint for decklists
-  (unlike TCGCSV's price API already used elsewhere in this app) -- only
-  HTML articles meant for human reading.
+- https://yugiohblog.konami.com/category/ycs/
+- https://yugiohblog.konami.com/category/championships/
 
-Given that, this feature ships with a **validated JSON importer** (manual
-transcription is explicitly permitted for the first sample) rather than a
-live scraper, per the task's own fallback instructions.
+Collection fetches only over HTTPS with normal certificate verification
+(`requests` defaults); TLS verification is never disabled.
 
 ## Sourced sample (imported)
 
@@ -130,7 +120,31 @@ full JSON schema. Usage:
 ```bash
 python -m scripts.import_meta_watch_lists path/to/sourced_batch.json
 python -m scripts.import_meta_watch_lists path/to/sourced_batch.json --dry-run
+python -m scripts.collect_meta_watch_lists --dry-run
 ```
+
+Automated scheduling is in `.github/workflows/meta_watch_daily.yml`. It
+collects/parses decklists, validates/imports observations, writes
+`data/meta_watch_collection_report.json` (import counts, rejected records,
+source failures, and changed-source flags), and opens/updates an automated
+data-update PR instead of pushing directly to `main`.
+
+## TopDeck coverage check (pre-integration gate)
+
+Before any production integration with a TopDeck source, run the manual
+coverage check workflow `.github/workflows/topdeck_coverage_check.yml`.
+It uses the `TOPDECK_API_KEY` secret, performs a **read-only** query for
+`game="Yu-Gi-Oh"` and `format="Advanced"` over the last 90 days, and
+uploads a sanitized artifact report (no secrets, no production dataset
+writes) with:
+
+- events found (dates + participant counts where present)
+- player decklist completeness split (complete Main/Side/Extra vs external
+  links vs missing/incomplete)
+- paper TCG Advanced distinction assessment
+- explicit publication timestamp availability (never substituted from event
+  date)
+- coverage windows for the last 14/30/90 days
 
 ## Remaining limitations
 
@@ -139,12 +153,9 @@ python -m scripts.import_meta_watch_lists path/to/sourced_batch.json --dry-run
   reports "insufficient data" for all three banlist buckets -- this sample
   demonstrates the ingestion pipeline end-to-end, not a reliable adoption
   trend.
-- The importer used for this sample was run manually against `curl -k`
-  -fetched pages (see "Data source" above); an unattended/scheduled
-  importer would need either a real CA bundle update for
-  `yugiohblog.konami.com` or a different fetch path -- this repo does not
-  currently automate that fetch at all, by design (manual transcription
-  only, per the task).
+- Source pages are HTML intended for human reading (no stable decklist API),
+  so parser assumptions may need maintenance if Konami changes page
+  structure; parse failures are reported and never erase existing data.
 - archetype and banlist_id are recorded as explicit "UNKNOWN"/"UNKNOWN-*"
   for this sample; if a future source clearly labels these, real values
   should be used instead.
