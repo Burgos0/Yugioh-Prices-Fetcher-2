@@ -30,6 +30,25 @@ POPULATION_MASTER_DUEL = "MASTER_DUEL"
 POPULATION_RUSH_DUEL = "RUSH_DUEL"
 POPULATION_GENESYS = "GENESYS"
 POPULATION_OTHER = "OTHER"
+
+# Multiple observed field-name variants used by getDecks.php over time. The
+# probe tries each in order and uses the first one that yields a usable value.
+# We never fall back to a *value* — only to an alternate key that carries the
+# same semantic field. A missing/absent field stays MISSING; an unparseable
+# value stays FAIL.
+DECK_ID_KEYS = ("deckID", "deck_id", "id")
+EVENT_DATE_KEYS = (
+    "submit_date",
+    "date_submitted",
+    "dateSubmitted",
+    "date_created",
+    "dateCreated",
+    "created",
+    "date",
+    "updated",
+)
+PRETTY_URL_KEYS = ("pretty_url", "prettyURL", "url_slug", "slug")
+
 _POPULATION_KEYWORDS = (
     (POPULATION_MASTER_DUEL, ("master duel",)),
     (POPULATION_RUSH_DUEL, ("rush duel",)),
@@ -218,10 +237,10 @@ def build_coverage_report(rows, now=None):
             continue
 
         event_name = _safe_str(row.get("tournamentName")) or "UNKNOWN_EVENT"
-        event_date = _parse_event_date(row.get("submit_date"))
+        event_date, raw_event_date, _date_key, _parse_ok = _extract_event_date(row)
         event_key = (
             event_name.lower(),
-            event_date.strftime("%Y-%m-%d") if event_date else _safe_str(row.get("submit_date")),
+            event_date.strftime("%Y-%m-%d") if event_date else (raw_event_date or ""),
         )
         if event_key not in by_event:
             by_event[event_key] = {
@@ -250,10 +269,12 @@ def build_coverage_report(rows, now=None):
             if entry["participant_count_max"] is None or participant_count > entry["participant_count_max"]:
                 entry["participant_count_max"] = participant_count
 
-        if row.get("pretty_url") and len(entry["sample_deck_urls"]) < 3:
-            entry["sample_deck_urls"].append(f"https://ygoprodeck.com/deck/{row['pretty_url']}")
+        deck_url = _extract_deck_url(row)
+        if deck_url and len(entry["sample_deck_urls"]) < 3:
+            entry["sample_deck_urls"].append(deck_url)
 
-        quality = _publication_timestamp_quality(row.get("submit_date"))
+        raw_pub, _pub_key = _extract_event_date_raw(row)
+        quality = _publication_timestamp_quality(raw_pub)
         timestamp_quality_counts[quality["quality"]] += 1
 
     events = []
@@ -320,9 +341,11 @@ def write_report(path, report):
 
 
 def _extract_deck_id(record):
-    for key in ("deck_id", "id"):
+    if not isinstance(record, dict):
+        return None
+    for key in DECK_ID_KEYS:
         value = record.get(key)
-        if isinstance(value, int):
+        if isinstance(value, int) and not isinstance(value, bool):
             return value
         if isinstance(value, str) and value.strip().isdigit():
             return int(value.strip())
@@ -330,13 +353,38 @@ def _extract_deck_id(record):
 
 
 def _extract_deck_url(record):
-    pretty = _safe_str(record.get("pretty_url"))
-    if pretty:
-        return f"https://ygoprodeck.com/deck/{pretty}"
+    if not isinstance(record, dict):
+        return None
+    for key in PRETTY_URL_KEYS:
+        pretty = _safe_str(record.get(key))
+        if pretty:
+            return f"https://ygoprodeck.com/deck/{pretty}"
     deck_id = _extract_deck_id(record)
     if deck_id is not None:
         return f"https://ygoprodeck.com/deck/?id={deck_id}"
     return None
+
+
+def _extract_event_date_raw(record):
+    """Return (raw_string, key_used) for the first candidate date key that
+    holds a non-empty string, or (None, None) if none present. Never
+    substitutes a value from another field-shape."""
+    if not isinstance(record, dict):
+        return None, None
+    for key in EVENT_DATE_KEYS:
+        raw = _safe_str(record.get(key))
+        if raw:
+            return raw, key
+    return None, None
+
+
+def _extract_event_date(record):
+    """Return (parsed_datetime, raw_string, key_used, parse_ok)."""
+    raw, key = _extract_event_date_raw(record)
+    if raw is None:
+        return None, None, None, False
+    parsed = _parse_event_date(raw)
+    return parsed, raw, key, parsed is not None
 
 
 def _detail_card_array(detail, key):
@@ -462,9 +510,16 @@ def verify_deck_sample(list_row, detail_payload, *, observed_at, cache_hit=False
 
     # Event date: only accept a value that actually parses. If the raw string
     # is present but unparseable, that is FAIL (junk data), not MISSING.
-    raw_event_date = _safe_str(list_row.get("submit_date")) or _safe_str(
-        detail.get("submit_date")
-    )
+    # Iterate every documented/observed date-field variant on both list row
+    # and detail payload; the first non-empty raw value is authoritative.
+    raw_event_date = None
+    event_date_key_used = None
+    for source in (list_row, detail):
+        raw, key = _extract_event_date_raw(source)
+        if raw:
+            raw_event_date = raw
+            event_date_key_used = key
+            break
     parsed_event_date = _parse_event_date(raw_event_date) if raw_event_date else None
     if not raw_event_date:
         event_date_status = "MISSING"
@@ -549,6 +604,7 @@ def verify_deck_sample(list_row, detail_payload, *, observed_at, cache_hit=False
         "side_deck_nonempty_status": side_nonempty,
         "side_deck_count": len(side_arr) if side_arr is not None else None,
         "structure_complete_status": structure_complete,
+        "event_date_key_used": event_date_key_used,
         "detail_cache_hit": bool(cache_hit),
         "sample_kind": "top_cut_only",
     }
@@ -575,34 +631,125 @@ _VERIFIED_STATUS_FIELDS = (
 
 
 def _select_recent_paper_rows(rows, sample_size):
+    """Return (selected_rows, exclusion_reason_counts). Never returns rows that
+    lack a deck_id or that belong to a non-TCG_ADVANCED population. Rows with
+    an unparseable/missing event date are still eligible for sampling — they
+    just sort last, and their FAIL/MISSING state will be recorded honestly by
+    the verifier. This guarantees that "the source has no dates we can parse"
+    is surfaced as a per-record FAIL, not as a silent zero-sample."""
+    reasons = defaultdict(int)
     candidates = []
     for row in rows:
         if not _is_paper_tcg_record(row):
+            reasons["excluded_by_keyword_or_wrong_format"] += 1
             continue
-        parsed = _parse_event_date(row.get("submit_date"))
-        if parsed is None:
-            # Rows without a parseable date are still eligible for sampling
-            # (they will be recorded FAIL for event_date), but sort last.
+        population = _classify_population(row)
+        if population != POPULATION_TCG_ADVANCED:
+            reasons["non_tcg_advanced_population"] += 1
+            continue
+        deck_id = _extract_deck_id(row)
+        if deck_id is None:
+            reasons["no_deck_id"] += 1
+            continue
+        parsed, _raw, _key, parse_ok = _extract_event_date(row)
+        if not parse_ok:
+            # Recorded as an exclusion *reason* but not as an exclusion: the row
+            # still moves forward so the verifier can label the date FAIL.
+            reasons["date_missing_or_unparseable_kept_for_sampling"] += 1
             sort_key = datetime.min.replace(tzinfo=timezone.utc)
         else:
             sort_key = parsed
-        deck_id = _extract_deck_id(row)
-        if deck_id is None:
-            continue
         candidates.append((sort_key, deck_id, row))
-    # Sort newest first; break ties by deck_id descending for determinism.
     candidates.sort(key=lambda t: (t[0], t[1]), reverse=True)
-    # De-duplicate by deck_id, preserving first (most recent) occurrence.
     seen = set()
     selected = []
     for _sort_key, deck_id, row in candidates:
         if deck_id in seen:
+            reasons["duplicate_deck_id"] += 1
             continue
         seen.add(deck_id)
         selected.append(row)
         if len(selected) >= sample_size:
             break
-    return selected
+    return selected, dict(reasons)
+
+
+def build_list_response_diagnostics(rows, *, sample_keys_from=5):
+    """Produce a sanitized diagnostic block describing the list response
+    shape. Emits KEY NAMES only — never values, player identifiers, or full
+    payloads. Safe to attach to the CI artifact.
+
+    Fields:
+      raw_row_count                    -- total rows returned by getDecks.php
+      keys_observed_sample             -- sorted union of top-level keys from
+                                          the first `sample_keys_from` rows
+      deck_id_key_present_count        -- how many rows expose ANY deck-id key
+      deck_id_keys_seen                -- which of DECK_ID_KEYS appear in data
+      event_date_key_present_count     -- rows with ANY date-candidate key
+      event_date_keys_seen             -- which of EVENT_DATE_KEYS appear
+      event_date_parseable_count       -- rows whose date-candidate parses
+      passes_is_paper_tcg_record       -- rows surviving the paper-TCG filter
+      classified_tcg_advanced          -- of those, in TCG_ADVANCED bucket
+      population_bucket_counts         -- disjoint bucket histogram
+      status                           -- OK | INCONCLUSIVE
+    """
+    raw_row_count = len(rows)
+    keys_union = set()
+    for row in rows[:sample_keys_from]:
+        if isinstance(row, dict):
+            keys_union.update(row.keys())
+
+    deck_id_key_present = 0
+    deck_id_keys_seen = set()
+    event_date_key_present = 0
+    event_date_keys_seen = set()
+    event_date_parseable = 0
+    passes_paper = 0
+    passes_tcg_advanced = 0
+    population_counts = defaultdict(int)
+
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        # Deck-id key visibility.
+        row_deck_id_keys = [key for key in DECK_ID_KEYS if key in row and row.get(key) not in (None, "")]
+        if row_deck_id_keys:
+            deck_id_key_present += 1
+            deck_id_keys_seen.update(row_deck_id_keys)
+        # Event-date key visibility.
+        row_date_keys = [key for key in EVENT_DATE_KEYS if _safe_str(row.get(key))]
+        if row_date_keys:
+            event_date_key_present += 1
+            event_date_keys_seen.update(row_date_keys)
+        _parsed, _raw, _key, parse_ok = _extract_event_date(row)
+        if parse_ok:
+            event_date_parseable += 1
+        if _is_paper_tcg_record(row):
+            passes_paper += 1
+            bucket = _classify_population(row)
+            population_counts[bucket] += 1
+            if bucket == POPULATION_TCG_ADVANCED:
+                passes_tcg_advanced += 1
+
+    status = "OK" if passes_tcg_advanced > 0 and deck_id_key_present > 0 else "INCONCLUSIVE"
+
+    return {
+        "endpoint": YGOPRODECK_API_URL,
+        "raw_row_count": raw_row_count,
+        "keys_observed_sample": sorted(keys_union),
+        "keys_observed_sample_source_rows": min(sample_keys_from, raw_row_count),
+        "deck_id_key_present_count": deck_id_key_present,
+        "deck_id_keys_seen": sorted(deck_id_keys_seen),
+        "deck_id_keys_probed": list(DECK_ID_KEYS),
+        "event_date_key_present_count": event_date_key_present,
+        "event_date_keys_seen": sorted(event_date_keys_seen),
+        "event_date_keys_probed": list(EVENT_DATE_KEYS),
+        "event_date_parseable_count": event_date_parseable,
+        "passes_is_paper_tcg_record": passes_paper,
+        "classified_tcg_advanced": passes_tcg_advanced,
+        "population_bucket_counts": dict(population_counts),
+        "status": status,
+    }
 
 
 def sample_top_cut_details(
@@ -620,7 +767,7 @@ def sample_top_cut_details(
     PASS / MISSING / FAIL totals for every checked field."""
     now = now or _now_utc()
     observed_at = _iso(now)
-    selected = _select_recent_paper_rows(rows, sample_size)
+    selected, exclusion_reasons = _select_recent_paper_rows(rows, sample_size)
 
     last_call_ref = {"t": None}
     details = []
@@ -677,6 +824,7 @@ def sample_top_cut_details(
         "field_totals": {field: dict(counts) for field, counts in totals.items()},
         "decks": details,
         "detail_errors": errors,
+        "exclusion_reason_counts": exclusion_reasons,
     }
 
 
@@ -692,7 +840,9 @@ def run_experiment(
     from_date = (_now_utc() - timedelta(days=int(lookback_days))).strftime("%Y-%m-%d")
     client = session or requests.Session()
     rows = fetch_tcg_decks(from_date=from_date, timeout=timeout, session=client)
+    diagnostics = build_list_response_diagnostics(rows)
     report = build_coverage_report(rows)
+    report["list_response_diagnostics"] = diagnostics
     sample_block = sample_top_cut_details(
         rows,
         sample_size=sample_size,
@@ -702,6 +852,12 @@ def run_experiment(
         min_interval_seconds=min_interval_seconds,
     )
     report["top_cut_sample"] = sample_block
+    # A zero-candidate run must be labeled INCONCLUSIVE; do not predeclare
+    # success. The overall_status flag is what the workflow step exits on.
+    if sample_block["sample_size_actual"] == 0:
+        report["overall_status"] = "INCONCLUSIVE"
+    else:
+        report["overall_status"] = "OK"
     write_report(output_path, report)
     return report
 
@@ -750,23 +906,38 @@ def main():
         raise SystemExit(f"YGOPRODeck coverage check failed: {exc}") from exc
 
     sample_block = report.get("top_cut_sample", {}) or {}
-    print(
-        json.dumps(
-            {
-                "output": args.output,
-                "events_found": report["events_found"],
-                "last_14_days_events": report["coverage_windows"]["last_14_days"]["events"],
-                "last_30_days_events": report["coverage_windows"]["last_30_days"]["events"],
-                "last_90_days_events": report["coverage_windows"]["last_90_days"]["events"],
-                "top_cut_sample_size_actual": sample_block.get("sample_size_actual", 0),
-                "top_cut_structure_complete_totals": sample_block.get("field_totals", {}).get(
-                    "structure_complete_status", {}
-                ),
-                "top_cut_population_bucket_counts": sample_block.get("population_bucket_counts", {}),
-            },
-            indent=2,
+    diagnostics = report.get("list_response_diagnostics", {}) or {}
+    overall_status = report.get("overall_status", "INCONCLUSIVE")
+    summary = {
+        "output": args.output,
+        "overall_status": overall_status,
+        "events_found": report["events_found"],
+        "last_14_days_events": report["coverage_windows"]["last_14_days"]["events"],
+        "last_30_days_events": report["coverage_windows"]["last_30_days"]["events"],
+        "last_90_days_events": report["coverage_windows"]["last_90_days"]["events"],
+        "top_cut_sample_size_actual": sample_block.get("sample_size_actual", 0),
+        "top_cut_structure_complete_totals": sample_block.get("field_totals", {}).get(
+            "structure_complete_status", {}
+        ),
+        "top_cut_population_bucket_counts": sample_block.get("population_bucket_counts", {}),
+        "top_cut_exclusion_reason_counts": sample_block.get("exclusion_reason_counts", {}),
+        "list_response_diagnostics": {
+            "raw_row_count": diagnostics.get("raw_row_count"),
+            "keys_observed_sample": diagnostics.get("keys_observed_sample"),
+            "deck_id_keys_seen": diagnostics.get("deck_id_keys_seen"),
+            "event_date_keys_seen": diagnostics.get("event_date_keys_seen"),
+            "event_date_parseable_count": diagnostics.get("event_date_parseable_count"),
+            "classified_tcg_advanced": diagnostics.get("classified_tcg_advanced"),
+            "status": diagnostics.get("status"),
+        },
+    }
+    print(json.dumps(summary, indent=2, sort_keys=True))
+    if overall_status != "OK":
+        # Zero-candidate / shape-mismatch runs must fail the workflow so
+        # nobody predeclares success from a green tick.
+        raise SystemExit(
+            f"YGOPRODeck coverage check inconclusive: overall_status={overall_status}"
         )
-    )
 
 
 if __name__ == "__main__":

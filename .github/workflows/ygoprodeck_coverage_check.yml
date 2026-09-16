@@ -30,6 +30,7 @@ jobs:
             --output "${{ runner.temp }}/ygoprodeck_tcg_coverage_report.json"
 
       - name: upload sanitized coverage report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ygoprodeck-tcg-coverage-report

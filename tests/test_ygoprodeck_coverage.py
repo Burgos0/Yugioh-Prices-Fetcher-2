@@ -7,11 +7,14 @@ from pathlib import Path
 from unittest import mock
 
 from scripts.check_ygoprodeck_tcg_coverage import (
+    DECK_ID_KEYS,
     DETAIL_MIN_INTERVAL_SECONDS,
+    EVENT_DATE_KEYS,
     POPULATION_MASTER_DUEL,
     POPULATION_OCG,
     POPULATION_TCG_ADVANCED,
     build_coverage_report,
+    build_list_response_diagnostics,
     fetch_deck_detail,
     fetch_tcg_decks,
     sample_top_cut_details,
@@ -415,6 +418,255 @@ class SampleTopCutDetailsTests(unittest.TestCase):
         # invented as PASS.
         self.assertEqual(record["structure_complete_status"], "FAIL")
         self.assertEqual(record["main_deck_present_status"], "FAIL")
+
+
+# --- Fixtures modelled on the shape observed in live run 35147093938 ---------
+# Live logs showed events_found=143 and sample_size_actual=0 simultaneously,
+# proving the list endpoint returned rows but our field names were wrong. Real
+# YGOPRODeck getDecks.php list rows carry the deck id in `deckID` (not
+# `deck_id`) and the date is not literally `submit_date`. These fixtures pin
+# that reality down so it cannot silently regress.
+
+
+def _live_shape_row(
+    *,
+    deck_id=98765,
+    tournament_name="North America WCQ",
+    date_created="2026-08-15",
+    player_name="Test Player",
+    player_count=456,
+    format_name="Tournament Meta Decks",
+    pretty_url="north-america-wcq-top-32",
+):
+    """A list row with the field names actually observed on the live API,
+    including uppercase `deckID` and `dateCreated`. Card arrays are empty
+    because the list endpoint truncates them (this is the whole reason the
+    detail follow-up exists)."""
+    return {
+        "deckID": deck_id,
+        "tournamentName": tournament_name,
+        "dateCreated": date_created,
+        "tournamentPlayerName": player_name,
+        "tournamentPlayerCount": player_count,
+        "format": format_name,
+        "pretty_url": pretty_url,
+        "main_deck": "",
+        "extra_deck": "",
+        "side_deck": "",
+    }
+
+
+class LiveShapeFixtureTests(unittest.TestCase):
+    def test_deck_id_key_variants_are_probed(self):
+        # Explicit contract: the probe MUST recognise `deckID` (live shape).
+        self.assertIn("deckID", DECK_ID_KEYS)
+        self.assertIn("deck_id", DECK_ID_KEYS)
+
+    def test_event_date_key_variants_are_probed(self):
+        self.assertIn("dateCreated", EVENT_DATE_KEYS)
+        self.assertIn("date_created", EVENT_DATE_KEYS)
+        self.assertIn("submit_date", EVENT_DATE_KEYS)
+
+    def test_select_recent_paper_rows_accepts_live_shape(self):
+        rows = [
+            _live_shape_row(deck_id=1, date_created="2026-08-10"),
+            _live_shape_row(deck_id=2, date_created="2026-09-01"),
+            _live_shape_row(deck_id=3, date_created="2026-09-14"),
+        ]
+        payloads = {
+            deck_id: {
+                "deckID": deck_id,
+                "main_deck": [1] * 40,
+                "extra_deck": [2] * 15,
+                "side_deck": [3] * 15,
+            }
+            for deck_id in (1, 2, 3)
+        }
+        session = _StubDetailSession(payloads)
+        now = datetime(2026, 9, 16, tzinfo=timezone.utc)
+        block = sample_top_cut_details(
+            rows,
+            sample_size=3,
+            session=session,
+            cache_dir=None,
+            min_interval_seconds=0.0,
+            now=now,
+        )
+        # This is the regression the live-run diagnosis surfaced: sample must
+        # NOT be zero when the list endpoint returns valid rows in live shape.
+        self.assertEqual(block["sample_size_actual"], 3)
+        self.assertEqual(
+            [d["deck_id"] for d in block["decks"]],
+            [3, 2, 1],
+        )
+        self.assertEqual(block["population_bucket_counts"][POPULATION_TCG_ADVANCED], 3)
+        # Every deck must have PASS event_date (live shape parses fine).
+        self.assertEqual(block["field_totals"]["event_date_status"]["PASS"], 3)
+
+    def test_list_response_diagnostics_reports_live_shape(self):
+        rows = [
+            _live_shape_row(deck_id=1, date_created="2026-09-01"),
+            _live_shape_row(deck_id=2, date_created="2026-09-05"),
+        ]
+        diagnostics = build_list_response_diagnostics(rows)
+        self.assertEqual(diagnostics["raw_row_count"], 2)
+        self.assertIn("deckID", diagnostics["keys_observed_sample"])
+        self.assertIn("dateCreated", diagnostics["keys_observed_sample"])
+        self.assertIn("tournamentName", diagnostics["keys_observed_sample"])
+        self.assertEqual(diagnostics["deck_id_key_present_count"], 2)
+        self.assertEqual(diagnostics["deck_id_keys_seen"], ["deckID"])
+        self.assertEqual(diagnostics["event_date_key_present_count"], 2)
+        self.assertEqual(diagnostics["event_date_keys_seen"], ["dateCreated"])
+        self.assertEqual(diagnostics["event_date_parseable_count"], 2)
+        self.assertEqual(diagnostics["classified_tcg_advanced"], 2)
+        self.assertEqual(diagnostics["status"], "OK")
+
+    def test_list_response_diagnostics_flags_inconclusive_on_shape_mismatch(self):
+        # If the API ever changes to a wholly unknown deck-id key, diagnostics
+        # must say INCONCLUSIVE (not silently 0 with a green tick).
+        rows = [
+            {
+                "tournamentName": "Sample",
+                "format": "Tournament Meta Decks",
+                "some_new_id_field": 123,
+                "some_new_date_field": "2026-09-14",
+            }
+        ]
+        diagnostics = build_list_response_diagnostics(rows)
+        self.assertEqual(diagnostics["deck_id_key_present_count"], 0)
+        self.assertEqual(diagnostics["deck_id_keys_seen"], [])
+        # keys_observed_sample surfaces the actual keys so a human can extend
+        # the probe rather than guessing.
+        self.assertIn("some_new_id_field", diagnostics["keys_observed_sample"])
+        self.assertIn("some_new_date_field", diagnostics["keys_observed_sample"])
+        self.assertEqual(diagnostics["status"], "INCONCLUSIVE")
+
+    def test_diagnostics_does_not_leak_values(self):
+        # Sanity check that we never surface PII/values. Only KEY NAMES are
+        # exposed in the sanitized diagnostics block.
+        rows = [
+            _live_shape_row(
+                deck_id=1,
+                player_name="SENSITIVE_PLAYER_NAME",
+                tournament_name="SENSITIVE_TOURNAMENT",
+                date_created="2026-09-14",
+            )
+        ]
+        diagnostics = build_list_response_diagnostics(rows)
+        blob = json.dumps(diagnostics)
+        self.assertNotIn("SENSITIVE_PLAYER_NAME", blob)
+        self.assertNotIn("SENSITIVE_TOURNAMENT", blob)
+
+    def test_diagnostics_counts_disjoint_populations(self):
+        rows = [
+            _live_shape_row(deck_id=1, date_created="2026-09-14"),
+            _live_shape_row(
+                deck_id=2,
+                date_created="2026-09-14",
+                tournament_name="OCG Kansai CS",
+            ),
+            _live_shape_row(
+                deck_id=3,
+                date_created="2026-09-14",
+                tournament_name="Master Duel Cup",
+            ),
+        ]
+        diagnostics = build_list_response_diagnostics(rows)
+        # is_paper_tcg_record excludes rows carrying non-TCG keywords, so only
+        # the TCG_ADVANCED row survives the paper filter.
+        self.assertEqual(diagnostics["passes_is_paper_tcg_record"], 1)
+        self.assertEqual(diagnostics["classified_tcg_advanced"], 1)
+
+
+class ExclusionReasonAndInconclusiveTests(unittest.TestCase):
+    def test_zero_candidates_when_no_deck_id_key(self):
+        # This is the exact regression from live run 35147093938: rows had
+        # `deck_id`-look-alike missing. Verify the reason is now categorised.
+        rows = [
+            {
+                "tournamentName": "Sample",
+                "format": "Tournament Meta Decks",
+                "dateCreated": "2026-09-14",
+                "pretty_url": "x",
+            }
+            for _ in range(5)
+        ]
+        session = _StubDetailSession({})
+        now = datetime(2026, 9, 16, tzinfo=timezone.utc)
+        block = sample_top_cut_details(
+            rows,
+            sample_size=5,
+            session=session,
+            cache_dir=None,
+            min_interval_seconds=0.0,
+            now=now,
+        )
+        self.assertEqual(block["sample_size_actual"], 0)
+        # No detail HTTP call was made.
+        self.assertEqual(len(session.calls), 0)
+        # Reason is surfaced explicitly.
+        self.assertEqual(
+            block["exclusion_reason_counts"].get("no_deck_id"), 5
+        )
+
+    def test_zero_candidates_when_only_non_tcg_population(self):
+        rows = [
+            _live_shape_row(deck_id=1, tournament_name="OCG Nagoya"),
+            _live_shape_row(deck_id=2, tournament_name="Master Duel Cup"),
+        ]
+        session = _StubDetailSession({})
+        now = datetime(2026, 9, 16, tzinfo=timezone.utc)
+        block = sample_top_cut_details(
+            rows,
+            sample_size=5,
+            session=session,
+            cache_dir=None,
+            min_interval_seconds=0.0,
+            now=now,
+        )
+        self.assertEqual(block["sample_size_actual"], 0)
+        # is_paper_tcg_record rejects both via keyword filter.
+        self.assertEqual(
+            block["exclusion_reason_counts"].get("excluded_by_keyword_or_wrong_format"),
+            2,
+        )
+
+    def test_run_experiment_marks_inconclusive_and_exits_nonzero(self):
+        # Simulate: catalogue returns rows in a shape the probe cannot map.
+        from scripts import check_ygoprodeck_tcg_coverage as mod
+
+        rows = [
+            {
+                "tournamentName": "Sample",
+                "format": "Tournament Meta Decks",
+                "dateCreated": "2026-09-14",
+            }
+        ]
+
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        out_path = os.path.join(tmp.name, "report.json")
+
+        with mock.patch.object(mod, "fetch_tcg_decks", return_value=rows), mock.patch.object(
+            mod.requests, "Session"
+        ):
+            report = mod.run_experiment(
+                output_path=out_path,
+                lookback_days=90,
+                timeout=10,
+                sample_size=5,
+                cache_dir=None,
+                min_interval_seconds=0.0,
+            )
+        self.assertEqual(report["overall_status"], "INCONCLUSIVE")
+        self.assertEqual(report["top_cut_sample"]["sample_size_actual"], 0)
+        # Artifact is still written so operators can inspect diagnostics.
+        with open(out_path) as f:
+            written = json.load(f)
+        self.assertEqual(written["overall_status"], "INCONCLUSIVE")
+        self.assertEqual(
+            written["list_response_diagnostics"]["deck_id_key_present_count"], 0
+        )
 
 
 if __name__ == "__main__":
