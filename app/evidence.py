@@ -17,9 +17,14 @@ layer"):
 
 * Timestamps are separated by role and are never substituted for one
   another:
-    - `event_time`        : when the underlying event happened
-                            (tournament played, announcement effective,
-                            price snapshot dated).
+    - `event_time`        : SUBJECT METADATA — when the underlying
+                            event happened or will happen (tournament
+                            played date, announced product release
+                            date, price snapshot date). Describes
+                            *what the record is about*. It does NOT
+                            enter visibility computations: an
+                            announcement observed today about a
+                            release next month is visible today.
     - `publication_time`  : when the source first *published* the fact
                             (article date, standings publish date).
                             May be None; callers must NOT fill it with
@@ -29,15 +34,17 @@ layer"):
     - `available_at`      : earliest timestamp at which the fact was
                             *publicly available* (an omniscient observer
                             with access to the source could have acted
-                            on it). Used for retrospective research
-                            that legitimately assumes access to
-                            verified publication times. Derived, not
-                            caller-set.
+                            on it). Equals `publication_time` when
+                            known, else `first_seen_at`; floored at
+                            `first_seen_at` for revisions. Used for
+                            retrospective research that legitimately
+                            assumes access to verified publication
+                            times. Derived, not caller-set.
     - `observable_at`     : earliest timestamp at which *this repository
-                            itself* could have acted on the fact
-                            (bounded below by `first_seen_at`). Used to
-                            simulate whether a hypothetical live alert
-                            could have been issued. Derived.
+                            itself* could have acted on the fact.
+                            Equals `first_seen_at`. Used to simulate
+                            whether a hypothetical live alert could
+                            have been issued. Derived.
 
   Retrospective evaluation (`visible_at(mode="retrospective")`) uses
   `available_at`; live-alert simulation (`visible_at(mode="live_simulation")`)
@@ -250,17 +257,23 @@ def compute_available_at(
     available (a hypothetical observer with source access could have
     acted on it).
 
-    Rules:
+    Semantics:
 
-    * If ``publication_time`` is known, the fact was publicly available
-      no earlier than the later of ``publication_time`` and
-      ``event_time``.
-    * If ``publication_time`` is unknown, ``first_seen_at`` is used in
-      its place — we cannot legitimately claim public availability
-      before we ourselves observed the fact. ``event_time`` is never
-      used as a substitute for publication time, because a fact
-      describing an event may only be published later than the event
-      itself.
+    * ``event_time`` describes the *subject* of the record (the
+      release date being announced, the tournament date whose results
+      are reported, the date a price snapshot describes). It is
+      SUBJECT METADATA and **never** enters the visibility formula.
+      An announcement observed today about a release next month is
+      available today; a future release date must not delay
+      visibility.
+    * If ``publication_time`` is known, ``available_at`` equals
+      ``publication_time`` (the moment the source published the fact).
+    * If ``publication_time`` is unknown, ``available_at`` falls back
+      to ``first_seen_at`` — we cannot legitimately claim public
+      availability before we ourselves observed the fact.
+      ``event_time`` is never used as a substitute for publication
+      time, because a fact describing an event may be published
+      before OR after the event itself.
     * When ``is_revision`` is true (the record has ``supersedes``),
       ``available_at`` is additionally bounded below by
       ``first_seen_at``. The revised content did not become the
@@ -268,14 +281,14 @@ def compute_available_at(
       source retained the original ``publication_time``. Without this
       floor, a later correction could leak backward into an earlier
       evaluation window.
+
+    (Callers who need "this fact refers to something that has not
+    happened yet" should filter on ``event_time`` at evaluation time;
+    that is a subject-domain question, not a visibility question.)
     """
     seen = _parse_iso(first_seen_at)
-    ev = _parse_iso(event_time) if event_time else None
     pub = _parse_iso(publication_time) if publication_time else None
-    lower_bound = pub if pub is not None else seen
-    candidates = [lower_bound]
-    if ev is not None:
-        candidates.append(ev)
+    candidates = [pub if pub is not None else seen]
     if is_revision:
         candidates.append(seen)
     chosen = max(candidates)
@@ -289,26 +302,26 @@ def compute_observable_at(
     """Return the earliest timestamp at which *this repository* could
     have acted on the fact.
 
-    ``observable_at`` differs from ``available_at`` in that it never
-    references ``publication_time``: even if a source published a fact
-    weeks before we crawled it, we could not have issued a live alert
-    before we observed it. ``first_seen_at`` is therefore always a
-    lower bound. ``event_time`` is included as an upper anchor for the
-    same reason ``available_at`` uses it — an event's implication is
-    not actionable before the event occurs.
+    ``observable_at`` equals ``first_seen_at``: the moment we ingested
+    the record is the earliest moment we could have raised a live
+    alert on it. Neither ``publication_time`` (a source may have
+    published weeks before we crawled) nor ``event_time`` (subject
+    metadata about the underlying release/tournament date, which may
+    be in the future) enters this formula.
+
+    ``event_time`` is kept as an argument for symmetry with
+    :func:`compute_available_at` and future evolution; it is currently
+    ignored on purpose so that an announcement first seen today about
+    a release next month is visible in today's live simulation.
 
     Use this in ``visible_at(..., mode="live_simulation")`` to answer
     "could we have alerted at time T?"; use :func:`compute_available_at`
     to answer the retrospective research question "was this fact
     publicly available at time T?".
     """
+    del event_time  # intentionally unused; see docstring.
     seen = _parse_iso(first_seen_at)
-    ev = _parse_iso(event_time) if event_time else None
-    candidates = [seen]
-    if ev is not None:
-        candidates.append(ev)
-    chosen = max(candidates)
-    return chosen.strftime("%Y-%m-%dT%H:%M:%SZ")
+    return seen.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def build_record(

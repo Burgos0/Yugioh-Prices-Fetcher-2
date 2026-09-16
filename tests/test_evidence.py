@@ -35,7 +35,8 @@ class BuildRecordTests(unittest.TestCase):
         self.assertEqual(r.product_id, 94958)
         self.assertTrue(r.record_id)
         self.assertTrue(r.first_seen_at.endswith("Z"))
-        # available_at = max(publication_time, event_time)
+        # available_at = publication_time (event_time is subject
+        # metadata and does not enter the visibility formula).
         self.assertEqual(r.available_at, "2026-09-10T15:00:00Z")
 
     def test_available_at_uses_first_seen_when_publication_unknown(self):
@@ -54,21 +55,22 @@ class BuildRecordTests(unittest.TestCase):
         )
         self.assertEqual(r.available_at, "2026-08-20T12:00:00Z")
 
-    def test_available_at_never_regresses_below_event_time(self):
-        # If publication_time exists but is *earlier* than event_time
-        # (e.g. a pre-announcement), available_at must still be at least
-        # event_time — the fact is not actionable before the event.
+    def test_future_event_time_does_not_delay_available_at(self):
+        # An announcement published today about a release next month
+        # is publicly available today. The future event_time is subject
+        # metadata; it must NOT push available_at into the future.
         r = build_record(
             evidence_type="announcement",
             source="ygorg",
             source_id="preview-1",
-            event_time="2026-09-10T00:00:00Z",
+            event_time="2026-10-10T00:00:00Z",   # future release date
             publication_time="2026-09-01T00:00:00Z",
             first_seen_at="2026-09-01T00:00:00Z",
             value=1,
             product_id=1,
         )
-        self.assertEqual(r.available_at, "2026-09-10T00:00:00Z")
+        # available_at follows publication_time, not event_time.
+        self.assertEqual(r.available_at, "2026-09-01T00:00:00Z")
 
 
 class MissingIsNotZeroTests(unittest.TestCase):
@@ -431,19 +433,98 @@ class ObservableAtLiveSimulationTests(unittest.TestCase):
         live_after = visible_at([r], "2026-09-10T00:00:00Z", mode="live_simulation")
         self.assertEqual(len(live_after), 1)
 
-    def test_observable_at_still_respects_event_time(self):
-        # A fact whose event is in the future is not actionable in
-        # either mode before the event.
+    def test_future_release_announcement_visible_today_in_live_simulation(self):
+        # Regression: an announcement first seen today about a card
+        # released next month must be visible in today's live
+        # simulation. A future event_time must never delay
+        # observable_at.
         r = build_record(
-            evidence_type="banlist_change",
-            source="konami", source_id="banlist-2026-10",
-            event_time="2026-10-01T00:00:00Z",
-            publication_time="2026-09-15T00:00:00Z",
-            first_seen_at="2026-09-15T00:00:00Z",
+            evidence_type="announcement",
+            source="ygorg", source_id="cubic-support-preview",
+            event_time="2026-10-15T00:00:00Z",   # release next month
+            publication_time="2026-09-16T00:00:00Z",
+            first_seen_at="2026-09-16T00:00:00Z",
             value=1, product_id=1,
         )
-        self.assertEqual(r.observable_at, "2026-10-01T00:00:00Z")
-        self.assertEqual(r.available_at, "2026-10-01T00:00:00Z")
+        # observable_at equals first_seen_at, not event_time.
+        self.assertEqual(r.observable_at, "2026-09-16T00:00:00Z")
+        # Live simulation at time-of-first-seen: visible.
+        live_today = visible_at(
+            [r], "2026-09-16T00:00:00Z", mode="live_simulation"
+        )
+        self.assertEqual(len(live_today), 1)
+
+    def test_future_release_announcement_not_visible_before_first_seen(self):
+        # Same announcement must NOT be visible in live simulation at
+        # any timestamp strictly earlier than first_seen_at.
+        r = build_record(
+            evidence_type="announcement",
+            source="ygorg", source_id="cubic-support-preview",
+            event_time="2026-10-15T00:00:00Z",
+            publication_time="2026-09-16T00:00:00Z",
+            first_seen_at="2026-09-16T00:00:00Z",
+            value=1, product_id=1,
+        )
+        one_second_before = "2026-09-15T23:59:59Z"
+        live_before = visible_at(
+            [r], one_second_before, mode="live_simulation"
+        )
+        self.assertEqual(live_before, [])
+        # Also verify a day-before cutoff.
+        live_day_before = visible_at(
+            [r], "2026-09-15T00:00:00Z", mode="live_simulation"
+        )
+        self.assertEqual(live_day_before, [])
+
+    def test_revision_not_visible_before_revision_was_observed(self):
+        # Regression: even for a revision that retains the original
+        # article's publication_time, the revision itself must not be
+        # visible in live simulation before we observed it.
+        original = build_record(
+            evidence_type="announcement",
+            source="ygorg", source_id="cubic-support",
+            publication_time="2026-09-01T00:00:00Z",
+            first_seen_at="2026-09-01T00:00:00Z",
+            value=1, product_id=1,
+        )
+        # Editor corrected the article on Sep 8 but kept the same
+        # publication_time in the visible metadata.
+        revised = build_record(
+            evidence_type="announcement",
+            source="ygorg", source_id="cubic-support",
+            publication_time="2026-09-01T00:00:00Z",   # retained
+            first_seen_at="2026-09-08T00:00:00Z",
+            value=2, product_id=1,
+            supersedes=original.record_id,
+        )
+        # Live simulation on Sep 5: only the original is visible; the
+        # revision was not yet observed by us.
+        live_sep5 = visible_at(
+            [original, revised],
+            "2026-09-05T00:00:00Z",
+            mode="live_simulation",
+        )
+        ids = {r.record_id for r in live_sep5}
+        self.assertIn(original.record_id, ids)
+        self.assertNotIn(revised.record_id, ids)
+        # Retrospective replay on Sep 5 must also NOT show the
+        # revision (the revision-leak floor keeps its available_at at
+        # its first_seen_at = Sep 8).
+        retro_sep5 = visible_at(
+            [original, revised],
+            "2026-09-05T00:00:00Z",
+            mode="retrospective",
+        )
+        retro_ids = {r.record_id for r in retro_sep5}
+        self.assertIn(original.record_id, retro_ids)
+        self.assertNotIn(revised.record_id, retro_ids)
+        # On Sep 8, the revision becomes visible in both modes.
+        live_sep8 = visible_at(
+            [original, revised],
+            "2026-09-08T00:00:00Z",
+            mode="live_simulation",
+        )
+        self.assertIn(revised.record_id, {r.record_id for r in live_sep8})
 
     def test_unknown_visibility_mode_rejected(self):
         r = build_record(

@@ -50,10 +50,16 @@ increments toward the objective:
     `event_time` is never substituted for `publication_time`.
   * **Public availability vs our observation are distinct.**
     `available_at` (derived) is the earliest time the fact was
-    publicly available (research/retrospective mode). `observable_at`
-    (derived) is the earliest time *this repository itself* could
-    have acted on the fact — bounded below by `first_seen_at` — so
-    live-alert simulation cannot claim we alerted before we crawled.
+    publicly available (research/retrospective mode) — it equals
+    `publication_time` when known, else `first_seen_at`.
+    `observable_at` (derived) is the earliest time *this repository
+    itself* could have acted on the fact — it equals
+    `first_seen_at`. **Neither timestamp uses `event_time`.**
+    `event_time` is subject metadata (the future release date, the
+    tournament date, the price-snapshot date); it describes what the
+    record is *about* and never delays visibility. An announcement
+    first seen today about a release next month is visible today in
+    live simulation.
     `visible_at(mode="retrospective")` (default) uses `available_at`;
     `visible_at(mode="live_simulation")` uses `observable_at`.
     Retrospective results must always be labeled as such; a public
@@ -86,8 +92,8 @@ increments toward the objective:
   in addition to the earlier schema, missing-vs-zero, mapping,
   timestamp, and append/iter tests.
 
-Verified: `python -m unittest discover -s tests` → **135 tests, OK**
-(99 pre-existing on `main` + 8 TopDeck coverage + 36 evidence, of
+Verified: `python -m unittest discover -s tests` → **137 tests, OK**
+(99 pre-existing on `main` + 8 TopDeck coverage + 38 evidence, of
 which 15 are new PR-review regressions).
 
 Deliberately **not** in this PR (kept small for review): announcement
@@ -124,11 +130,17 @@ product UI. See §6 for the sequenced follow-ups.
    B–E each get their own branch.
 3. **Missing is unknown, not zero.** Enforced in code
    (`app/evidence.py::validate_record`).
-4. **Public availability vs our observation are distinct times.**
-   `available_at` is retrospective/public;  `observable_at` is
-   live-simulation. Callers pick the mode with an explicit argument
-   to `visible_at`; the default is `retrospective` and callers must
-   label such results as retrospective research, not as live alerts.
+4. **Public availability vs our observation are distinct times, and
+   neither uses `event_time`.** `available_at =
+   publication_time or first_seen_at` (retrospective / public).
+   `observable_at = first_seen_at` (live-simulation / our
+   observation). `event_time` is subject metadata about *what the
+   record describes* (release date, tournament date, snapshot date)
+   and never enters visibility computations, so future release
+   dates cannot hide announcements observed today. Callers pick
+   the mode with an explicit argument to `visible_at`; the default
+   is `retrospective` and callers must label such results as
+   retrospective research, not as live alerts.
 5. **Revisions cannot leak backward.** Enforced by flooring a
    revision's `available_at` at its own `first_seen_at`.
 6. **Card-level identity is first-class.** One
@@ -150,18 +162,21 @@ product UI. See §6 for the sequenced follow-ups.
     retrospective end-to-end demonstration; and
   * validating any future announcement collector against a live
     source from this session.
-  The next collector PR must therefore ship with sanitized
-  fixture tests plus a `workflow_dispatch` job that runs the
-  collector in CI (which does have outbound network) and uploads a
-  sanitized coverage artifact — same pattern as
-  `topdeck_coverage_check.yml`. Fixture output must never be
-  labeled as a live run.
-- **No `prices.db` on fresh clones.** Production restores it from a
-  GitHub Release via `scripts/restore_snapshot.py`. The evidence
-  layer intentionally does not depend on `prices.db`; the next PR
-  that maps announcement text to `product_id` will run inside the
-  daily workflow (which restores the DB) or against a small mapping
-  fixture in tests.
+- **CI network access to third-party sources is UNVERIFIED for the
+  new collector.** GitHub-hosted runners generally allow outbound
+  HTTPS, but reliability against `ygorganization.com`,
+  `db.ygoprodeck.com`, and any other third party has not been
+  demonstrated from this repository's CI. It remains unverified
+  until the new `workflow_dispatch` collector job successfully
+  fetches the source in a real run and uploads a sanitized
+  coverage artifact.
+- **`prices.db` is NOT automatically available in other jobs.** The
+  daily workflow restores the snapshot in its own job via
+  `scripts/restore_snapshot.py`; separate workflows do not inherit
+  it. Any collector or demonstration job that needs `prices.db`
+  must explicitly call `scripts/restore_snapshot.py` in its own
+  steps and only proceed to price-history joins after that step
+  succeeds. Fixture output must never be labeled as a live run.
 
 ---
 
@@ -183,9 +198,14 @@ Attempted from this session. **Not completed.** Exact blockers:
 No fixture substitute was written, and no synthetic record was
 appended to any dataset — per the task instruction to never
 substitute fixtures and call the demonstration live-verified. The
-demonstration is queued to run in the announcement-collector PR
-(§6 step 2), which will execute under CI where outbound network
-and the snapshot-restored `prices.db` are available.
+demonstration is queued for the announcement-collector PR
+(§6 step 2). Whether CI can actually reach the source, and whether
+the collector job successfully restores `prices.db`, will only be
+established once that PR's `workflow_dispatch` job runs. Until
+that run succeeds, treat CI network access to
+`ygorganization.com` / `db.ygoprodeck.com` and cross-job
+availability of `prices.db` as unverified assumptions, not
+guarantees.
 
 ---
 
@@ -253,8 +273,8 @@ and the snapshot-restored `prices.db` are available.
 
 ## 8. Test results
 
-- `python -m unittest discover -s tests` → **135 tests, OK**
-  (99 pre-existing + 8 TopDeck coverage + 36 evidence-layer, of
+- `python -m unittest discover -s tests` → **137 tests, OK**
+  (99 pre-existing + 8 TopDeck coverage + 38 evidence-layer, of
   which 15 are new PR-review regressions).
 - No changes to production paths (`app/analysis.py`,
   `scripts/early_movers.py`, `scripts/fetch_prices.py`, snapshot
