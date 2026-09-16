@@ -115,6 +115,10 @@ def _rollup_events(events, now):
 
 
 def _paper_distinction_assessment(events):
+    """Assess whether the returned events can be treated as paper-TCG
+    Yu-Gi-Oh Advanced. Conclusions are scoped to the queried sample —
+    they say nothing about tournaments that were not returned.
+    """
     non_matching = []
     digital_name_matches = []
     for event in events:
@@ -125,26 +129,43 @@ def _paper_distinction_assessment(events):
         name = (event.get("event_name") or "").lower()
         if any(hint in name for hint in _DIGITAL_HINTS):
             digital_name_matches.append({"tid": event.get("tid"), "event_name": event.get("event_name")})
+    n = len(events)
+    scope = f"in the queried sample (n={n} events)"
     if non_matching:
         return {
-            "reliably_distinguished": False,
-            "assessment": "not_reliable",
-            "reason": "API response included events outside Yu-Gi-Oh Advanced filter.",
+            "sample_size": n,
+            "reliably_distinguished_in_sample": False,
+            "assessment": "not_reliable_in_sample",
+            "reason": (
+                f"API response {scope} included events outside the "
+                f"Yu-Gi-Oh Advanced filter."
+            ),
             "non_matching_events": non_matching,
             "digital_name_matches": digital_name_matches,
         }
     if digital_name_matches:
         return {
-            "reliably_distinguished": False,
-            "assessment": "uncertain",
-            "reason": "All events match filter fields, but some names include digital-population indicators.",
+            "sample_size": n,
+            "reliably_distinguished_in_sample": False,
+            "assessment": "uncertain_in_sample",
+            "reason": (
+                f"All events {scope} match the filter fields, but some "
+                f"names include digital-population indicators; a broader "
+                f"or later query may include such events."
+            ),
             "non_matching_events": [],
             "digital_name_matches": digital_name_matches,
         }
     return {
-        "reliably_distinguished": True,
-        "assessment": "likely_reliable",
-        "reason": "All returned events match Yu-Gi-Oh Advanced and no digital-population name indicators were found.",
+        "sample_size": n,
+        "reliably_distinguished_in_sample": True,
+        "assessment": "likely_reliable_in_sample",
+        "reason": (
+            f"All events {scope} match Yu-Gi-Oh Advanced and no "
+            f"digital-population name indicators were found. This "
+            f"conclusion is scoped to the returned sample and does not "
+            f"generalize to unqueried windows or other filters."
+        ),
         "non_matching_events": [],
         "digital_name_matches": [],
     }

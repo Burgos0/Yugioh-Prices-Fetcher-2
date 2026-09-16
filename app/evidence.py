@@ -26,23 +26,52 @@ layer"):
                             event_time.
     - `first_seen_at`     : when *this repository* first observed the
                             record. Always populated on write.
-    - `available_at`      : the earliest timestamp at which a downstream
-                            evaluator could have acted on this record.
-                            Typically max(publication_time or
-                            first_seen_at, event_time). Used for
-                            time-ordered / point-in-time evaluation so
-                            historical replays cannot "see the future".
+    - `available_at`      : earliest timestamp at which the fact was
+                            *publicly available* (an omniscient observer
+                            with access to the source could have acted
+                            on it). Used for retrospective research
+                            that legitimately assumes access to
+                            verified publication times. Derived, not
+                            caller-set.
+    - `observable_at`     : earliest timestamp at which *this repository
+                            itself* could have acted on the fact
+                            (bounded below by `first_seen_at`). Used to
+                            simulate whether a hypothetical live alert
+                            could have been issued. Derived.
+
+  Retrospective evaluation (`visible_at(mode="retrospective")`) uses
+  `available_at`; live-alert simulation (`visible_at(mode="live_simulation")`)
+  uses `observable_at`. Retrospective results must always be labeled as
+  such by callers — they never imply a live alert was issued at
+  `available_at`.
 
 * Revisions do not overwrite history. A newer observation of the same
   logical fact is appended as a new record with `supersedes` pointing
   at the earlier `record_id`. Historical evaluation replays only
-  records whose `available_at` is <= the replay cutoff.
+  records visible at the replay cutoff. Crucially, a revision's
+  `available_at` is bounded below by its own `first_seen_at` — even
+  when the revision retains the original article's `publication_time`,
+  the corrected content did not become the *record's* public value
+  until we re-read the source. This prevents a later correction from
+  leaking backward into an earlier evaluation window.
 
 * `product_id` (TCGPlayer product id, matching the tracked printing
   key already used by `prices.db` and `top_gainers.json`) is the
   primary printing identity. `card_name`/`set_name` are provenance
   hints, never the join key. `mapping_uncertainty` describes any
   fuzziness in how the source got mapped to a `product_id`.
+
+* Card-level evidence is a first-class case. A support announcement
+  can affect a canonical card (or an entire archetype) without
+  claiming a specific printing. Such a record uses
+  `mapping_uncertainty="card_level"`, sets `card_key` (canonical card
+  identity — typically the printed card name) and/or `archetype`, and
+  omits `product_id`. It MAY populate `affected_printings` with the
+  TCGPlayer product ids currently believed to represent that card in
+  the tracked catalog; the combiner treats one `card_level` record as
+  one confirmation regardless of `len(affected_printings)`, so a
+  single announcement is never counted as several independent
+  confirmations just because a card has many reprints.
 
 The storage format is line-delimited JSON (JSONL), append-only. This
 keeps the file trivially auditable, safe under concurrent readers,
@@ -67,7 +96,7 @@ from datetime import datetime, timezone
 from typing import Any, Iterable, Iterator, Mapping, Optional
 
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 # Fixed vocabulary for `evidence_type`. Downstream signal combination
 # uses this to weight/filter records; adding a new source means adding a
@@ -84,19 +113,37 @@ EVIDENCE_TYPES = frozenset({
     "price_snapshot",       # daily tracked price observation
 })
 
-# Fixed vocabulary for `mapping_uncertainty`. `exact` means the source
-# already carried a TCGPlayer product id; `resolved_by_name` means the
-# name matched a unique tracked printing; `ambiguous` means multiple
-# printings match (record all candidate ids in `evidence.candidates`);
-# `unresolved` means the referenced card exists in the game but has no
-# tracked printing in prices.db; `not_a_card` means the source referred
-# to something other than a card (event, article, reprint set, ...).
+# Fixed vocabulary for `mapping_uncertainty`. Semantics:
+#   * `exact`            — source carried a TCGPlayer product id, or the
+#                          record targets one specific tracked printing.
+#                          Requires `product_id`.
+#   * `resolved_by_name` — source referenced a printing by name and the
+#                          name resolved to a unique tracked printing.
+#                          Requires `product_id`.
+#   * `ambiguous`        — the printing referenced by the source could
+#                          not be resolved to a single tracked printing;
+#                          candidate product ids may be listed in
+#                          `evidence.candidates`. Forbids `product_id`.
+#   * `unresolved`       — the referenced card exists in the game but no
+#                          matching tracked printing was found. Forbids
+#                          `product_id`.
+#   * `not_a_card`       — the source referred to something other than a
+#                          card (an event, an article, a reprint set,
+#                          ...). Forbids `product_id`.
+#   * `card_level`       — the record is scoped to a canonical card
+#                          and/or archetype rather than to a printing.
+#                          Requires `card_key` OR `archetype`; forbids
+#                          `product_id`; may set `affected_printings`.
+#                          One `card_level` record counts as one
+#                          confirmation regardless of the length of
+#                          `affected_printings`.
 MAPPING_UNCERTAINTY_VALUES = frozenset({
     "exact",
     "resolved_by_name",
     "ambiguous",
     "unresolved",
     "not_a_card",
+    "card_level",
 })
 
 
@@ -130,6 +177,7 @@ class EvidenceRecord:
     publication_time: Optional[str]
     first_seen_at: str
     available_at: str
+    observable_at: str
 
     # Value + missingness
     value: Any
@@ -143,6 +191,17 @@ class EvidenceRecord:
     set_name: Optional[str]
     mapping_uncertainty: str
 
+    # Card-level target (used when the fact is scoped to a canonical
+    # card or archetype rather than a single printing). See module
+    # docstring and MAPPING_UNCERTAINTY_VALUES for semantics.
+    card_key: Optional[str] = None
+    archetype: Optional[str] = None
+    # TCGPlayer product ids currently believed to represent the target
+    # card. Set only for card-level records to make fan-out to printings
+    # explicit; downstream code MUST treat one such record as one
+    # confirmation regardless of len(affected_printings).
+    affected_printings: tuple = ()
+
     # Free-form supporting evidence and revision chaining
     evidence: Mapping[str, Any] = field(default_factory=dict)
     supersedes: Optional[str] = None
@@ -151,6 +210,7 @@ class EvidenceRecord:
         """Return a JSON-serializable dict (evidence is copied)."""
         d = dataclasses.asdict(self)
         d["evidence"] = dict(self.evidence)
+        d["affected_printings"] = list(self.affected_printings)
         return d
 
 
@@ -183,25 +243,68 @@ def compute_available_at(
     event_time: Optional[str],
     publication_time: Optional[str],
     first_seen_at: str,
+    *,
+    is_revision: bool = False,
 ) -> str:
-    """Return the earliest timestamp at which a downstream evaluator
-    could act on this record.
+    """Return the earliest timestamp at which the fact was publicly
+    available (a hypothetical observer with source access could have
+    acted on it).
 
     Rules:
-    * If ``publication_time`` is known, the fact could have been acted
-      on no earlier than the later of ``publication_time`` and
+
+    * If ``publication_time`` is known, the fact was publicly available
+      no earlier than the later of ``publication_time`` and
       ``event_time``.
     * If ``publication_time`` is unknown, ``first_seen_at`` is used in
-      its place (we cannot claim to have known a fact before we
-      observed it). ``event_time`` is never used as a substitute for
-      publication time — that would falsify replay timing for facts
-      that were published later than the event they describe.
+      its place — we cannot legitimately claim public availability
+      before we ourselves observed the fact. ``event_time`` is never
+      used as a substitute for publication time, because a fact
+      describing an event may only be published later than the event
+      itself.
+    * When ``is_revision`` is true (the record has ``supersedes``),
+      ``available_at`` is additionally bounded below by
+      ``first_seen_at``. The revised content did not become the
+      *record's* public value until we re-read the source, even if the
+      source retained the original ``publication_time``. Without this
+      floor, a later correction could leak backward into an earlier
+      evaluation window.
     """
     seen = _parse_iso(first_seen_at)
     ev = _parse_iso(event_time) if event_time else None
     pub = _parse_iso(publication_time) if publication_time else None
     lower_bound = pub if pub is not None else seen
     candidates = [lower_bound]
+    if ev is not None:
+        candidates.append(ev)
+    if is_revision:
+        candidates.append(seen)
+    chosen = max(candidates)
+    return chosen.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def compute_observable_at(
+    event_time: Optional[str],
+    first_seen_at: str,
+) -> str:
+    """Return the earliest timestamp at which *this repository* could
+    have acted on the fact.
+
+    ``observable_at`` differs from ``available_at`` in that it never
+    references ``publication_time``: even if a source published a fact
+    weeks before we crawled it, we could not have issued a live alert
+    before we observed it. ``first_seen_at`` is therefore always a
+    lower bound. ``event_time`` is included as an upper anchor for the
+    same reason ``available_at`` uses it — an event's implication is
+    not actionable before the event occurs.
+
+    Use this in ``visible_at(..., mode="live_simulation")`` to answer
+    "could we have alerted at time T?"; use :func:`compute_available_at`
+    to answer the retrospective research question "was this fact
+    publicly available at time T?".
+    """
+    seen = _parse_iso(first_seen_at)
+    ev = _parse_iso(event_time) if event_time else None
+    candidates = [seen]
     if ev is not None:
         candidates.append(ev)
     chosen = max(candidates)
@@ -225,15 +328,18 @@ def build_record(
     card_name: Optional[str] = None,
     set_name: Optional[str] = None,
     mapping_uncertainty: str = "exact",
+    card_key: Optional[str] = None,
+    archetype: Optional[str] = None,
+    affected_printings: Iterable[int] = (),
     evidence: Optional[Mapping[str, Any]] = None,
     supersedes: Optional[str] = None,
     record_id: Optional[str] = None,
 ) -> EvidenceRecord:
     """Build a validated :class:`EvidenceRecord`.
 
-    ``first_seen_at`` defaults to now (UTC); ``available_at`` is
-    computed via :func:`compute_available_at` and cannot be passed in
-    directly, since it is a derived, replay-critical field.
+    ``first_seen_at`` defaults to now (UTC); ``available_at`` and
+    ``observable_at`` are computed and cannot be passed in directly,
+    since they are derived, replay-critical fields.
     """
     seen = first_seen_at or _utc_now_iso()
     _parse_iso(seen)  # validate now, before we compute anything
@@ -247,7 +353,11 @@ def build_record(
         event_time=event_time,
         publication_time=publication_time,
         first_seen_at=seen,
-        available_at=compute_available_at(event_time, publication_time, seen),
+        available_at=compute_available_at(
+            event_time, publication_time, seen,
+            is_revision=supersedes is not None,
+        ),
+        observable_at=compute_observable_at(event_time, seen),
         value=value,
         value_unit=value_unit,
         freshness_days=freshness_days,
@@ -256,6 +366,9 @@ def build_record(
         card_name=card_name,
         set_name=set_name,
         mapping_uncertainty=mapping_uncertainty,
+        card_key=card_key,
+        archetype=archetype,
+        affected_printings=tuple(affected_printings),
         evidence=dict(evidence or {}),
         supersedes=supersedes,
     )
@@ -307,14 +420,25 @@ def validate_record(record: EvidenceRecord) -> None:
     # first_seen_at and available_at are required and must parse
     _parse_iso(record.first_seen_at)
     _parse_iso(record.available_at)
-    expected = compute_available_at(
-        record.event_time, record.publication_time, record.first_seen_at
+    _parse_iso(record.observable_at)
+    expected_available = compute_available_at(
+        record.event_time, record.publication_time, record.first_seen_at,
+        is_revision=record.supersedes is not None,
     )
-    if record.available_at != expected:
+    if record.available_at != expected_available:
         raise EvidenceValidationError(
             f"available_at {record.available_at!r} does not match "
-            f"computed {expected!r}; do not construct records manually — "
-            f"use build_record()"
+            f"computed {expected_available!r}; do not construct records "
+            f"manually — use build_record()"
+        )
+    expected_observable = compute_observable_at(
+        record.event_time, record.first_seen_at
+    )
+    if record.observable_at != expected_observable:
+        raise EvidenceValidationError(
+            f"observable_at {record.observable_at!r} does not match "
+            f"computed {expected_observable!r}; do not construct "
+            f"records manually — use build_record()"
         )
 
     is_missing = record.value is None
@@ -329,14 +453,39 @@ def validate_record(record: EvidenceRecord) -> None:
             "present are mutually exclusive"
         )
 
-    if record.mapping_uncertainty == "exact" and record.product_id is None:
+    mu = record.mapping_uncertainty
+    if mu == "exact" and record.product_id is None:
         raise EvidenceValidationError(
             "mapping_uncertainty='exact' requires a product_id"
         )
-    if record.mapping_uncertainty == "unresolved" and record.product_id is not None:
+    if mu == "resolved_by_name" and record.product_id is None:
+        raise EvidenceValidationError(
+            "mapping_uncertainty='resolved_by_name' requires a product_id"
+        )
+    if mu == "unresolved" and record.product_id is not None:
         raise EvidenceValidationError(
             "mapping_uncertainty='unresolved' cannot carry a product_id"
         )
+    if mu == "ambiguous" and record.product_id is not None:
+        raise EvidenceValidationError(
+            "mapping_uncertainty='ambiguous' cannot carry a product_id; "
+            "list candidate ids in evidence.candidates"
+        )
+    if mu == "not_a_card" and record.product_id is not None:
+        raise EvidenceValidationError(
+            "mapping_uncertainty='not_a_card' cannot carry a product_id"
+        )
+    if mu == "card_level":
+        if record.product_id is not None:
+            raise EvidenceValidationError(
+                "mapping_uncertainty='card_level' cannot carry a "
+                "product_id; use affected_printings for fan-out"
+            )
+        if not record.card_key and not record.archetype:
+            raise EvidenceValidationError(
+                "mapping_uncertainty='card_level' requires card_key or "
+                "archetype to be set"
+            )
     if record.product_id is not None and not isinstance(record.product_id, int):
         raise EvidenceValidationError(
             f"product_id must be int, got {type(record.product_id).__name__}"
@@ -344,6 +493,17 @@ def validate_record(record: EvidenceRecord) -> None:
     if record.freshness_days is not None and record.freshness_days < 0:
         raise EvidenceValidationError(
             f"freshness_days must be >= 0, got {record.freshness_days!r}"
+        )
+    for pid in record.affected_printings:
+        if not isinstance(pid, int):
+            raise EvidenceValidationError(
+                f"affected_printings entries must be int, got "
+                f"{type(pid).__name__}"
+            )
+    if record.affected_printings and mu != "card_level":
+        raise EvidenceValidationError(
+            "affected_printings may only be set when "
+            "mapping_uncertainty='card_level'"
         )
 
 
@@ -389,6 +549,13 @@ def iter_records(path: str) -> Iterator[EvidenceRecord]:
                 raise EvidenceValidationError(
                     f"{path}:{line_no}: malformed JSON: {exc}"
                 ) from exc
+            # Round-trip: JSON lists become Python lists; the dataclass
+            # expects tuples for affected_printings so equality with the
+            # written record is stable and the field is hashable.
+            if "affected_printings" in obj and isinstance(
+                obj["affected_printings"], list
+            ):
+                obj["affected_printings"] = tuple(obj["affected_printings"])
             try:
                 record = EvidenceRecord(**obj)
             except TypeError as exc:
@@ -426,16 +593,38 @@ def latest_by_logical_key(records: Iterable[EvidenceRecord]) -> dict:
     return latest
 
 
-def visible_at(records: Iterable[EvidenceRecord], cutoff_iso: str) -> list:
-    """Return records whose ``available_at`` is <= ``cutoff_iso``.
+VISIBILITY_MODES = frozenset({"retrospective", "live_simulation"})
 
-    This is the point-in-time filter used by historical evaluation so
-    a backtest at time T can never accidentally consult a record that
-    was not yet available at T.
+
+def visible_at(
+    records: Iterable[EvidenceRecord],
+    cutoff_iso: str,
+    *,
+    mode: str = "retrospective",
+) -> list:
+    """Return records visible at ``cutoff_iso`` under the given mode.
+
+    Modes:
+
+    * ``retrospective`` (default): keeps records whose ``available_at``
+      is <= ``cutoff_iso``. Answers "was this fact publicly available
+      at the cutoff?". Callers using this mode MUST label the results
+      as retrospective research — a public availability time is NOT
+      evidence that a live alert was issued at that time.
+    * ``live_simulation``: keeps records whose ``observable_at`` is <=
+      ``cutoff_iso``. Answers "could we ourselves have issued an alert
+      based on this fact by the cutoff?". Used to simulate live-alert
+      performance under actual (potentially delayed) source access.
     """
+    if mode not in VISIBILITY_MODES:
+        raise ValueError(
+            f"unknown visibility mode {mode!r}; expected one of "
+            f"{sorted(VISIBILITY_MODES)}"
+        )
     cutoff = _parse_iso(cutoff_iso)
+    field_name = "available_at" if mode == "retrospective" else "observable_at"
     out = []
     for r in records:
-        if _parse_iso(r.available_at) <= cutoff:
+        if _parse_iso(getattr(r, field_name)) <= cutoff:
             out.append(r)
     return out
