@@ -19,7 +19,7 @@ and validation rules):
   "observations": [
     {
       "event_id": str, "event_name": str, "event_date": "YYYY-MM-DD",
-      "region": str, "format": "TCG_ADVANCED" | "OCG" | "MASTER_DUEL",
+      "region": str, "format": "TCG_ADVANCED" | "OCG" | "MASTER_DUEL" | "RUSH_DUEL" | "OTHER",
       "banlist_id": str, "player": str, "placement": str|int|null,
       "archetype": str, "source_url": str, "source_type": "tournament"|"casual",
       "published_at": "YYYY-MM-DDTHH:MM:SSZ"|null,
@@ -41,7 +41,9 @@ SCHEMA_VERSION = 1
 FORMAT_TCG_ADVANCED = "TCG_ADVANCED"
 FORMAT_OCG = "OCG"
 FORMAT_MASTER_DUEL = "MASTER_DUEL"
-VALID_FORMATS = (FORMAT_TCG_ADVANCED, FORMAT_OCG, FORMAT_MASTER_DUEL)
+FORMAT_RUSH_DUEL = "RUSH_DUEL"
+FORMAT_OTHER = "OTHER"
+VALID_FORMATS = (FORMAT_TCG_ADVANCED, FORMAT_OCG, FORMAT_MASTER_DUEL, FORMAT_RUSH_DUEL, FORMAT_OTHER)
 
 SOURCE_TOURNAMENT = "tournament"
 SOURCE_CASUAL = "casual"
@@ -529,8 +531,12 @@ def build_meta_watch_report(dataset_path=DEFAULT_DATASET_PATH, prices_db_path="d
     casual_excluded = len(all_observations) - len(tournament_only)
 
     deduped, duplicate_count = dedupe_observations(tournament_only)
+    format_population_counts = Counter(o.get("format") for o in deduped)
     format_filtered = [o for o in deduped if o.get("format") == target_format]
     other_format_excluded = len(deduped) - len(format_filtered)
+    non_target_format_counts = {
+        fmt: count for fmt, count in sorted(format_population_counts.items()) if fmt != target_format
+    }
 
     report = {
         "target_format": target_format,
@@ -544,6 +550,8 @@ def build_meta_watch_report(dataset_path=DEFAULT_DATASET_PATH, prices_db_path="d
         "casual_excluded": casual_excluded,
         "duplicate_observations_skipped": duplicate_count,
         "other_format_excluded": other_format_excluded,
+        "format_population_counts": dict(sorted(format_population_counts.items())),
+        "non_target_format_counts": non_target_format_counts,
         "banlists": [],
     }
 

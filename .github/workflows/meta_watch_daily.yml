@@ -1,0 +1,52 @@
+name: meta watch decklist collector
+
+on:
+  schedule:
+    - cron: "35 16 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: yugioh-meta-watch-collector
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: install python packages
+        run: |
+          pip install -r requirements.txt
+
+      - name: collect and import meta watch decklists
+        id: collect
+        run: |
+          python -m scripts.collect_meta_watch_lists --report data/meta_watch_collection_report.json
+
+      - name: open automated meta watch data-update PR
+        if: success()
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: "Update Meta Watch decklist observations"
+          title: "Update Meta Watch decklist observations"
+          body: |
+            Automated Meta Watch decklist collection update.
+
+            - Source failures, rejected records, changed-source flags, and import counts are recorded in `data/meta_watch_collection_report.json`.
+            - This PR preserves existing data and appends only validated, non-duplicate observations.
+          branch: "automation/meta-watch-decklists"
+          delete-branch: false
+          add-paths: |
+            data/meta_watch_lists.json
+            data/meta_watch_collection_report.json

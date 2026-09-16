@@ -12,8 +12,11 @@ from app.meta_watch import (
     dedupe_observations,
     filter_tournament,
     validate_observation,
+    FORMAT_MASTER_DUEL,
     FORMAT_TCG_ADVANCED,
     FORMAT_OCG,
+    FORMAT_OTHER,
+    FORMAT_RUSH_DUEL,
 )
 from scripts.import_meta_watch_lists import import_observations
 
@@ -47,6 +50,14 @@ class ValidationTests(unittest.TestCase):
         obs = make_obs("E1", "Alice", "Kashtira", [("Card", 1)], fmt="LEGACY")
         errors = validate_observation(obs)
         self.assertTrue(any("format" in e for e in errors))
+
+    def test_supported_additional_formats_are_accepted(self):
+        rush = make_obs("E1", "Alice", "Kashtira", [("Card", 1)], fmt=FORMAT_RUSH_DUEL)
+        other = make_obs("E2", "Bob", "Kashtira", [("Card", 1)], fmt=FORMAT_OTHER)
+        md = make_obs("E3", "Cara", "Kashtira", [("Card", 1)], fmt=FORMAT_MASTER_DUEL)
+        self.assertEqual(validate_observation(rush), [])
+        self.assertEqual(validate_observation(other), [])
+        self.assertEqual(validate_observation(md), [])
 
     def test_bad_count_is_rejected(self):
         obs = make_obs("E1", "Alice", "Kashtira", [("Card", 1)])
@@ -198,11 +209,38 @@ class FormatSeparationAndCutoffTests(unittest.TestCase):
         for i in range(25):
             obs.append(make_obs(f"O{i}", f"OP{i}", "Kashtira", [("Tech Card", 1)],
                                  fmt=FORMAT_OCG, published_at="2026-09-01T00:00:00Z"))
+        for i in range(25):
+            obs.append(make_obs(f"M{i}", f"MP{i}", "Kashtira", [("Tech Card", 1)],
+                                 fmt=FORMAT_MASTER_DUEL, published_at="2026-09-01T00:00:00Z"))
+        for i in range(25):
+            obs.append(make_obs(f"R{i}", f"RP{i}", "Kashtira", [("Tech Card", 1)],
+                                 fmt=FORMAT_RUSH_DUEL, published_at="2026-09-01T00:00:00Z"))
+        for i in range(25):
+            obs.append(make_obs(f"X{i}", f"XP{i}", "Kashtira", [("Tech Card", 1)],
+                                 fmt=FORMAT_OTHER, published_at="2026-09-01T00:00:00Z"))
         self._write_dataset(obs)
         tcg_report = build_meta_watch_report(self.dataset_path, self.prices_path, target_format=FORMAT_TCG_ADVANCED)
-        self.assertEqual(tcg_report["other_format_excluded"], 25)
+        self.assertEqual(tcg_report["other_format_excluded"], 100)
+        self.assertEqual(
+            tcg_report["non_target_format_counts"],
+            {
+                FORMAT_MASTER_DUEL: 25,
+                FORMAT_OCG: 25,
+                FORMAT_OTHER: 25,
+                FORMAT_RUSH_DUEL: 25,
+            },
+        )
         ocg_report = build_meta_watch_report(self.dataset_path, self.prices_path, target_format=FORMAT_OCG)
-        self.assertEqual(ocg_report["other_format_excluded"], 25)
+        self.assertEqual(ocg_report["other_format_excluded"], 100)
+        self.assertEqual(
+            ocg_report["non_target_format_counts"],
+            {
+                FORMAT_MASTER_DUEL: 25,
+                FORMAT_OTHER: 25,
+                FORMAT_RUSH_DUEL: 25,
+                FORMAT_TCG_ADVANCED: 25,
+            },
+        )
 
     def test_publication_time_cutoff_uses_published_at_over_first_seen(self):
         # first_seen_at would put this list far in the past window; published_at
