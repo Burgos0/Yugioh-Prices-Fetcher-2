@@ -34,8 +34,25 @@ jobs:
         run: |
           python -m scripts.collect_meta_watch_lists --report data/meta_watch_collection_report.json
 
+      - name: report category-page failures
+        if: always() && hashFiles('data/meta_watch_collection_report.json') != ''
+        run: |
+          python - <<'PY'
+          import json, sys
+          with open("data/meta_watch_collection_report.json") as f:
+              report = json.load(f)
+          failures = report.get("source_failures", [])
+          if failures:
+              print("::group::Konami category-page failures")
+              for entry in failures:
+                  print(f"::warning::source {entry.get('source_url')} failed: {entry.get('error')}")
+              print("::endgroup::")
+          if report.get("all_sources_failed"):
+              print("::error::All Konami category sources were unreachable; no observations collected.")
+          PY
+
       - name: open automated meta watch data-update PR
-        if: success()
+        if: success() && steps.collect.outputs.observations_added != '0' && steps.collect.outputs.observations_added != ''
         uses: peter-evans/create-pull-request@v7
         with:
           commit-message: "Update Meta Watch decklist observations"
