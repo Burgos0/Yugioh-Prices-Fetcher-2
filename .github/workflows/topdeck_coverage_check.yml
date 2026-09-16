@@ -2,16 +2,6 @@ name: topdeck coverage check
 
 on:
   workflow_dispatch:
-  # One-shot trigger so the coverage check can produce a live run from a
-  # coverage-only branch without waiting to merge into the default branch.
-  # Scoped to this branch and to the coverage files only.
-  push:
-    branches:
-      - copilot/get-topdeck-coverage-results
-    paths:
-      - .github/workflows/topdeck_coverage_check.yml
-      - scripts/check_topdeck_coverage.py
-      - tests/test_topdeck_coverage.py
 
 permissions:
   contents: read
