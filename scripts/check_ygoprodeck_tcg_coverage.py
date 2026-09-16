@@ -17,7 +17,19 @@ from typing import Optional
 import requests
 
 YGOPRODECK_API_URL = "https://ygoprodeck.com/api/decks/getDecks.php"
-YGOPRODECK_DECK_DETAIL_URL = "https://ygoprodeck.com/api/decks/get.php"
+# Ordered candidate detail URLs. `/api/decks/get.php` was the historically
+# documented endpoint, but the current live probe run returned HTTP 404 for
+# every request. `/api/decks/getDeck.php` (singular) and the frontend
+# `/api/deck.php?decklist=` are known variants used by the ygoprodeck.com
+# front-end; we try them in order and record per-URL HTTP status counts in
+# a sanitized diagnostic block so future breaks are self-diagnosing.
+YGOPRODECK_DECK_DETAIL_URL_CANDIDATES = (
+    ("https://ygoprodeck.com/api/decks/getDeck.php", "deck_id"),
+    ("https://ygoprodeck.com/api/deck.php", "decklist"),
+    ("https://ygoprodeck.com/api/decks/get.php", "deck_id"),
+)
+# Legacy single-URL alias kept for callers that still import it.
+YGOPRODECK_DECK_DETAIL_URL = YGOPRODECK_DECK_DETAIL_URL_CANDIDATES[0][0]
 TCG_CATEGORY = "Tournament Meta Decks"
 WINDOW_DAYS = (14, 30, 90)
 PAGE_SIZE = 20
@@ -99,6 +111,12 @@ def _parse_json_array(raw):
     try:
         data = json.loads(raw)
     except (TypeError, ValueError):
+        # Not JSON — some getDecks.php rows use comma-separated card IDs,
+        # e.g. "12345,67890,42". Accept that shape as a legitimate array
+        # source; anything else stays empty.
+        tokens = [t.strip() for t in raw.split(",") if t.strip()]
+        if tokens and all(re.fullmatch(r"-?\d+", t) for t in tokens):
+            return tokens
         return []
     return [str(x) for x in data] if isinstance(data, list) else []
 
@@ -147,7 +165,57 @@ _EVENT_DATE_STRPTIME_PATTERNS = (
 )
 
 
-def _parse_event_date(value) -> Optional[datetime]:
+_RELATIVE_AGO_UNITS = {
+    "minute": timedelta(minutes=1),
+    "minutes": timedelta(minutes=1),
+    "hour": timedelta(hours=1),
+    "hours": timedelta(hours=1),
+    "day": timedelta(days=1),
+    "days": timedelta(days=1),
+    "week": timedelta(weeks=1),
+    "weeks": timedelta(weeks=1),
+    "month": timedelta(days=30),
+    "months": timedelta(days=30),
+    "year": timedelta(days=365),
+    "years": timedelta(days=365),
+}
+_RELATIVE_AGO_RE = re.compile(
+    r"^\s*(\d+)\s+(minute|minutes|hour|hours|day|days|week|weeks|month|months|year|years)\s+ago\s*$",
+    re.IGNORECASE,
+)
+
+
+def _parse_relative_ago(raw: str, now: Optional[datetime] = None) -> Optional[datetime]:
+    """Parse a *concrete* relative timestamp such as `3 days ago`,
+    `1 week ago`, `yesterday`, or `today`. Vague forms like `recently`
+    or `a while ago` return None so they stay honestly FAIL.
+
+    Not a substitution from another field — this parses the same source
+    value the API sent us, just decoding its relative encoding.
+    Approximations (weeks/months/years) are still returned so that
+    14/30/90-day coverage windows work; the sanitized diagnostic
+    surfaces `relative_ago` counts separately so consumers know the
+    precision level."""
+    if not isinstance(raw, str):
+        return None
+    text = raw.strip().lower()
+    if not text:
+        return None
+    ref = now or _now_utc()
+    if text == "today" or text == "just now":
+        return ref
+    if text == "yesterday":
+        return ref - timedelta(days=1)
+    match = _RELATIVE_AGO_RE.match(text)
+    if not match:
+        return None
+    amount = int(match.group(1))
+    unit = match.group(2).lower()
+    delta = _RELATIVE_AGO_UNITS[unit] * amount
+    return ref - delta
+
+
+def _parse_event_date(value, *, now: Optional[datetime] = None) -> Optional[datetime]:
     # Numeric epoch (int / float / all-digit string).
     if isinstance(value, bool):
         return None
@@ -172,7 +240,10 @@ def _parse_event_date(value) -> Optional[datetime]:
             dt = dt.replace(tzinfo=timezone.utc)
         return dt.astimezone(timezone.utc)
     except ValueError:
-        return None
+        pass
+    # Relative-ago phrases such as `3 days ago`. Only concrete "N units
+    # ago" (and `today`/`yesterday`) parse; vague strings stay FAIL.
+    return _parse_relative_ago(raw, now=now)
 
 
 def _parse_epoch(number) -> Optional[datetime]:
@@ -206,7 +277,7 @@ _EVENT_DATE_SHAPE_PATTERNS = (
     ("epoch13", re.compile(r"^-?\d{13}$")),
     ("digits_other", re.compile(r"^-?\d+$")),
     ("human_month", re.compile(r"^(?:\d{1,2}\s+)?[A-Za-z]{3,9}\s+\d{1,2}(?:,)?\s+\d{4}$")),
-    ("relative_ago", re.compile(r"\bago\b", re.IGNORECASE)),
+    ("relative_ago", re.compile(r"\b(ago|yesterday|today|just now)\b", re.IGNORECASE)),
 )
 
 
@@ -479,12 +550,12 @@ def _extract_event_date_raw(record):
     return None, None
 
 
-def _extract_event_date(record):
+def _extract_event_date(record, *, now=None):
     """Return (parsed_datetime, raw_string, key_used, parse_ok)."""
     raw, key = _extract_event_date_raw(record)
     if raw is None:
         return None, None, None, False
-    parsed = _parse_event_date(raw)
+    parsed = _parse_event_date(raw, now=now)
     return parsed, raw, key, parsed is not None
 
 
@@ -514,9 +585,25 @@ def fetch_deck_detail(
     timeout=30,
     min_interval_seconds=DETAIL_MIN_INTERVAL_SECONDS,
     _last_call_ref=None,
+    _http_status_counter=None,
 ):
     """Fetch a single deck detail payload with HTTPS verification, local file
-    cache, and rate limiting. Never bypasses TLS. Never sends auth."""
+    cache, and rate limiting. Never bypasses TLS. Never sends auth.
+
+    Tries each URL in ``YGOPRODECK_DECK_DETAIL_URL_CANDIDATES`` in order and
+    accepts the first response that:
+      * returns HTTP 200 with a JSON body, AND
+      * whose body is a dict (or a list-of-one dict) that exposes any of the
+        expected deck-array keys (`main_deck`, `extra_deck`, `side_deck`).
+
+    Per-URL HTTP status codes are recorded in ``_http_status_counter`` (a
+    ``defaultdict(Counter)`` keyed by URL) so the caller can surface them
+    in a sanitized diagnostic. Only status codes and URLs are recorded —
+    never response bodies.
+
+    If every candidate fails, raises :class:`requests.RequestException` with
+    a summary of the tried URLs and their statuses (URL + status only).
+    """
     if deck_id is None:
         raise ValueError("deck_id is required")
     cache_path = None
@@ -526,32 +613,71 @@ def fetch_deck_detail(
         if os.path.exists(cache_path):
             with open(cache_path) as f:
                 return json.load(f), True
-    if _last_call_ref is not None and min_interval_seconds > 0:
-        last = _last_call_ref.get("t")
-        if last is not None:
-            wait = min_interval_seconds - (time.monotonic() - last)
-            if wait > 0:
-                time.sleep(wait)
     client = session or requests.Session()
-    response = client.get(
-        YGOPRODECK_DECK_DETAIL_URL,
-        params={"deck_id": deck_id},
-        timeout=timeout,
+    last_error = None
+    tried = []
+    for url, param_name in YGOPRODECK_DECK_DETAIL_URL_CANDIDATES:
+        # Rate-limit between EVERY outbound request (candidate attempts count
+        # too — we never burst-hit the origin).
+        if _last_call_ref is not None and min_interval_seconds > 0:
+            last = _last_call_ref.get("t")
+            if last is not None:
+                wait = min_interval_seconds - (time.monotonic() - last)
+                if wait > 0:
+                    time.sleep(wait)
+        try:
+            response = client.get(
+                url,
+                params={param_name: deck_id},
+                timeout=timeout,
+            )
+        except requests.RequestException as exc:
+            if _last_call_ref is not None:
+                _last_call_ref["t"] = time.monotonic()
+            last_error = exc
+            tried.append((url, "network_error"))
+            if _http_status_counter is not None:
+                _http_status_counter[url]["network_error"] = (
+                    _http_status_counter[url].get("network_error", 0) + 1
+                )
+            continue
+        if _last_call_ref is not None:
+            _last_call_ref["t"] = time.monotonic()
+        status = getattr(response, "status_code", None)
+        if _http_status_counter is not None and status is not None:
+            _http_status_counter[url][status] = (
+                _http_status_counter[url].get(status, 0) + 1
+            )
+        tried.append((url, status))
+        if status != 200:
+            continue
+        try:
+            payload = response.json()
+        except ValueError:
+            continue
+        if isinstance(payload, list):
+            payload = payload[0] if payload else {}
+        if not isinstance(payload, dict):
+            continue
+        # Require at least one recognized deck-structure key so we don't
+        # accept an unrelated 200 response (e.g. an error envelope).
+        if not any(
+            key in payload for key in ("main_deck", "extra_deck", "side_deck")
+        ):
+            continue
+        if cache_path:
+            with open(cache_path, "w") as f:
+                json.dump(payload, f, sort_keys=True)
+        return payload, False
+
+    tried_summary = ", ".join(f"{u}={s}" for u, s in tried)
+    message = (
+        f"YGOPRODeck detail: no candidate URL yielded a usable payload for "
+        f"deck_id={deck_id} (tried: {tried_summary})"
     )
-    if _last_call_ref is not None:
-        _last_call_ref["t"] = time.monotonic()
-    response.raise_for_status()
-    payload = response.json()
-    if isinstance(payload, list):
-        payload = payload[0] if payload else {}
-    if not isinstance(payload, dict):
-        raise ValueError(
-            f"YGOPRODeck get.php returned non-object payload for deck_id={deck_id}"
-        )
-    if cache_path:
-        with open(cache_path, "w") as f:
-            json.dump(payload, f, sort_keys=True)
-    return payload, False
+    if last_error is not None:
+        raise requests.RequestException(message) from last_error
+    raise requests.RequestException(message)
 
 
 def _classify_field(value, *, field_type="text"):
@@ -570,10 +696,13 @@ def _classify_field(value, *, field_type="text"):
     return "MISSING"
 
 
-def verify_deck_sample(list_row, detail_payload, *, observed_at, cache_hit=False):
+def verify_deck_sample(list_row, detail_payload, *, observed_at, cache_hit=False, now=None):
     """Produce a sanitized per-deck verification row with explicit
     PASS / MISSING / FAIL states for every required field. Never fabricates
-    tournament dates, placements, player counts, or publication timestamps."""
+    tournament dates, placements, player counts, or publication timestamps.
+
+    ``now`` sets the reference for relative-timestamp decoding (e.g.
+    ``3 days ago``). Defaults to ``_now_utc()``."""
     if list_row is None:
         list_row = {}
     detail = detail_payload if isinstance(detail_payload, dict) else {}
@@ -621,7 +750,7 @@ def verify_deck_sample(list_row, detail_payload, *, observed_at, cache_hit=False
             raw_event_date = raw
             event_date_key_used = key
             break
-    parsed_event_date = _parse_event_date(raw_event_date) if raw_event_date else None
+    parsed_event_date = _parse_event_date(raw_event_date, now=now) if raw_event_date else None
     if not raw_event_date:
         event_date_status = "MISSING"
         event_date_iso = None
@@ -786,7 +915,7 @@ def _date_key_present(record, key):
     return False
 
 
-def build_list_response_diagnostics(rows, *, sample_keys_from=5):
+def build_list_response_diagnostics(rows, *, sample_keys_from=5, now=None):
     """Produce a sanitized diagnostic block describing the list response
     shape. Emits KEY NAMES only — never values, player identifiers, or full
     payloads. Safe to attach to the CI artifact.
@@ -837,7 +966,7 @@ def build_list_response_diagnostics(rows, *, sample_keys_from=5):
         raw_event_value, _key = _extract_event_date_raw(row)
         if raw_event_value is not None:
             event_date_shape_counts[_classify_event_date_shape(raw_event_value)] += 1
-        _parsed, _raw, _key, parse_ok = _extract_event_date(row)
+        _parsed, _raw, _key, parse_ok = _extract_event_date(row, now=now)
         if parse_ok:
             event_date_parseable += 1
         if _is_paper_tcg_record(row):
@@ -887,6 +1016,7 @@ def sample_top_cut_details(
     selected, exclusion_reasons = _select_recent_paper_rows(rows, sample_size)
 
     last_call_ref = {"t": None}
+    http_status_counter = defaultdict(lambda: defaultdict(int))
     details = []
     errors = []
     for row in selected:
@@ -899,15 +1029,21 @@ def sample_top_cut_details(
                 timeout=timeout,
                 min_interval_seconds=min_interval_seconds,
                 _last_call_ref=last_call_ref,
+                _http_status_counter=http_status_counter,
             )
         except (requests.RequestException, ValueError) as exc:
             errors.append({"deck_id": deck_id, "error": str(exc)})
+            # Detail HTTP failed. Fall back on card arrays the *catalogue*
+            # row already carries (comma-separated strings or JSON arrays).
+            # This is not substitution from an unrelated field — it's the
+            # same field the source already delivered.
             details.append(
                 verify_deck_sample(
                     row,
-                    {},
+                    _catalogue_row_as_detail(row),
                     observed_at=observed_at,
                     cache_hit=False,
+                    now=now,
                 )
             )
             continue
@@ -917,6 +1053,7 @@ def sample_top_cut_details(
                 detail_payload,
                 observed_at=observed_at,
                 cache_hit=cache_hit,
+                now=now,
             )
         )
 
@@ -934,7 +1071,12 @@ def sample_top_cut_details(
         "sample_size_target": sample_size,
         "sample_size_actual": len(details),
         "sample_kind": "top_cut_only",
-        "endpoint": YGOPRODECK_DECK_DETAIL_URL,
+        "endpoint_candidates": [url for url, _ in YGOPRODECK_DECK_DETAIL_URL_CANDIDATES],
+        "endpoint": YGOPRODECK_DECK_DETAIL_URL_CANDIDATES[0][0],
+        "detail_probe_summary": {
+            url: {str(status): count for status, count in statuses.items()}
+            for url, statuses in http_status_counter.items()
+        },
         "min_interval_seconds": float(min_interval_seconds),
         "observed_at": observed_at,
         "population_bucket_counts": dict(populations),
@@ -943,6 +1085,20 @@ def sample_top_cut_details(
         "detail_errors": errors,
         "exclusion_reason_counts": exclusion_reasons,
     }
+
+
+def _catalogue_row_as_detail(row):
+    """Extract a minimal detail-shaped dict from a catalogue row when the
+    detail endpoint is unavailable. Only carries fields the catalogue
+    already sent — never invents. Empty/unusable strings pass through
+    unchanged so downstream classification still treats them as MISSING."""
+    if not isinstance(row, dict):
+        return {}
+    passthrough = {}
+    for key in ("main_deck", "extra_deck", "side_deck"):
+        if key in row:
+            passthrough[key] = row[key]
+    return passthrough
 
 
 def run_experiment(
@@ -971,7 +1127,21 @@ def run_experiment(
     report["top_cut_sample"] = sample_block
     # A zero-candidate run must be labeled INCONCLUSIVE; do not predeclare
     # success. The overall_status flag is what the workflow step exits on.
+    structure_pass = (
+        sample_block.get("field_totals", {})
+        .get("structure_complete", {})
+        .get("PASS", 0)
+    )
+    detail_probe = sample_block.get("detail_probe_summary", {})
+    any_detail_2xx = any(
+        any(str(code).startswith("2") for code in statuses)
+        for statuses in detail_probe.values()
+    )
     if sample_block["sample_size_actual"] == 0:
+        report["overall_status"] = "INCONCLUSIVE"
+    elif structure_pass == 0 and not any_detail_2xx:
+        # 20 samples selected but no detail endpoint returned a usable
+        # payload and no catalogue row carried complete arrays.
         report["overall_status"] = "INCONCLUSIVE"
     else:
         report["overall_status"] = "OK"

@@ -13,6 +13,7 @@ from scripts.check_ygoprodeck_tcg_coverage import (
     POPULATION_MASTER_DUEL,
     POPULATION_OCG,
     POPULATION_TCG_ADVANCED,
+    YGOPRODECK_DECK_DETAIL_URL_CANDIDATES,
     build_coverage_report,
     build_list_response_diagnostics,
     fetch_deck_detail,
@@ -21,6 +22,7 @@ from scripts.check_ygoprodeck_tcg_coverage import (
     verify_deck_sample,
     write_report,
 )
+import requests
 
 
 class _Response:
@@ -265,26 +267,47 @@ class DetailFollowVerificationTests(unittest.TestCase):
 
 
 class _StubDetailSession:
-    def __init__(self, payloads):
+    def __init__(self, payloads, *, url_status_map=None):
+        """`payloads` maps deck_id -> dict payload returned on 200.
+        `url_status_map` optionally maps candidate URL -> HTTP status to
+        force (default: 200 for the first candidate URL, 404 for the rest).
+        This lets tests simulate the live-run behaviour where the primary
+        detail URL 404s and a later candidate succeeds."""
         self._payloads = payloads
+        self._url_status_map = url_status_map or {}
         self.calls = []
 
     def get(self, url, params=None, timeout=None):
-        self.calls.append({"url": url, "params": dict(params or {}), "timeout": timeout})
-        deck_id = int(params["deck_id"])
-        payload = self._payloads[deck_id]
+        params = dict(params or {})
+        self.calls.append({"url": url, "params": params, "timeout": timeout})
+        deck_id_raw = params.get("deck_id") or params.get("decklist")
+        try:
+            deck_id = int(deck_id_raw)
+        except (TypeError, ValueError):
+            deck_id = None
+        # Default: the first candidate URL succeeds, others 404. Tests can
+        # override with `url_status_map`.
+        default_status = 200 if url == YGOPRODECK_DECK_DETAIL_URL_CANDIDATES[0][0] else 404
+        status = self._url_status_map.get(url, default_status)
+        if status == 200 and deck_id in self._payloads:
+            body = self._payloads[deck_id]
+        else:
+            body = {}
 
         class _Resp:
-            def __init__(self, p):
+            def __init__(self, p, s):
                 self._p = p
+                self.status_code = s
 
             def raise_for_status(self):
+                if self.status_code >= 400:
+                    raise requests.HTTPError(f"{self.status_code}")
                 return None
 
             def json(self):
                 return self._p
 
-        return _Resp(payload)
+        return _Resp(body, status)
 
 
 class DetailFetchCacheAndRateLimitTests(unittest.TestCase):
@@ -391,7 +414,17 @@ class SampleTopCutDetailsTests(unittest.TestCase):
         self.assertEqual(block["sample_kind"], "top_cut_only")
 
     def test_detail_error_recorded_without_inventing_data(self):
-        rows = [self._build_row(9, "2026-09-14")]
+        # When detail fetch fails AND the catalogue row carries no card
+        # arrays, structure must be FAIL — not invented.
+        rows = [
+            self._build_row(
+                9,
+                "2026-09-14",
+                main_deck="",
+                extra_deck="",
+                side_deck="",
+            )
+        ]
 
         class _FailingSession:
             def __init__(self):
@@ -414,10 +447,52 @@ class SampleTopCutDetailsTests(unittest.TestCase):
         self.assertEqual(block["sample_size_actual"], 1)
         self.assertEqual(len(block["detail_errors"]), 1)
         record = block["decks"][0]
-        # Because the detail payload never arrived, card arrays are FAIL, not
-        # invented as PASS.
+        # Detail payload never arrived AND catalogue had no arrays -> FAIL,
+        # not invented as PASS.
         self.assertEqual(record["structure_complete_status"], "FAIL")
         self.assertEqual(record["main_deck_present_status"], "FAIL")
+
+    def test_detail_error_falls_back_to_catalogue_arrays_when_present(self):
+        # When detail fails but the catalogue row carries `main_deck`/
+        # `extra_deck`/`side_deck`, we accept them: it's the SAME field the
+        # source already sent, not substitution from an unrelated field.
+        rows = [
+            self._build_row(
+                10,
+                "2026-09-14",
+                main_deck="1,2,3,4,5,6,7,8,9,10",
+                extra_deck="11,12,13",
+                side_deck="14,15,16",
+            )
+        ]
+
+        class _FailingSession:
+            def __init__(self):
+                self.calls = 0
+
+            def get(self, url, params=None, timeout=None):
+                self.calls += 1
+                raise ValueError("simulated network error")
+
+        session = _FailingSession()
+        now = datetime(2026, 9, 16, tzinfo=timezone.utc)
+        block = sample_top_cut_details(
+            rows,
+            sample_size=5,
+            session=session,
+            cache_dir=None,
+            min_interval_seconds=0.0,
+            now=now,
+        )
+        self.assertEqual(block["sample_size_actual"], 1)
+        self.assertEqual(len(block["detail_errors"]), 1)
+        record = block["decks"][0]
+        # Catalogue-carried arrays satisfy structure_complete.
+        self.assertEqual(record["structure_complete_status"], "PASS")
+        self.assertEqual(record["main_deck_present_status"], "PASS")
+        self.assertEqual(record["main_deck_count"], 10)
+        self.assertEqual(record["extra_deck_count"], 3)
+        self.assertEqual(record["side_deck_count"], 3)
 
 
 # --- Fixtures modelled on the shape observed in live run 35147093938 ---------
@@ -737,11 +812,43 @@ class DeckNumAndSubmitDateShapeTests(unittest.TestCase):
         self.assertIsNotNone(_parse_event_date("12 August 2026"))
 
     def test_submit_date_truly_unparseable_stays_fail(self):
-        # Honest missing rule: never substitute another timestamp.
+        # Honest missing rule: vague relatives / gibberish stay FAIL. The
+        # source's own concrete relative encoding (`N units ago`, `yesterday`)
+        # is decoded — that's parsing the same field, not substitution.
         from scripts.check_ygoprodeck_tcg_coverage import _parse_event_date
         self.assertIsNone(_parse_event_date("recently"))
-        self.assertIsNone(_parse_event_date("3 days ago"))
         self.assertIsNone(_parse_event_date("gibberish"))
+        self.assertIsNone(_parse_event_date("a while ago"))
+        self.assertIsNone(_parse_event_date("some time ago"))
+
+    def test_submit_date_concrete_relative_ago_parses(self):
+        # The current live artifact has `submit_date` in "N units ago" form
+        # for every row. Decode concrete forms so 14/30/90-day coverage
+        # windows work; the sanitized diagnostic separately reports how
+        # many rows used relative interpretation.
+        from scripts.check_ygoprodeck_tcg_coverage import _parse_event_date
+        ref = datetime(2026, 9, 16, 12, 0, 0, tzinfo=timezone.utc)
+        self.assertEqual(
+            _parse_event_date("3 days ago", now=ref),
+            datetime(2026, 9, 13, 12, 0, 0, tzinfo=timezone.utc),
+        )
+        self.assertEqual(
+            _parse_event_date("2 weeks ago", now=ref),
+            datetime(2026, 9, 2, 12, 0, 0, tzinfo=timezone.utc),
+        )
+        self.assertEqual(
+            _parse_event_date("1 hour ago", now=ref),
+            datetime(2026, 9, 16, 11, 0, 0, tzinfo=timezone.utc),
+        )
+        self.assertEqual(
+            _parse_event_date("yesterday", now=ref),
+            datetime(2026, 9, 15, 12, 0, 0, tzinfo=timezone.utc),
+        )
+        # 30-day and 90-day windows must include a "1 month ago" record.
+        self.assertIsNotNone(_parse_event_date("1 month ago", now=ref))
+        self.assertIsNotNone(_parse_event_date("2 months ago", now=ref))
+        # Case-insensitive.
+        self.assertIsNotNone(_parse_event_date("5 Days Ago", now=ref))
 
     def test_list_response_diagnostics_recognizes_deck_num_and_submit_date(self):
         rows = [
@@ -818,6 +925,303 @@ class DeckNumAndSubmitDateShapeTests(unittest.TestCase):
         record = verify_deck_sample(list_row, {}, observed_at="obs")
         self.assertEqual(record["event_date_status"], "FAIL")
         self.assertIsNone(record["event_date"])
+
+
+class DetailUrlCandidateFallbackTests(unittest.TestCase):
+    """The current live artifact showed every request to
+    /api/decks/get.php?deck_id=… returning 404. Pin the recovery: the probe
+    tries multiple documented/known-frontend URL candidates and records
+    per-URL HTTP status counts in a sanitized diagnostic, and the run is
+    marked INCONCLUSIVE when none succeed."""
+
+    @staticmethod
+    def _row(deck_num, submit_date="2026-09-14 12:00:00", **overrides):
+        row = {
+            "deckNum": deck_num,
+            "submit_date": submit_date,
+            "tournamentName": f"Event {deck_num}",
+            "tournamentPlacement": "Top 8",
+            "tournamentPlayerCount": 128,
+            "tournamentPlayerName": "Player",
+            "format": "Tournament Meta Decks",
+            "pretty_url": f"deck-{deck_num}",
+            "main_deck": "",
+            "extra_deck": "",
+            "side_deck": "",
+        }
+        row.update(overrides)
+        return row
+
+    def test_url_candidate_list_starts_with_getDeck_php(self):
+        # /api/decks/get.php returned 404 for all 20 attempts in the live
+        # artifact — it MUST no longer be the primary candidate.
+        primary_url = YGOPRODECK_DECK_DETAIL_URL_CANDIDATES[0][0]
+        self.assertNotEqual(primary_url, "https://ygoprodeck.com/api/decks/get.php")
+        # And getDeck.php (singular, current front-end) MUST be probed.
+        candidate_urls = {url for url, _ in YGOPRODECK_DECK_DETAIL_URL_CANDIDATES}
+        self.assertIn("https://ygoprodeck.com/api/decks/getDeck.php", candidate_urls)
+        self.assertIn("https://ygoprodeck.com/api/deck.php", candidate_urls)
+
+    def test_fetch_deck_detail_falls_through_to_second_candidate(self):
+        # Simulate: primary URL 404s, second candidate returns the payload.
+        second_url = YGOPRODECK_DECK_DETAIL_URL_CANDIDATES[1][0]
+        session = _StubDetailSession(
+            {42: {"deckNum": 42, "main_deck": [1] * 40, "extra_deck": [2] * 15, "side_deck": [3] * 15}},
+            url_status_map={
+                YGOPRODECK_DECK_DETAIL_URL_CANDIDATES[0][0]: 404,
+                second_url: 200,
+            },
+        )
+        payload, hit = fetch_deck_detail(
+            42, session=session, cache_dir=None, min_interval_seconds=0.0
+        )
+        self.assertFalse(hit)
+        self.assertEqual(payload["deckNum"], 42)
+        # Both URLs were tried; the first got a 404, the second succeeded.
+        tried_urls = [call["url"] for call in session.calls]
+        self.assertEqual(tried_urls[0], YGOPRODECK_DECK_DETAIL_URL_CANDIDATES[0][0])
+        self.assertEqual(tried_urls[1], second_url)
+
+    def test_fetch_deck_detail_respects_decklist_param_name(self):
+        # The /api/deck.php URL takes `decklist=`, not `deck_id=`.
+        session = _StubDetailSession(
+            {42: {"deckNum": 42, "main_deck": [1], "extra_deck": [2], "side_deck": [3]}},
+            url_status_map={
+                YGOPRODECK_DECK_DETAIL_URL_CANDIDATES[0][0]: 404,
+                YGOPRODECK_DECK_DETAIL_URL_CANDIDATES[1][0]: 200,
+            },
+        )
+        fetch_deck_detail(42, session=session, cache_dir=None, min_interval_seconds=0.0)
+        deck_php_call = [
+            c for c in session.calls if c["url"] == YGOPRODECK_DECK_DETAIL_URL_CANDIDATES[1][0]
+        ][0]
+        self.assertIn("decklist", deck_php_call["params"])
+        self.assertEqual(int(deck_php_call["params"]["decklist"]), 42)
+
+    def test_all_candidates_404_raises_request_exception(self):
+        session = _StubDetailSession(
+            {},
+            url_status_map={url: 404 for url, _ in YGOPRODECK_DECK_DETAIL_URL_CANDIDATES},
+        )
+        with self.assertRaises(requests.RequestException) as ctx:
+            fetch_deck_detail(42, session=session, cache_dir=None, min_interval_seconds=0.0)
+        # Sanitized: message references URLs and statuses, no payload bodies.
+        self.assertIn("42", str(ctx.exception))
+        self.assertIn("404", str(ctx.exception))
+
+    def test_detail_probe_summary_records_per_url_status_counts(self):
+        rows = [self._row(1000 + i) for i in range(3)]
+        # Every attempt 404s across every candidate.
+        session = _StubDetailSession(
+            {},
+            url_status_map={url: 404 for url, _ in YGOPRODECK_DECK_DETAIL_URL_CANDIDATES},
+        )
+        now = datetime(2026, 9, 16, tzinfo=timezone.utc)
+        block = sample_top_cut_details(
+            rows,
+            sample_size=3,
+            session=session,
+            cache_dir=None,
+            min_interval_seconds=0.0,
+            now=now,
+        )
+        summary = block["detail_probe_summary"]
+        # Every candidate URL appears with a 404 count of 3 (one per deck).
+        for url, _ in YGOPRODECK_DECK_DETAIL_URL_CANDIDATES:
+            self.assertIn(url, summary)
+            self.assertEqual(summary[url].get("404"), 3)
+        # Detail errors surfaced but sample size still 3 (verified rows, no
+        # invented data).
+        self.assertEqual(block["sample_size_actual"], 3)
+        self.assertEqual(len(block["detail_errors"]), 3)
+        # No structure_complete PASS because catalogue rows had empty arrays.
+        self.assertEqual(
+            block["field_totals"]["structure_complete_status"].get("PASS", 0), 0
+        )
+
+    def test_detail_probe_summary_does_not_leak_bodies(self):
+        session = _StubDetailSession(
+            {},
+            url_status_map={url: 404 for url, _ in YGOPRODECK_DECK_DETAIL_URL_CANDIDATES},
+        )
+        now = datetime(2026, 9, 16, tzinfo=timezone.utc)
+        rows = [
+            self._row(1, tournamentPlayerName="SECRET_PLAYER_XYZ"),
+        ]
+        block = sample_top_cut_details(
+            rows,
+            sample_size=1,
+            session=session,
+            cache_dir=None,
+            min_interval_seconds=0.0,
+            now=now,
+        )
+        blob = json.dumps(block["detail_probe_summary"])
+        self.assertNotIn("SECRET_PLAYER_XYZ", blob)
+
+    def test_run_experiment_marks_inconclusive_when_all_details_404(self):
+        # Even though sample_size_actual > 0, if no detail HTTP call
+        # succeeded AND no catalogue arrays were usable, overall_status
+        # MUST be INCONCLUSIVE.
+        from scripts import check_ygoprodeck_tcg_coverage as mod
+
+        rows = [self._row(1000 + i) for i in range(5)]
+
+        class _All404Session:
+            def __init__(self):
+                self.calls = []
+
+            def get(self, url, params=None, timeout=None):
+                self.calls.append({"url": url, "params": dict(params or {})})
+
+                class _R:
+                    status_code = 404
+
+                    def raise_for_status(self):
+                        raise requests.HTTPError("404")
+
+                    def json(self):
+                        return {}
+
+                return _R()
+
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        out_path = os.path.join(tmp.name, "report.json")
+
+        session = _All404Session()
+        with mock.patch.object(mod, "fetch_tcg_decks", return_value=rows):
+            report = mod.run_experiment(
+                output_path=out_path,
+                lookback_days=90,
+                timeout=10,
+                sample_size=5,
+                cache_dir=None,
+                min_interval_seconds=0.0,
+                session=session,
+            )
+        self.assertEqual(report["overall_status"], "INCONCLUSIVE")
+        # detail_probe_summary is populated so operators can inspect.
+        self.assertGreater(len(report["top_cut_sample"]["detail_probe_summary"]), 0)
+
+
+class CatalogueArrayFallbackTests(unittest.TestCase):
+    """When getDecks.php itself carries card arrays (either JSON strings or
+    comma-separated numeric strings), the probe must accept them rather
+    than treating structure as MISSING."""
+
+    def test_comma_separated_main_deck_parses(self):
+        from scripts.check_ygoprodeck_tcg_coverage import _parse_json_array
+        self.assertEqual(
+            _parse_json_array("12345,67890,42"),
+            ["12345", "67890", "42"],
+        )
+        # Whitespace and empty tokens tolerated.
+        self.assertEqual(
+            _parse_json_array("1, 2 ,3,"),
+            ["1", "2", "3"],
+        )
+        # Non-numeric comma strings stay empty (not decklist data).
+        self.assertEqual(_parse_json_array("Dark Magician, Blue-Eyes"), [])
+
+    def test_json_array_string_still_parses(self):
+        from scripts.check_ygoprodeck_tcg_coverage import _parse_json_array
+        self.assertEqual(_parse_json_array("[1,2,3]"), ["1", "2", "3"])
+        self.assertEqual(_parse_json_array([1, 2, 3]), ["1", "2", "3"])
+
+    def test_catalogue_arrays_trigger_structure_pass_when_detail_fails(self):
+        # End-to-end: detail 404 on all candidates; catalogue arrays present.
+        row = {
+            "deckNum": 501,
+            "submit_date": "2026-09-14 12:00:00",
+            "tournamentName": "Event",
+            "tournamentPlacement": "Top 8",
+            "tournamentPlayerCount": 128,
+            "tournamentPlayerName": "P",
+            "format": "Tournament Meta Decks",
+            "pretty_url": "e-501",
+            "main_deck": "1,2,3,4,5,6,7,8,9,10",
+            "extra_deck": "11,12,13",
+            "side_deck": "14,15,16",
+        }
+        session = _StubDetailSession(
+            {},
+            url_status_map={url: 404 for url, _ in YGOPRODECK_DECK_DETAIL_URL_CANDIDATES},
+        )
+        now = datetime(2026, 9, 16, tzinfo=timezone.utc)
+        block = sample_top_cut_details(
+            [row],
+            sample_size=1,
+            session=session,
+            cache_dir=None,
+            min_interval_seconds=0.0,
+            now=now,
+        )
+        record = block["decks"][0]
+        self.assertEqual(record["structure_complete_status"], "PASS")
+        self.assertEqual(record["main_deck_count"], 10)
+
+
+class RelativeAgoSubmitDateEndToEndTests(unittest.TestCase):
+    """Live artifact showed EVERY submit_date value in relative_ago form.
+    Pin the end-to-end behaviour: concrete forms parse; the sanitized
+    shape counter reports them; imprecise phrases stay FAIL."""
+
+    @staticmethod
+    def _row(deck_num, submit_date):
+        return {
+            "deckNum": deck_num,
+            "submit_date": submit_date,
+            "tournamentName": f"Event {deck_num}",
+            "tournamentPlacement": "Top 8",
+            "tournamentPlayerCount": 128,
+            "tournamentPlayerName": "P",
+            "format": "Tournament Meta Decks",
+            "pretty_url": f"e-{deck_num}",
+            "main_deck": "1,2,3,4,5,6,7,8,9,10",
+            "extra_deck": "11,12,13",
+            "side_deck": "14,15,16",
+        }
+
+    def test_diagnostics_classifies_relative_ago_shape(self):
+        rows = [
+            self._row(1, "3 days ago"),
+            self._row(2, "1 week ago"),
+            self._row(3, "2 hours ago"),
+            self._row(4, "yesterday"),
+            self._row(5, "recently"),
+        ]
+        now = datetime(2026, 9, 16, 12, 0, 0, tzinfo=timezone.utc)
+        d = build_list_response_diagnostics(rows, now=now)
+        # 4 of 5 rows parseable (the 5th is vague).
+        self.assertEqual(d["event_date_parseable_count"], 4)
+        # Shape counter surfaces the ago category, key-only.
+        self.assertGreaterEqual(d["event_date_shape_counts"].get("relative_ago", 0), 4)
+
+    def test_end_to_end_ago_dates_pass_and_populate_windows(self):
+        # 3 rows within 14 days, 3 rows within 30 days, 3 within 90 days.
+        session = _StubDetailSession(
+            {
+                i: {"deckNum": i, "main_deck": [1] * 40, "extra_deck": [2] * 15, "side_deck": [3] * 15}
+                for i in range(1, 10)
+            },
+        )
+        now = datetime(2026, 9, 16, 12, 0, 0, tzinfo=timezone.utc)
+        rows = [
+            self._row(1, "3 days ago"),
+            self._row(2, "1 week ago"),
+            self._row(3, "2 weeks ago"),
+        ]
+        block = sample_top_cut_details(
+            rows,
+            sample_size=3,
+            session=session,
+            cache_dir=None,
+            min_interval_seconds=0.0,
+            now=now,
+        )
+        self.assertEqual(block["sample_size_actual"], 3)
+        self.assertEqual(block["field_totals"]["event_date_status"]["PASS"], 3)
 
 
 if __name__ == "__main__":
