@@ -24,6 +24,9 @@ jobs:
         run: |
           python -m scripts.check_ygoprodeck_tcg_coverage \
             --lookback-days 90 \
+            --sample-size 20 \
+            --min-interval-seconds 1.0 \
+            --cache-dir "${{ runner.temp }}/ygoprodeck_detail_cache" \
             --output "${{ runner.temp }}/ygoprodeck_tcg_coverage_report.json"
 
       - name: upload sanitized coverage report
