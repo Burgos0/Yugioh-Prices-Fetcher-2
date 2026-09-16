@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from html import unescape
 from urllib.parse import urljoin, urlparse
 
+import certifi
 import requests
 
 sys.path.insert(0, ".")
@@ -305,6 +306,20 @@ def _write_json(path, payload):
         json.dump(payload, f, indent=2, sort_keys=True)
 
 
+def _build_session():
+    """Return a requests Session that verifies HTTPS against the certifi CA bundle.
+
+    GitHub-hosted runners occasionally ship with a system trust store that is
+    missing or stale relative to the intermediates Konami serves, which produced
+    SSL_CERTIFICATE_VERIFY_FAILED errors in the daily collector run. Pinning
+    verification to the bundled certifi roots keeps TLS verification enabled
+    while removing that source of flakiness.
+    """
+    session = requests.Session()
+    session.verify = certifi.where()
+    return session
+
+
 def collect_and_import(
     dataset_path=DEFAULT_DATASET_PATH,
     report_path=DEFAULT_REPORT_PATH,
@@ -313,7 +328,7 @@ def collect_and_import(
     sources=None,
     session=None,
 ):
-    client = session or requests.Session()
+    client = session or _build_session()
     sources = tuple(sources or DEFAULT_SOURCE_INDEXES)
     existing = load_dataset(dataset_path)
     existing_by_key = {dedupe_key(obs): obs for obs in existing.get("observations", [])}
@@ -376,12 +391,14 @@ def collect_and_import(
             existing_by_key[key] = obs
 
     import_result = import_observations_payload({"observations": collected}, dataset_path=dataset_path, dry_run=dry_run)
+    all_sources_failed = bool(sources) and len(source_failures) == len(sources)
     report = {
         "collected_at": _now_iso(),
         "dataset_path": dataset_path,
         "dry_run": dry_run,
         "sources_checked": len(sources),
         "source_failures": source_failures,
+        "all_sources_failed": all_sources_failed,
         "source_articles_checked": len(article_sources),
         "source_article_failures": article_failures,
         "candidate_observations": len(collected),
@@ -393,6 +410,21 @@ def collect_and_import(
     }
     _write_json(report_path, report)
     return report
+
+
+def _emit_github_output(report):
+    output_path = os.environ.get("GITHUB_OUTPUT")
+    if not output_path:
+        return
+    added = 0
+    if isinstance(report.get("import"), dict):
+        added = int(report["import"].get("added", 0) or 0)
+    lines = [
+        f"observations_added={added}",
+        f"all_sources_failed={'true' if report.get('all_sources_failed') else 'false'}",
+    ]
+    with open(output_path, "a") as f:
+        f.write("\n".join(lines) + "\n")
 
 
 def main():
@@ -410,6 +442,13 @@ def main():
         timeout=args.timeout,
     )
     print(json.dumps(result, indent=2))
+    _emit_github_output(result)
+    if result.get("all_sources_failed"):
+        print(
+            "ERROR: every configured category source was unreachable; failing the job.",
+            file=sys.stderr,
+        )
+        sys.exit(2)
 
 
 if __name__ == "__main__":

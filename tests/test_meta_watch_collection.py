@@ -1,11 +1,16 @@
 import json
+import os
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 
+import certifi
 import requests
 
 from scripts.collect_meta_watch_lists import (
+    _build_session,
     collect_and_import,
     parse_article_observations,
 )
@@ -173,6 +178,146 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("peter-evans/create-pull-request@v7", workflow)
         self.assertNotIn("git push", workflow)
         self.assertIn("scripts.collect_meta_watch_lists", workflow)
+
+    def test_meta_watch_workflow_gates_pr_on_new_observations(self):
+        workflow = (
+            Path(__file__).resolve().parents[1]
+            / ".github"
+            / "workflows"
+            / "meta_watch_daily.yml"
+        ).read_text()
+        self.assertIn("steps.collect.outputs.observations_added", workflow)
+        # Ensure the gate is on the PR-opening step, not just informational
+        self.assertRegex(
+            workflow,
+            r"open automated meta watch data-update PR[\s\S]*?if:[^\n]*steps\.collect\.outputs\.observations_added",
+        )
+
+    def test_meta_watch_workflow_never_disables_tls(self):
+        workflow = (
+            Path(__file__).resolve().parents[1]
+            / ".github"
+            / "workflows"
+            / "meta_watch_daily.yml"
+        ).read_text()
+        self.assertNotIn("curl -k", workflow)
+        self.assertNotIn("--insecure", workflow)
+        self.assertNotIn("verify=False", workflow)
+
+
+class TlsAndFailureTests(unittest.TestCase):
+    def test_default_session_uses_certifi_bundle(self):
+        session = _build_session()
+        try:
+            self.assertEqual(session.verify, certifi.where())
+            self.assertTrue(os.path.exists(session.verify))
+        finally:
+            session.close()
+
+    def test_collector_never_disables_tls_verification(self):
+        source = Path(__file__).resolve().parents[1] / "scripts" / "collect_meta_watch_lists.py"
+        text = source.read_text()
+        self.assertNotIn("verify=False", text)
+        self.assertNotIn("verify = False", text)
+        self.assertNotIn("VERIFY_NONE", text)
+
+    def test_all_sources_failed_flag_and_cli_exit_code(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            dataset_path = str(Path(tmp) / "meta_watch_lists.json")
+            report_path = str(Path(tmp) / "report.json")
+            with open(dataset_path, "w") as f:
+                json.dump({"schema_version": 1, "observations": []}, f)
+
+            sources = (
+                {"name": "a", "url": "https://yugiohblog.konami.com/category/ycs/", "format": "TCG_ADVANCED", "region": "NA"},
+                {"name": "b", "url": "https://yugiohblog.konami.com/category/championships/", "format": "TCG_ADVANCED", "region": "NA"},
+            )
+            session = _FakeSession({
+                sources[0]["url"]: requests.exceptions.SSLError("CERTIFICATE_VERIFY_FAILED"),
+                sources[1]["url"]: requests.exceptions.SSLError("CERTIFICATE_VERIFY_FAILED"),
+            })
+            report = collect_and_import(
+                dataset_path=dataset_path,
+                report_path=report_path,
+                dry_run=False,
+                sources=sources,
+                session=session,
+            )
+            self.assertTrue(report["all_sources_failed"])
+            self.assertEqual(len(report["source_failures"]), 2)
+            self.assertEqual(report["import"]["added"], 0)
+            with open(dataset_path) as f:
+                self.assertEqual(json.load(f)["observations"], [])
+
+    def test_partial_source_failure_does_not_mark_all_failed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            dataset_path = str(Path(tmp) / "meta_watch_lists.json")
+            report_path = str(Path(tmp) / "report.json")
+            with open(dataset_path, "w") as f:
+                json.dump({"schema_version": 1, "observations": []}, f)
+            sources = (
+                {"name": "a", "url": "https://yugiohblog.konami.com/category/ycs/", "format": "TCG_ADVANCED", "region": "NA"},
+                {"name": "b", "url": "https://yugiohblog.konami.com/category/championships/", "format": "TCG_ADVANCED", "region": "NA"},
+            )
+            session = _FakeSession({
+                sources[0]["url"]: "<html></html>",
+                sources[1]["url"]: requests.exceptions.SSLError("boom"),
+            })
+            report = collect_and_import(
+                dataset_path=dataset_path,
+                report_path=report_path,
+                dry_run=False,
+                sources=sources,
+                session=session,
+            )
+            self.assertFalse(report["all_sources_failed"])
+            self.assertEqual(len(report["source_failures"]), 1)
+
+    def test_cli_exits_nonzero_and_emits_outputs_when_all_sources_fail(self):
+        repo_root = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as tmp:
+            dataset_path = Path(tmp) / "meta_watch_lists.json"
+            report_path = Path(tmp) / "report.json"
+            gh_output = Path(tmp) / "gh_output"
+            gh_output.touch()
+            with open(dataset_path, "w") as f:
+                json.dump({"schema_version": 1, "observations": []}, f)
+
+            # Point the two default sources at a non-routable localhost port so
+            # every request fails without hitting the network.
+            wrapper = Path(tmp) / "run.py"
+            wrapper.write_text(
+                "import sys\n"
+                f"sys.path.insert(0, {str(repo_root)!r})\n"
+                "from scripts import collect_meta_watch_lists as m\n"
+                "m.DEFAULT_SOURCE_INDEXES = (\n"
+                "    {'name': 'a', 'url': 'http://127.0.0.1:1/one/', 'format': 'TCG_ADVANCED', 'region': 'NA'},\n"
+                "    {'name': 'b', 'url': 'http://127.0.0.1:1/two/', 'format': 'TCG_ADVANCED', 'region': 'NA'},\n"
+                ")\n"
+                "m.main()\n"
+            )
+            env = dict(os.environ)
+            env["GITHUB_OUTPUT"] = str(gh_output)
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(wrapper),
+                    "--dataset",
+                    str(dataset_path),
+                    "--report",
+                    str(report_path),
+                    "--timeout",
+                    "1",
+                ],
+                cwd=str(repo_root),
+                env=env,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(result.returncode, 2, msg=result.stderr)
+            output_contents = gh_output.read_text()
+            self.assertIn("observations_added=0", output_contents)
+            self.assertIn("all_sources_failed=true", output_contents)
 
 
 if __name__ == "__main__":
