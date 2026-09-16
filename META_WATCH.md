@@ -96,9 +96,12 @@ printing; 0 remain unresolved.
 - Only `source_type: "tournament"` observations count; casual uploads are
   excluded from adoption stats but not silently dropped from the dataset.
 - Same player + same event is deduplicated, keeping the first import.
-- Formats/banlists are never combined: TCG Advanced, OCG, and Master Duel
-  are tracked as separate `format` values, and each `banlist_id` is
-  evaluated as its own pair of 14-day windows.
+- Formats/banlists are never combined: TCG Advanced, OCG, Master Duel, Rush
+  Duel, and `OTHER` are tracked as separate `format` values. Each
+  `banlist_id` is evaluated as its own pair of 14-day windows.
+- `build_meta_watch_report(...)` now records `format_population_counts` and
+  `non_target_format_counts` so each format population is visible separately
+  and excluded populations are explicit in every report.
 - Publication-time cutoff prefers `published_at`; falls back to
   `first_seen_at` (the import time) only when no publication date is
   known.

@@ -16,7 +16,7 @@ Input file format: a JSON array of observation objects, or
   "event_name": "YCS Atlanta 2026",     # required
   "event_date": "2026-08-30",           # required, YYYY-MM-DD
   "region": "NA",                       # required
-  "format": "TCG_ADVANCED",             # required: TCG_ADVANCED | OCG | MASTER_DUEL
+  "format": "TCG_ADVANCED",             # required: TCG_ADVANCED | OCG | MASTER_DUEL | RUSH_DUEL | OTHER
   "banlist_id": "2026-04",              # required, the banlist in effect
   "player": "Jane Doe",                 # required
   "placement": "1st",                   # optional
