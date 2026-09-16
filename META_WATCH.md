@@ -146,6 +146,25 @@ writes) with:
   date)
 - coverage windows for the last 14/30/90 days
 
+## YGOPRODeck source evaluation experiment (pre-decision only)
+
+`scripts/check_ygoprodeck_tcg_coverage.py` and
+`.github/workflows/ygoprodeck_coverage_check.yml` provide a read-only
+coverage experiment for curated **Tournament Meta Decks (TCG)**. This is
+for source-selection evidence only (no production data writes).
+
+- Uses YGOPRODeck's observed deck feed endpoint:
+  `https://ygoprodeck.com/api/decks/getDecks.php` with
+  `_sft_category=Tournament Meta Decks`
+- Reports 14/30/90-day event and decklist coverage, metadata completeness,
+  timestamp quality, and excluded non-paper records.
+- Explicitly excludes OCG, Master Duel, Genesys, online/remote/casual/test
+  markers from paper TCG counts.
+
+Because this endpoint is not part of YGOPRODeck's documented card API guide,
+results from this check are used to evaluate viability and maintenance risk
+before any integration decision.
+
 ## Remaining limitations
 
 - Only 6 lists have been imported (well below the unchanged minimum-sample
