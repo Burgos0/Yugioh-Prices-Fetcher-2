@@ -82,7 +82,8 @@ class CoverageReportTests(unittest.TestCase):
         # No explicit publication fields in payload -> no substituted timestamps.
         self.assertIsNone(report["events"][0]["publication_timestamp"])
         self.assertIsNone(report["events"][1]["publication_timestamp"])
-        self.assertTrue(report["paper_tcg_advanced_distinction"]["reliably_distinguished"])
+        self.assertTrue(report["paper_tcg_advanced_distinction"]["reliably_distinguished_in_sample"])
+        self.assertEqual(report["paper_tcg_advanced_distinction"]["sample_size"], 2)
 
     def test_distinction_uncertain_when_digital_name_marker_present(self):
         now = datetime(2026, 9, 15, tzinfo=timezone.utc)
@@ -97,8 +98,8 @@ class CoverageReportTests(unittest.TestCase):
             }
         ]
         report = build_coverage_report(tournaments, lookback_days=90, now=now)
-        self.assertFalse(report["paper_tcg_advanced_distinction"]["reliably_distinguished"])
-        self.assertEqual(report["paper_tcg_advanced_distinction"]["assessment"], "uncertain")
+        self.assertFalse(report["paper_tcg_advanced_distinction"]["reliably_distinguished_in_sample"])
+        self.assertEqual(report["paper_tcg_advanced_distinction"]["assessment"], "uncertain_in_sample")
 
 
 class ReportWriteTests(unittest.TestCase):
