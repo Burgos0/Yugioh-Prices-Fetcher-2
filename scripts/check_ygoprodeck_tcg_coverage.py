@@ -36,7 +36,7 @@ POPULATION_OTHER = "OTHER"
 # We never fall back to a *value* — only to an alternate key that carries the
 # same semantic field. A missing/absent field stays MISSING; an unparseable
 # value stays FAIL.
-DECK_ID_KEYS = ("deckID", "deck_id", "id")
+DECK_ID_KEYS = ("deckNum", "deckID", "deck_id", "id")
 EVENT_DATE_KEYS = (
     "submit_date",
     "date_submitted",
@@ -121,28 +121,124 @@ def _classify_deck_completeness(record):
     return "missing_or_incomplete", {"main_count": len(main), "extra_count": len(extra), "side_count": len(side)}
 
 
+_EVENT_DATE_STRPTIME_PATTERNS = (
+    # Date-only.
+    "%Y-%m-%d",
+    "%m/%d/%Y",
+    "%d/%m/%Y",
+    "%Y/%m/%d",
+    # MySQL DATETIME (space separator) — the format actually returned by
+    # ygoprodeck.com/api/decks/getDecks.php `submit_date`, e.g.
+    # "2023-11-27 17:42:36". Python 3.11's fromisoformat also accepts this,
+    # but we register it explicitly so behaviour is stable across runners.
+    "%Y-%m-%d %H:%M:%S",
+    "%Y-%m-%d %H:%M:%S.%f",
+    "%Y-%m-%dT%H:%M:%S",
+    "%Y-%m-%dT%H:%M:%S.%f",
+    # European/US variants with time.
+    "%d/%m/%Y %H:%M:%S",
+    "%m/%d/%Y %H:%M:%S",
+    "%d-%m-%Y %H:%M:%S",
+    # Human-readable variants sometimes surfaced by WP-backed feeds.
+    "%B %d, %Y",
+    "%b %d, %Y",
+    "%d %B %Y",
+    "%d %b %Y",
+)
+
+
 def _parse_event_date(value) -> Optional[datetime]:
+    # Numeric epoch (int / float / all-digit string).
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return _parse_epoch(value)
     raw = _safe_str(value)
     if not raw:
         return None
-    patterns = ("%Y-%m-%d", "%m/%d/%Y", "%d/%m/%Y", "%Y/%m/%d")
-    for pattern in patterns:
+    if raw.isdigit() or (raw.startswith("-") and raw[1:].isdigit()):
+        try:
+            return _parse_epoch(int(raw))
+        except (TypeError, ValueError):
+            pass
+    for pattern in _EVENT_DATE_STRPTIME_PATTERNS:
         try:
             return datetime.strptime(raw, pattern).replace(tzinfo=timezone.utc)
         except ValueError:
             continue
-    for parser in (lambda s: datetime.fromisoformat(s.replace("Z", "+00:00")),):
-        try:
-            dt = parser(raw)
-            if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=timezone.utc)
-            return dt.astimezone(timezone.utc)
-        except ValueError:
-            continue
-    return None
+    try:
+        dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(timezone.utc)
+    except ValueError:
+        return None
+
+
+def _parse_epoch(number) -> Optional[datetime]:
+    """Interpret an integer/float as a Unix epoch. 10-digit values are
+    treated as seconds, 13-digit as milliseconds. Rejects implausible
+    years (< 2000 or > 2100) to guard against non-epoch integers."""
+    try:
+        n = int(number)
+    except (TypeError, ValueError):
+        return None
+    if abs(n) >= 10**12:  # 13-digit ms
+        n = n // 1000
+    if abs(n) < 10**9 or abs(n) > 10**10:
+        return None
+    try:
+        dt = datetime.fromtimestamp(n, tz=timezone.utc)
+    except (OverflowError, OSError, ValueError):
+        return None
+    if dt.year < 2000 or dt.year > 2100:
+        return None
+    return dt
+
+
+_EVENT_DATE_SHAPE_PATTERNS = (
+    ("date_only", re.compile(r"^\d{4}-\d{2}-\d{2}$")),
+    ("sql_datetime", re.compile(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)?$")),
+    ("iso_t", re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?$")),
+    ("us_slash", re.compile(r"^\d{1,2}/\d{1,2}/\d{4}(?: \d{1,2}:\d{2}(?::\d{2})?)?$")),
+    ("eu_dash", re.compile(r"^\d{1,2}-\d{1,2}-\d{4}(?: \d{1,2}:\d{2}(?::\d{2})?)?$")),
+    ("epoch10", re.compile(r"^-?\d{10}$")),
+    ("epoch13", re.compile(r"^-?\d{13}$")),
+    ("digits_other", re.compile(r"^-?\d+$")),
+    ("human_month", re.compile(r"^(?:\d{1,2}\s+)?[A-Za-z]{3,9}\s+\d{1,2}(?:,)?\s+\d{4}$")),
+    ("relative_ago", re.compile(r"\bago\b", re.IGNORECASE)),
+)
+
+
+def _classify_event_date_shape(value) -> str:
+    """Regex-only shape classification of a raw date value. Never returns
+    the value itself — only a stable category name. Used for sanitized
+    diagnostics so unknown formats can be identified without leaking
+    tournament data."""
+    if isinstance(value, bool):
+        return "boolean"
+    if isinstance(value, (int, float)):
+        digits = str(abs(int(value)))
+        if len(digits) == 10:
+            return "epoch10"
+        if len(digits) == 13:
+            return "epoch13"
+        return "numeric_other"
+    raw = _safe_str(value)
+    if not raw:
+        return "empty"
+    for name, pattern in _EVENT_DATE_SHAPE_PATTERNS:
+        if pattern.search(raw) if name == "relative_ago" else pattern.match(raw):
+            return name
+    return "unknown"
 
 
 def _publication_timestamp_quality(value):
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        parsed = _parse_epoch(value)
+        if parsed is None:
+            return {"quality": "unparseable", "normalized": None}
+        return {"quality": "timestamp", "normalized": _iso(parsed)}
     raw = _safe_str(value)
     if not raw:
         return {"quality": "missing", "normalized": None}
@@ -366,15 +462,20 @@ def _extract_deck_url(record):
 
 
 def _extract_event_date_raw(record):
-    """Return (raw_string, key_used) for the first candidate date key that
-    holds a non-empty string, or (None, None) if none present. Never
-    substitutes a value from another field-shape."""
+    """Return (raw_value, key_used) for the first candidate date key that
+    holds a non-empty value, or (None, None) if none present. Never
+    substitutes a value from another field-shape. Raw value may be a
+    string or a numeric epoch — parsing normalises it later."""
     if not isinstance(record, dict):
         return None, None
     for key in EVENT_DATE_KEYS:
-        raw = _safe_str(record.get(key))
-        if raw:
-            return raw, key
+        raw_value = record.get(key)
+        if isinstance(raw_value, str):
+            stripped = raw_value.strip()
+            if stripped:
+                return stripped, key
+        elif isinstance(raw_value, (int, float)) and not isinstance(raw_value, bool):
+            return raw_value, key
     return None, None
 
 
@@ -674,6 +775,17 @@ def _select_recent_paper_rows(rows, sample_size):
     return selected, dict(reasons)
 
 
+def _date_key_present(record, key):
+    """A date-candidate key counts as present if it holds a non-empty
+    string OR any numeric (epoch) value. Zero-length string is absent."""
+    value = record.get(key)
+    if isinstance(value, str):
+        return bool(value.strip())
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return True
+    return False
+
+
 def build_list_response_diagnostics(rows, *, sample_keys_from=5):
     """Produce a sanitized diagnostic block describing the list response
     shape. Emits KEY NAMES only — never values, player identifiers, or full
@@ -704,6 +816,7 @@ def build_list_response_diagnostics(rows, *, sample_keys_from=5):
     event_date_key_present = 0
     event_date_keys_seen = set()
     event_date_parseable = 0
+    event_date_shape_counts = defaultdict(int)
     passes_paper = 0
     passes_tcg_advanced = 0
     population_counts = defaultdict(int)
@@ -717,10 +830,13 @@ def build_list_response_diagnostics(rows, *, sample_keys_from=5):
             deck_id_key_present += 1
             deck_id_keys_seen.update(row_deck_id_keys)
         # Event-date key visibility.
-        row_date_keys = [key for key in EVENT_DATE_KEYS if _safe_str(row.get(key))]
+        row_date_keys = [key for key in EVENT_DATE_KEYS if _date_key_present(row, key)]
         if row_date_keys:
             event_date_key_present += 1
             event_date_keys_seen.update(row_date_keys)
+        raw_event_value, _key = _extract_event_date_raw(row)
+        if raw_event_value is not None:
+            event_date_shape_counts[_classify_event_date_shape(raw_event_value)] += 1
         _parsed, _raw, _key, parse_ok = _extract_event_date(row)
         if parse_ok:
             event_date_parseable += 1
@@ -745,6 +861,7 @@ def build_list_response_diagnostics(rows, *, sample_keys_from=5):
         "event_date_keys_seen": sorted(event_date_keys_seen),
         "event_date_keys_probed": list(EVENT_DATE_KEYS),
         "event_date_parseable_count": event_date_parseable,
+        "event_date_shape_counts": dict(event_date_shape_counts),
         "passes_is_paper_tcg_record": passes_paper,
         "classified_tcg_advanced": passes_tcg_advanced,
         "population_bucket_counts": dict(population_counts),

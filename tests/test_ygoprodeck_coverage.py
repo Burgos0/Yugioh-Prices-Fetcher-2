@@ -669,5 +669,156 @@ class ExclusionReasonAndInconclusiveTests(unittest.TestCase):
         )
 
 
+class DeckNumAndSubmitDateShapeTests(unittest.TestCase):
+    """Pin down the *actual* getDecks.php list shape observed in the newer
+    live run: the deck id is `deckNum` (not `deckID`), and `submit_date` is
+    a MySQL DATETIME string ("YYYY-MM-DD HH:MM:SS"). Prior fixtures used a
+    guessed shape; these fixtures encode the real one."""
+
+    @staticmethod
+    def _live_row(deck_num, submit_date, **overrides):
+        row = {
+            "deckNum": deck_num,
+            "submit_date": submit_date,
+            "tournamentName": "Sample Regional",
+            "tournamentPlacement": "Top 8",
+            "tournamentPlayerCount": 128,
+            "tournamentPlayerName": "Player X",
+            "format": "Tournament Meta Decks",
+            "pretty_url": f"sample-{deck_num}",
+            "main_deck": "",
+            "extra_deck": "",
+            "side_deck": "",
+        }
+        row.update(overrides)
+        return row
+
+    def test_deck_num_is_probed_first(self):
+        self.assertEqual(DECK_ID_KEYS[0], "deckNum")
+
+    def test_submit_date_mysql_datetime_parses(self):
+        from scripts.check_ygoprodeck_tcg_coverage import (
+            _extract_event_date,
+        )
+        row = self._live_row(732667, "2026-08-12 20:23:11")
+        parsed, raw, key, ok = _extract_event_date(row)
+        self.assertTrue(ok)
+        self.assertEqual(key, "submit_date")
+        self.assertEqual(raw, "2026-08-12 20:23:11")
+        self.assertEqual(parsed.strftime("%Y-%m-%d"), "2026-08-12")
+
+    def test_submit_date_iso_t_parses(self):
+        from scripts.check_ygoprodeck_tcg_coverage import _parse_event_date
+        self.assertIsNotNone(_parse_event_date("2026-08-12T20:23:11"))
+        self.assertIsNotNone(_parse_event_date("2026-08-12T20:23:11Z"))
+        self.assertIsNotNone(_parse_event_date("2026-08-12T20:23:11.500Z"))
+
+    def test_submit_date_epoch_seconds_parses(self):
+        from scripts.check_ygoprodeck_tcg_coverage import _parse_event_date
+        # 2026-08-12 00:00:00 UTC = 1786320000
+        parsed = _parse_event_date(1786320000)
+        self.assertIsNotNone(parsed)
+        self.assertEqual(parsed.year, 2026)
+        # Numeric string form.
+        parsed2 = _parse_event_date("1786320000")
+        self.assertIsNotNone(parsed2)
+        self.assertEqual(parsed2, parsed)
+
+    def test_submit_date_epoch_milliseconds_parses(self):
+        from scripts.check_ygoprodeck_tcg_coverage import _parse_event_date
+        parsed = _parse_event_date(1786320000000)
+        self.assertIsNotNone(parsed)
+        self.assertEqual(parsed.year, 2026)
+
+    def test_submit_date_human_format_parses(self):
+        from scripts.check_ygoprodeck_tcg_coverage import _parse_event_date
+        self.assertIsNotNone(_parse_event_date("August 12, 2026"))
+        self.assertIsNotNone(_parse_event_date("Aug 12, 2026"))
+        self.assertIsNotNone(_parse_event_date("12 August 2026"))
+
+    def test_submit_date_truly_unparseable_stays_fail(self):
+        # Honest missing rule: never substitute another timestamp.
+        from scripts.check_ygoprodeck_tcg_coverage import _parse_event_date
+        self.assertIsNone(_parse_event_date("recently"))
+        self.assertIsNone(_parse_event_date("3 days ago"))
+        self.assertIsNone(_parse_event_date("gibberish"))
+
+    def test_list_response_diagnostics_recognizes_deck_num_and_submit_date(self):
+        rows = [
+            self._live_row(732667, "2026-08-12 20:23:11"),
+            self._live_row(732668, "2026-08-13 15:00:01"),
+            self._live_row(732669, "2026-08-14 09:44:12"),
+        ]
+        d = build_list_response_diagnostics(rows)
+        self.assertEqual(d["raw_row_count"], 3)
+        self.assertEqual(d["deck_id_key_present_count"], 3)
+        self.assertEqual(d["deck_id_keys_seen"], ["deckNum"])
+        self.assertEqual(d["event_date_key_present_count"], 3)
+        self.assertEqual(d["event_date_keys_seen"], ["submit_date"])
+        self.assertEqual(d["event_date_parseable_count"], 3)
+        self.assertEqual(d["classified_tcg_advanced"], 3)
+        self.assertEqual(d["status"], "OK")
+        # Shape counter reports the actual live shape, key-only.
+        self.assertEqual(d["event_date_shape_counts"].get("sql_datetime"), 3)
+
+    def test_event_date_shape_counts_classifies_unknown_shape(self):
+        rows = [
+            self._live_row(1, "recently"),
+            self._live_row(2, "3 days ago"),
+        ]
+        d = build_list_response_diagnostics(rows)
+        # Shape counter surfaces the actual junk shape so operators can
+        # extend parsing without leaking values.
+        self.assertGreaterEqual(
+            d["event_date_shape_counts"].get("unknown", 0)
+            + d["event_date_shape_counts"].get("relative_ago", 0),
+            2,
+        )
+        # Sanity: no raw value bleeds into the diagnostic blob.
+        self.assertNotIn("recently", json.dumps(d))
+        self.assertNotIn("3 days ago", json.dumps(d))
+
+    def test_sample_top_cut_details_follows_20_detail_urls_for_live_shape(self):
+        rows = [
+            self._live_row(1000 + i, f"2026-08-{(i % 28) + 1:02d} 12:00:00")
+            for i in range(30)
+        ]
+        payloads = {
+            1000 + i: {
+                "deckNum": 1000 + i,
+                "main_deck": [1] * 40,
+                "extra_deck": [2] * 15,
+                "side_deck": [3] * 15,
+            }
+            for i in range(30)
+        }
+        session = _StubDetailSession(payloads)
+        now = datetime(2026, 9, 16, tzinfo=timezone.utc)
+        block = sample_top_cut_details(
+            rows,
+            sample_size=20,
+            session=session,
+            cache_dir=None,
+            min_interval_seconds=0.0,
+            now=now,
+        )
+        # THIS is the regression under repair: sample must be 20 (not 0)
+        # when the live shape carries deckNum + MySQL submit_date.
+        self.assertEqual(block["sample_size_actual"], 20)
+        self.assertEqual(len(session.calls), 20)
+        self.assertEqual(block["field_totals"]["event_date_status"]["PASS"], 20)
+        self.assertEqual(
+            block["population_bucket_counts"][POPULATION_TCG_ADVANCED], 20
+        )
+
+    def test_verify_deck_sample_honours_unparseable_date_for_live_shape(self):
+        # Honest missing: parse fails -> FAIL, not PASS, and event_date is
+        # never substituted from another timestamp.
+        list_row = self._live_row(1, "recently")
+        record = verify_deck_sample(list_row, {}, observed_at="obs")
+        self.assertEqual(record["event_date_status"], "FAIL")
+        self.assertIsNone(record["event_date"])
+
+
 if __name__ == "__main__":
     unittest.main()
