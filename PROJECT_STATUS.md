@@ -106,7 +106,7 @@ product UI. See §6 for the sequenced follow-ups.
 
 | Signal | Source | Live-verified in this repo | Notes |
 |---|---|---|---|
-| Daily tracked price | TCGCSV daily archive | Yes, in production (`scripts/fetch_prices.py` + `daily.yml`) | Category 2 = Yu-Gi-Oh. Missing subtypes never auto-switched. |
+| Daily tracked price | TCGCSV live per-set API | Yes, in production (`scripts/fetch_prices.py` + `daily.yml`) | Category 2 = Yu-Gi-Oh. Complete fetches use their UTC observation date; missing subtypes never auto-switched. |
 | Momentum signal | derived from `prices.db` | Yes, in production (`scripts/early_movers.py`, `scripts/top_gainers.py`) | 15-day snapshot on 2026-09-11; live signal history in `signals.db`. |
 | Meta Watch decklists (manual sample) | Konami blog HTML | Sample of 6 lists imported by hand (see `META_WATCH.md`) | Currently below the analysis' own minimum-sample threshold. |
 | Automated Konami collector | Konami blog HTML | **Draft in PR #3** (`copilot/automate-meta-watch-collection`) | Not merged; belongs to another agent's branch — do not touch. |

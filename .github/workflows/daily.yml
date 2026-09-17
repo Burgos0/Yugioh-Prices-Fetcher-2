@@ -2,7 +2,7 @@ name: yugioh price fetcher
 
 on:
   schedule:
-    - cron: "0 16 * * *"
+    - cron: "0 21 * * *"
   workflow_dispatch:
 
 permissions:
