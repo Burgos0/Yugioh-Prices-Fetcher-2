@@ -482,7 +482,7 @@ def _extra_provenance_fields(obs):
     }
 
 
-def collect_and_import(
+def _run_collect_and_import(
     dataset_path=DEFAULT_DATASET_PATH,
     report_path=DEFAULT_REPORT_PATH,
     dry_run=False,
@@ -497,21 +497,49 @@ def collect_and_import(
     catalogue_session=None,
 ):
     """
-    Fetch the current TCG Advanced feed from YGOPRODeck, filter/normalise
-    rows into Meta Watch observations, resolve YGOPRODeck deck-array
-    passcodes to canonical card names via the YGOPRODeck cardinfo
-    catalogue (fetched at most once per run and cached locally), and
-    import the resolved observations.
+    Internal helper that runs the collector and returns
+    ``(report, safe_summary)``.
 
-    On a catalogue endpoint failure -- either the decklist feed or the
-    cardinfo catalogue -- the dataset is left untouched and the failure
-    is reported in the returned report dict.
-
-    ``passcode_map`` may be supplied by callers/tests to skip the
-    catalogue fetch entirely (useful for offline determinism).
+    ``safe_summary`` is populated from primitive local integer/boolean
+    counters that are incremented in-place during processing, never
+    derived from the report dict. This gives CodeQL a clean data-flow
+    boundary between the detailed report (which contains paths, endpoint
+    URLs, and passcode-shaped keys) and the safe stdout summary.
     """
     now = now or _now_utc()
     from_date = (now - timedelta(days=int(lookback_days))).strftime("%Y-%m-%d")
+
+    # Primitive local counters -- the only source of stdout summary
+    # values. These are ints/bools with no path/URL/name provenance.
+    c_success = True
+    c_dry_run = bool(dry_run)
+    c_records_fetched = 0
+    c_records_excluded_non_tcg_advanced = 0
+    c_candidate_observations = 0
+    c_records_rejected = 0
+    c_records_unresolved_passcodes = 0
+    c_unresolved_passcode_count = 0
+    c_dup_existing = 0
+    c_dup_batch = 0
+    c_observations_changed = 0
+
+    def _safe_summary():
+        return {
+            "status": "ok" if c_success else "endpoint_failure",
+            "success": c_success,
+            "dry_run": c_dry_run,
+            "records_fetched": c_records_fetched,
+            "records_excluded_non_tcg_advanced": c_records_excluded_non_tcg_advanced,
+            "candidate_observations": c_candidate_observations,
+            "observations_scanned": c_records_fetched,
+            "observations_changed": c_observations_changed,
+            "records_rejected": c_records_rejected,
+            "records_unresolved_passcodes": c_records_unresolved_passcodes,
+            "resolved_passcode_count": c_observations_changed,
+            "unresolved_passcode_count": c_unresolved_passcode_count,
+            "duplicate_existing_precheck_skipped": c_dup_existing,
+            "duplicate_in_batch_precheck_skipped": c_dup_batch,
+        }
 
     existing = load_dataset(dataset_path)
     existing_obs = existing.get("observations", [])
@@ -564,10 +592,12 @@ def collect_and_import(
             "duplicate_in_batch_skipped": 0,
             "rejected": [],
         }
+        c_success = False
         _write_json(report_path, report)
-        return report
+        return report, _safe_summary()
 
     report["records_fetched"] = len(rows)
+    c_records_fetched = len(rows)
 
     # Fetch the card catalogue exactly once per run (or reuse the local
     # cache). Failure here leaves the dataset untouched and is reported
@@ -594,8 +624,9 @@ def collect_and_import(
                 "duplicate_in_batch_skipped": 0,
                 "rejected": [],
             }
+            c_success = False
             _write_json(report_path, report)
-            return report
+            return report, _safe_summary()
     else:
         catalogue_source = "provided"
     report["card_catalogue"] = {"source": catalogue_source, "size": len(passcode_map)}
@@ -611,6 +642,7 @@ def collect_and_import(
         # rows rejected for missing metadata.
         if not _is_tcg_advanced_record(row):
             report["records_excluded_non_tcg_advanced"] += 1
+            c_records_excluded_non_tcg_advanced += 1
             continue
 
         observation, reason = record_to_observation(row, now=now)
@@ -618,6 +650,7 @@ def collect_and_import(
             report["rejected_records"].append(
                 {"deckNum": deck_num, "pretty_url": _safe_str(row.get("pretty_url")), "reason": reason}
             )
+            c_records_rejected += 1
             continue
 
         # Resolve YGOPRODeck deck-array passcodes to canonical card
@@ -628,6 +661,17 @@ def collect_and_import(
             observation, passcode_map
         )
         if resolved_obs is None:
+            # Sum unresolved copy-counts using only primitive int
+            # addition on the entry counts; the passcode-shaped keys
+            # in the report are never read on the stdout data path.
+            zone_total = 0
+            for entries in unresolved_by_zone.values():
+                for entry in entries:
+                    n = entry.get("count")
+                    if isinstance(n, int) and n > 0:
+                        zone_total += n
+            c_unresolved_passcode_count += zone_total
+            c_records_unresolved_passcodes += 1
             report["unresolved_passcode_records"].append(
                 {
                     "deckNum": deck_num,
@@ -647,22 +691,27 @@ def collect_and_import(
                     "reason": "; ".join(errors),
                 }
             )
+            c_records_rejected += 1
             continue
 
         deck_id = observation["source_deck_id"]
         if deck_id in existing_deck_ids:
             report["duplicate_existing_precheck_skipped"] += 1
+            c_dup_existing += 1
             continue
         if deck_id in seen_batch_deck_ids:
             report["duplicate_in_batch_precheck_skipped"] += 1
+            c_dup_batch += 1
             continue
 
         key = dedupe_key(observation)
         if key in existing_by_key:
             report["duplicate_existing_precheck_skipped"] += 1
+            c_dup_existing += 1
             continue
         if key in seen_batch_dedupe_keys:
             report["duplicate_in_batch_precheck_skipped"] += 1
+            c_dup_batch += 1
             continue
 
         seen_batch_deck_ids.add(deck_id)
@@ -670,6 +719,7 @@ def collect_and_import(
         candidates.append(observation)
 
     report["candidate_observations"] = len(candidates)
+    c_candidate_observations = len(candidates)
 
     import_result = import_observations_payload(
         {"observations": candidates}, dataset_path=dataset_path, dry_run=dry_run
@@ -678,7 +728,46 @@ def collect_and_import(
     report["imported_provenance_sample"] = [
         _extra_provenance_fields(obs) for obs in candidates[:5]
     ]
+    added = import_result.get("added")
+    c_observations_changed = int(added) if isinstance(added, int) else 0
     _write_json(report_path, report)
+    return report, _safe_summary()
+
+
+def collect_and_import(
+    dataset_path=DEFAULT_DATASET_PATH,
+    report_path=DEFAULT_REPORT_PATH,
+    dry_run=False,
+    lookback_days=DEFAULT_LOOKBACK_DAYS,
+    timeout=DEFAULT_TIMEOUT,
+    session=None,
+    pacing_seconds=DEFAULT_REQUEST_PACING_SECONDS,
+    sleep=time.sleep,
+    now=None,
+    cache_dir=DEFAULT_CACHE_DIR,
+    passcode_map=None,
+    catalogue_session=None,
+):
+    """
+    Public entry point returning just the report dict (backward
+    compatible with existing callers and tests). CLI code that needs
+    the stdout-safe summary should call ``_run_collect_and_import``
+    directly.
+    """
+    report, _ = _run_collect_and_import(
+        dataset_path=dataset_path,
+        report_path=report_path,
+        dry_run=dry_run,
+        lookback_days=lookback_days,
+        timeout=timeout,
+        session=session,
+        pacing_seconds=pacing_seconds,
+        sleep=sleep,
+        now=now,
+        cache_dir=cache_dir,
+        passcode_map=passcode_map,
+        catalogue_session=catalogue_session,
+    )
     return report
 
 
@@ -758,7 +847,12 @@ def main():
     )
     args = parser.parse_args()
 
-    result = collect_and_import(
+    # Use the internal helper so we receive the safe summary directly,
+    # constructed from primitive local integer/boolean counters --
+    # never derived from the report dict on the stdout side. The full
+    # report is still persisted to args.report inside
+    # _run_collect_and_import.
+    _report, summary = _run_collect_and_import(
         dataset_path=args.dataset,
         report_path=args.report,
         dry_run=args.dry_run,
@@ -767,10 +861,6 @@ def main():
         pacing_seconds=args.pacing_seconds,
         cache_dir=args.cache_dir,
     )
-    # Full report is persisted to args.report by collect_and_import().
-    # Stdout only receives an independently-constructed, allowlisted
-    # summary of safe scalar counts -- never the report dict itself.
-    summary = build_stdout_summary(result)
     sys.stdout.write(json.dumps(summary, indent=2, sort_keys=True) + "\n")
     if not summary["success"]:
         sys.exit(1)

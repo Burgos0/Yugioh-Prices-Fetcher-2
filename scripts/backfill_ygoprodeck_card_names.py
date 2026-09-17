@@ -148,7 +148,7 @@ def check_prices_db_coverage(prices_db_path, canonical_names):
     return result
 
 
-def backfill(
+def _run_backfill(
     dataset_path=DEFAULT_DATASET_PATH,
     report_path=DEFAULT_REPORT_PATH,
     cache_dir=DEFAULT_CACHE_DIR,
@@ -160,10 +160,31 @@ def backfill(
     catalogue_source_override=None,
 ):
     """
-    Return a report dict. ``passcode_map`` may be supplied by tests to
-    skip the catalogue fetch entirely and stay deterministic.
+    Internal helper that runs the backfill and returns
+    ``(report, safe_summary)``.
+
+    ``safe_summary`` is populated from primitive local integer/boolean
+    counters that are incremented in-place during processing, never
+    derived from the report dict. This gives CodeQL a clean data-flow
+    boundary between the detailed report (which contains paths, endpoint
+    URLs, and passcode-shaped keys) and the safe stdout summary.
     """
     now_iso = (now or datetime.now(timezone.utc)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    # Primitive local counters -- the only source of stdout summary
+    # values. These are ints/bools with no path/URL/name provenance.
+    c_observations_total = 0
+    c_observations_ygoprodeck = 0
+    c_observations_scanned = 0
+    c_observations_already_canonical_skipped = 0
+    c_observations_resolved = 0
+    c_records_rejected = 0
+    c_unresolved_passcode_count = 0
+    c_matched_card_name_count = 0
+    c_unmatched_card_name_count = 0
+    c_prices_db_checked = False
+    c_success = True
+    c_dry_run = bool(dry_run)
 
     report = {
         "backfilled_at": now_iso,
@@ -181,23 +202,44 @@ def backfill(
         "prices_db_coverage": None,
     }
 
+    def _safe_summary():
+        return {
+            "status": "ok" if c_success else "endpoint_failure",
+            "success": c_success,
+            "dry_run": c_dry_run,
+            "observations_scanned": c_observations_scanned,
+            "observations_changed": c_observations_resolved,
+            "observations_already_canonical_skipped": (
+                c_observations_already_canonical_skipped
+            ),
+            "records_rejected": c_records_rejected,
+            "resolved_passcode_count": c_observations_resolved,
+            "unresolved_passcode_count": c_unresolved_passcode_count,
+            "matched_card_name_count": c_matched_card_name_count,
+            "unmatched_card_name_count": c_unmatched_card_name_count,
+            "prices_db_checked": c_prices_db_checked,
+        }
+
     if not os.path.exists(dataset_path):
         report["endpoint_failure"] = {
             "endpoint": dataset_path,
             "error": "dataset file does not exist",
         }
+        c_success = False
         _atomic_write_json(report_path, report)
-        return report
+        return report, _safe_summary()
 
     # Read the raw file so we can compare byte-for-byte on failure.
     with open(dataset_path, "rb") as f:
         original_bytes = f.read()
     dataset = json.loads(original_bytes.decode("utf-8"))
     observations = dataset.get("observations", [])
-    report["observations_total"] = len(observations)
-    report["observations_ygoprodeck"] = sum(
+    c_observations_total = len(observations)
+    c_observations_ygoprodeck = sum(
         1 for o in observations if o.get("source_provider") == "ygoprodeck"
     )
+    report["observations_total"] = c_observations_total
+    report["observations_ygoprodeck"] = c_observations_ygoprodeck
 
     if passcode_map is None:
         try:
@@ -210,9 +252,10 @@ def backfill(
                 "endpoint": "ygoprodeck cardinfo",
                 "error": str(exc),
             }
+            c_success = False
             # Dataset stays byte-identical on catalogue/cache failure.
             _atomic_write_json(report_path, report)
-            return report
+            return report, _safe_summary()
     else:
         catalogue_source = catalogue_source_override or "provided"
     report["card_catalogue"] = {"source": catalogue_source, "size": len(passcode_map)}
@@ -226,11 +269,24 @@ def backfill(
         if not observation_has_numeric_passcodes(obs):
             # Idempotent: already-canonical YGOPRODeck rows are skipped.
             report["observations_already_canonical_skipped"] += 1
+            c_observations_already_canonical_skipped += 1
             new_observations.append(obs)
             continue
         report["observations_scanned"] += 1
+        c_observations_scanned += 1
         resolved, unresolved_by_zone = resolve_observation_cards(obs, passcode_map)
         if resolved is None:
+            # Track the count from unresolved zones using primitive int
+            # addition on entry counts. We stay off the "passcode" key
+            # here -- summing the "count" values is enough.
+            zone_total = 0
+            for entries in unresolved_by_zone.values():
+                for entry in entries:
+                    n = entry.get("count")
+                    if isinstance(n, int) and n > 0:
+                        zone_total += n
+            c_unresolved_passcode_count += zone_total
+            c_records_rejected += 1
             report["observations_unresolved"].append(
                 {
                     "event_id": obs.get("event_id"),
@@ -243,6 +299,7 @@ def backfill(
             new_observations.append(obs)
             continue
         report["observations_resolved"] += 1
+        c_observations_resolved += 1
         any_change = True
         new_observations.append(resolved)
 
@@ -256,11 +313,46 @@ def backfill(
     # persisted. It never chooses a specific printing.
     if prices_db_path is not None:
         canonical_names = list(_iter_canonical_names(new_observations))
-        report["prices_db_coverage"] = check_prices_db_coverage(
-            prices_db_path, canonical_names
-        )
+        coverage = check_prices_db_coverage(prices_db_path, canonical_names)
+        report["prices_db_coverage"] = coverage
+        # Count-only summary values -- taken from len() of local lists
+        # we just built, not from any password-shaped structure.
+        if coverage.get("present"):
+            c_prices_db_checked = True
+            c_matched_card_name_count = len(coverage.get("matched") or [])
+            c_unmatched_card_name_count = len(coverage.get("unmatched") or [])
 
     _atomic_write_json(report_path, report)
+    return report, _safe_summary()
+
+
+def backfill(
+    dataset_path=DEFAULT_DATASET_PATH,
+    report_path=DEFAULT_REPORT_PATH,
+    cache_dir=DEFAULT_CACHE_DIR,
+    dry_run=False,
+    prices_db_path=None,
+    session=None,
+    now=None,
+    passcode_map=None,
+    catalogue_source_override=None,
+):
+    """
+    Public entry point that returns just the report dict (for backward
+    compatibility with existing callers and tests). CLI code that needs
+    the stdout-safe summary should call ``_run_backfill`` directly.
+    """
+    report, _ = _run_backfill(
+        dataset_path=dataset_path,
+        report_path=report_path,
+        cache_dir=cache_dir,
+        dry_run=dry_run,
+        prices_db_path=prices_db_path,
+        session=session,
+        now=now,
+        passcode_map=passcode_map,
+        catalogue_source_override=catalogue_source_override,
+    )
     return report
 
 
@@ -328,17 +420,17 @@ def main():
     )
     args = parser.parse_args()
 
-    result = backfill(
+    # Use the internal helper so we receive the safe summary directly,
+    # constructed from primitive local integer/boolean counters --
+    # never derived from the report dict on the stdout side. The full
+    # report is still persisted to args.report inside _run_backfill.
+    _report, summary = _run_backfill(
         dataset_path=args.dataset,
         report_path=args.report,
         cache_dir=args.cache_dir,
         dry_run=args.dry_run,
         prices_db_path=args.prices_db,
     )
-    # Full report is persisted to args.report by backfill(). Stdout only
-    # receives an independently-constructed, allowlisted summary of safe
-    # scalar counts -- never the report dict itself.
-    summary = build_stdout_summary(result)
     sys.stdout.write(json.dumps(summary, indent=2, sort_keys=True) + "\n")
     if not summary["success"]:
         sys.exit(1)
