@@ -173,6 +173,10 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("peter-evans/create-pull-request@v7", workflow)
         self.assertNotIn("git push", workflow)
         self.assertIn("scripts.collect_meta_watch_lists", workflow)
+        # YGOPRODeck backfill is wired into the same automated PR and its
+        # report is included in add-paths.
+        self.assertIn("scripts.collect_ygoprodeck_lists", workflow)
+        self.assertIn("data/meta_watch_ygoprodeck_report.json", workflow)
 
 
 if __name__ == "__main__":

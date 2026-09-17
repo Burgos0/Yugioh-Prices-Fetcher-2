@@ -34,6 +34,12 @@ jobs:
         run: |
           python -m scripts.collect_meta_watch_lists --report data/meta_watch_collection_report.json
 
+      - name: backfill from YGOPRODeck TCG Advanced catalogue
+        id: collect_ygoprodeck
+        continue-on-error: true
+        run: |
+          python -m scripts.collect_ygoprodeck_lists --report data/meta_watch_ygoprodeck_report.json
+
       - name: open automated meta watch data-update PR
         if: success()
         uses: peter-evans/create-pull-request@v7
@@ -44,9 +50,11 @@ jobs:
             Automated Meta Watch decklist collection update.
 
             - Source failures, rejected records, changed-source flags, and import counts are recorded in `data/meta_watch_collection_report.json`.
+            - YGOPRODeck TCG Advanced backfill status is recorded in `data/meta_watch_ygoprodeck_report.json`.
             - This PR preserves existing data and appends only validated, non-duplicate observations.
           branch: "automation/meta-watch-decklists"
           delete-branch: false
           add-paths: |
             data/meta_watch_lists.json
             data/meta_watch_collection_report.json
+            data/meta_watch_ygoprodeck_report.json
