@@ -357,12 +357,12 @@ class CollectAndImportTests(unittest.TestCase):
         self.cache_path = str(Path(self.tmp.name) / "card_cache.json")
 
     def _stub_bridge(self, mapping):
-        """Return a resolve_passcodes_fn stub that resolves from ``mapping``."""
+        """Return a resolve_card_ids_fn stub that resolves from ``mapping``."""
 
-        def _fn(passcodes, cache_path=None, session=None, timeout=None):
+        def _fn(card_ids, cache_path=None, session=None, timeout=None):
             resolved = {}
             unresolved = []
-            for p in passcodes:
+            for p in card_ids:
                 p_str = str(p)
                 if p_str in mapping:
                     resolved[p_str] = mapping[p_str]
@@ -432,7 +432,7 @@ class CollectAndImportTests(unittest.TestCase):
             sleep=lambda s: None,
             now=NOW,
             card_cache_path=self.cache_path,
-            resolve_passcodes_fn=self._default_bridge(),
+            resolve_card_ids_fn=self._default_bridge(),
         )
 
         self.assertIsNone(report["endpoint_failure"])
@@ -494,7 +494,7 @@ class CollectAndImportTests(unittest.TestCase):
             sleep=lambda s: None,
             now=NOW,
             card_cache_path=self.cache_path,
-            resolve_passcodes_fn=self._default_bridge(),
+            resolve_card_ids_fn=self._default_bridge(),
         )
         self.assertEqual(report["duplicate_existing_precheck_skipped"], 1)
         self.assertEqual(report["import"]["added"], 1)
@@ -517,7 +517,7 @@ class CollectAndImportTests(unittest.TestCase):
             sleep=lambda s: None,
             now=NOW,
             card_cache_path=self.cache_path,
-            resolve_passcodes_fn=self._default_bridge(),
+            resolve_card_ids_fn=self._default_bridge(),
         )
         self.assertEqual(report["duplicate_in_batch_precheck_skipped"], 1)
         self.assertEqual(report["import"]["added"], 1)
@@ -554,7 +554,7 @@ class CollectAndImportTests(unittest.TestCase):
             sleep=lambda s: None,
             now=NOW,
             card_cache_path=self.cache_path,
-            resolve_passcodes_fn=self._default_bridge(),
+            resolve_card_ids_fn=self._default_bridge(),
         )
         self.assertIsNotNone(report["endpoint_failure"])
         self.assertIn("network down", report["endpoint_failure"]["error"])
@@ -579,7 +579,7 @@ class CollectAndImportTests(unittest.TestCase):
             sleep=lambda s: None,
             now=NOW,
             card_cache_path=self.cache_path,
-            resolve_passcodes_fn=self._default_bridge(),
+            resolve_card_ids_fn=self._default_bridge(),
         )
         self.assertEqual(report["import"]["added"], 0)
         reasons = {r["reason"] for r in report["rejected_records"]}
@@ -607,7 +607,7 @@ class CollectAndImportTests(unittest.TestCase):
             sleep=lambda s: None,
             now=NOW,
             card_cache_path=self.cache_path,
-            resolve_passcodes_fn=self._default_bridge(),
+            resolve_card_ids_fn=self._default_bridge(),
         )
         self.assertEqual(report["records_excluded_non_tcg_advanced"], 4)
         self.assertEqual(report["import"]["added"], 0)

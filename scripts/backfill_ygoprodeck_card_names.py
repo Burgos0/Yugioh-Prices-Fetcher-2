@@ -1,6 +1,6 @@
 """
 Idempotent backfill CLI: rewrite existing YGOPRODeck observations so
-their deck arrays store canonical card names instead of numeric passcodes.
+their deck arrays store canonical card names instead of numeric card_ids.
 
 Scope and invariants:
 
@@ -11,10 +11,10 @@ Scope and invariants:
 - **Idempotent.** A second run against the already-backfilled dataset
   produces zero changes. That includes: entries whose ``name`` is
   already a canonical (non-numeric) name are passed through untouched;
-  duplicate passcodes that both map to the same canonical name have
+  duplicate card_ids that both map to the same canonical name have
   their counts summed on the first run and stay stable on subsequent
   runs.
-- **Honest rejection.** If any passcode in an observation cannot be
+- **Honest rejection.** If any card_id in an observation cannot be
   resolved by the card bridge, that whole observation is left untouched
   and reported. We never write a partial rewrite.
 - **Dry-run by default.** ``--apply`` is required to actually persist
@@ -22,7 +22,7 @@ Scope and invariants:
   detailed JSON report is printed.
 - **No network unless needed.** The bridge fetches the cardinfo
   endpoint at most once, and only if the on-disk cache cannot resolve
-  every passcode already. Rerunning after a successful apply is a pure
+  every card_id already. Rerunning after a successful apply is a pure
   cache-hit, no-op operation.
 """
 import argparse
@@ -35,28 +35,28 @@ from app.meta_watch import DEFAULT_DATASET_PATH, load_dataset, save_dataset  # n
 from scripts.ygoprodeck_card_bridge import (  # noqa: E402
     DEFAULT_CACHE_PATH as DEFAULT_BRIDGE_CACHE_PATH,
     CardBridgeError,
-    _normalize_passcode,
+    _normalize_card_id,
     rebuild_cards_with_canonical_names,
-    resolve_passcodes,
+    resolve_card_ids,
 )
 
 
 DECK_FIELDS = ("main_deck", "side_deck", "extra_deck")
 
 
-def _collect_passcodes(observation):
-    passcodes = set()
+def _collect_card_ids(observation):
+    card_ids = set()
     for field in DECK_FIELDS:
         for entry in observation.get(field, []) or []:
-            passcode = _normalize_passcode(entry.get("name") if isinstance(entry, dict) else None)
-            if passcode is not None:
-                passcodes.add(passcode)
-    return passcodes
+            card_id = _normalize_card_id(entry.get("name") if isinstance(entry, dict) else None)
+            if card_id is not None:
+                card_ids.add(card_id)
+    return card_ids
 
 
 def _observation_needs_backfill(observation):
-    """True if any deck entry still uses a numeric passcode as its name."""
-    return bool(_collect_passcodes(observation))
+    """True if any deck entry still uses a numeric card_id as its name."""
+    return bool(_collect_card_ids(observation))
 
 
 def _rewrite_observation(observation, resolved):
@@ -84,7 +84,7 @@ def backfill(
     dataset_path=DEFAULT_DATASET_PATH,
     card_cache_path=DEFAULT_BRIDGE_CACHE_PATH,
     apply=False,
-    resolve_passcodes_fn=resolve_passcodes,
+    resolve_card_ids_fn=resolve_card_ids,
     session=None,
     timeout=None,
 ):
@@ -94,10 +94,10 @@ def backfill(
 
     Args:
         dataset_path: path to ``meta_watch_lists.json``.
-        card_cache_path: on-disk passcode -> name cache.
+        card_cache_path: on-disk card_id -> name cache.
         apply: when False (default) the dataset file is left untouched
             and only a report is produced.
-        resolve_passcodes_fn: dependency-injection hook (tests use this
+        resolve_card_ids_fn: dependency-injection hook (tests use this
             to skip the real bridge fetch).
         session, timeout: forwarded to the bridge fetcher when needed.
 
@@ -122,20 +122,20 @@ def backfill(
     }
 
     needs_backfill = []
-    all_passcodes = set()
+    all_card_ids = set()
     for index, observation in enumerate(observations):
         if not isinstance(observation, dict):
             continue
         if observation.get("source_provider") != "ygoprodeck":
             continue
         report["ygoprodeck_observations"] += 1
-        passcodes = _collect_passcodes(observation)
-        if not passcodes:
+        card_ids = _collect_card_ids(observation)
+        if not card_ids:
             # Already canonical -- idempotency guarantees this row is
             # untouched on subsequent runs.
             continue
-        needs_backfill.append((index, observation, passcodes))
-        all_passcodes.update(passcodes)
+        needs_backfill.append((index, observation, card_ids))
+        all_card_ids.update(card_ids)
 
     report["observations_needing_backfill"] = len(needs_backfill)
 
@@ -144,8 +144,8 @@ def backfill(
         return report
 
     try:
-        resolved, _unresolved_global, fetched = resolve_passcodes_fn(
-            sorted(all_passcodes),
+        resolved, _unresolved_global, fetched = resolve_card_ids_fn(
+            sorted(all_card_ids),
             cache_path=card_cache_path,
             session=session,
             timeout=timeout,
@@ -158,7 +158,7 @@ def backfill(
 
     mutated = False
     new_observations = list(observations)
-    for index, observation, _passcodes in needs_backfill:
+    for index, observation, _card_ids in needs_backfill:
         new_obs, unresolved, changed = _rewrite_observation(observation, resolved)
         if unresolved:
             report["observations_with_unresolved_ids"].append(
@@ -198,7 +198,7 @@ def main(argv=None):
     parser.add_argument(
         "--card-cache",
         default=DEFAULT_BRIDGE_CACHE_PATH,
-        help="Path to the passcode -> canonical name cache",
+        help="Path to the card_id -> canonical name cache",
     )
     parser.add_argument(
         "--apply",

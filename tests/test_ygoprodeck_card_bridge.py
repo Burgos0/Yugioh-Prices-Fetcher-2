@@ -3,14 +3,14 @@ Offline tests for the YGOPRODeck card-identity bridge and the
 idempotent backfill CLI.
 
 Every test stubs out the network layer (either via ``requests``-mocked
-sessions or the ``fetch=`` / ``resolve_passcodes_fn=`` dependency-injection
+sessions or the ``fetch=`` / ``resolve_card_ids_fn=`` dependency-injection
 hooks) so no real HTTP call is ever made. The tests specifically enforce
 the invariants called out in the task:
 
-- ``resolve_passcodes`` maps numeric passcodes to canonical card names.
+- ``resolve_card_ids`` maps numeric card_ids to canonical card names.
 - The on-disk cache is reused across runs; a hit-only workload never
   calls the endpoint again.
-- Unresolved passcodes are reported honestly and cause observations to
+- Unresolved card_ids are reported honestly and cause observations to
   be rejected -- never silently backfilled.
 - An endpoint failure leaves the cache file untouched.
 - The backfill CLI is idempotent (a second run makes zero changes).
@@ -33,7 +33,7 @@ from scripts.ygoprodeck_card_bridge import (
     fetch_cardinfo_map,
     load_cache,
     rebuild_cards_with_canonical_names,
-    resolve_passcodes,
+    resolve_card_ids,
     save_cache,
 )
 
@@ -78,12 +78,12 @@ class _CardInfoSession:
 
 
 def _cardinfo_payload(entries):
-    """Build a cardinfo.php-shaped payload from ``[(passcode, name), ...]``."""
+    """Build a cardinfo.php-shaped payload from ``[(card_id, name), ...]``."""
     return {"data": [{"id": pid, "name": name} for pid, name in entries]}
 
 
 # ---------------------------------------------------------------------------
-# fetch_cardinfo_map / resolve_passcodes
+# fetch_cardinfo_map / resolve_card_ids
 # ---------------------------------------------------------------------------
 
 
@@ -140,7 +140,7 @@ class FetchCardInfoTests(unittest.TestCase):
             fetch_cardinfo_map(session=session)
 
 
-class ResolvePasscodesTests(unittest.TestCase):
+class ResolveCardIdsTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
@@ -153,7 +153,7 @@ class ResolvePasscodesTests(unittest.TestCase):
             fetch_calls.append(True)
             return {"11": "Ash Blossom & Joyous Spring", "22": "Maxx \"C\""}
 
-        resolved, unresolved, fetched = resolve_passcodes(
+        resolved, unresolved, fetched = resolve_card_ids(
             ["11", "22"], cache_path=self.cache_path, fetch=_fetch
         )
         self.assertEqual(
@@ -172,9 +172,9 @@ class ResolvePasscodesTests(unittest.TestCase):
         save_cache({"11": "Ash Blossom & Joyous Spring"}, self.cache_path)
 
         def _fetch():
-            self.fail("resolve_passcodes must not fetch when cache already resolves")
+            self.fail("resolve_card_ids must not fetch when cache already resolves")
 
-        resolved, unresolved, fetched = resolve_passcodes(
+        resolved, unresolved, fetched = resolve_card_ids(
             ["11"], cache_path=self.cache_path, fetch=_fetch
         )
         self.assertEqual(resolved, {"11": "Ash Blossom & Joyous Spring"})
@@ -189,7 +189,7 @@ class ResolvePasscodesTests(unittest.TestCase):
             fetch_count["n"] += 1
             return {"22": "Maxx \"C\"", "33": "Called by the Grave"}
 
-        resolved, unresolved, fetched = resolve_passcodes(
+        resolved, unresolved, fetched = resolve_card_ids(
             ["11", "22", "33"], cache_path=self.cache_path, fetch=_fetch
         )
         self.assertEqual(
@@ -208,7 +208,7 @@ class ResolvePasscodesTests(unittest.TestCase):
         def _fetch():
             return {"11": "Ash Blossom & Joyous Spring"}
 
-        resolved, unresolved, fetched = resolve_passcodes(
+        resolved, unresolved, fetched = resolve_card_ids(
             ["11", "99999999"], cache_path=self.cache_path, fetch=_fetch
         )
         self.assertEqual(resolved, {"11": "Ash Blossom & Joyous Spring"})
@@ -223,28 +223,28 @@ class ResolvePasscodesTests(unittest.TestCase):
             raise CardBridgeError("network down")
 
         with self.assertRaises(CardBridgeError):
-            resolve_passcodes(
+            resolve_card_ids(
                 ["11", "22"], cache_path=self.cache_path, fetch=_fetch
             )
         # Cache file must not have been rewritten.
         self.assertEqual(Path(self.cache_path).read_bytes(), pre_bytes)
 
-    def test_no_fetch_when_no_passcodes_requested(self):
+    def test_no_fetch_when_no_card_ids_requested(self):
         def _fetch():
             self.fail("must not fetch when nothing is requested")
 
-        resolved, unresolved, fetched = resolve_passcodes(
+        resolved, unresolved, fetched = resolve_card_ids(
             [], cache_path=self.cache_path, fetch=_fetch
         )
         self.assertEqual(resolved, {})
         self.assertEqual(unresolved, [])
         self.assertFalse(fetched)
 
-    def test_non_numeric_passcodes_are_skipped_never_fetched(self):
+    def test_non_numeric_card_ids_are_skipped_never_fetched(self):
         def _fetch():
             self.fail("must not fetch for non-numeric names")
 
-        resolved, unresolved, fetched = resolve_passcodes(
+        resolved, unresolved, fetched = resolve_card_ids(
             ["Ash Blossom & Joyous Spring", "", None],
             cache_path=self.cache_path,
             fetch=_fetch,
@@ -301,7 +301,7 @@ class RebuildCardsTests(unittest.TestCase):
         # unresolved id as a whole-observation rejection.
         self.assertEqual(rebuilt, [{"name": "Ash Blossom & Joyous Spring", "count": 3}])
 
-    def test_two_passcodes_mapping_to_same_name_sum_counts(self):
+    def test_two_card_ids_mapping_to_same_name_sum_counts(self):
         cards = [{"name": "11", "count": 2}, {"name": "12", "count": 1}]
         rebuilt, unresolved = rebuild_cards_with_canonical_names(
             cards,
@@ -320,7 +320,7 @@ class RebuildCardsTests(unittest.TestCase):
 
 class OneNameManyPrintingsTests(unittest.TestCase):
     """
-    The bridge only maps passcode -> canonical *card name*. Any given
+    The bridge only maps card_id -> canonical *card name*. Any given
     canonical name can (and often does) correspond to multiple product_ids
     in prices.db (alt-arts, reprints, secret rares, etc). This test wires
     the bridge output through ``app.meta_watch.resolve_card_printings`` on
@@ -348,7 +348,7 @@ class OneNameManyPrintingsTests(unittest.TestCase):
         )
         conn.commit()
 
-        # A single bridge entry (passcode 14558127 -> "Ash Blossom & Joyous
+        # A single bridge entry (card_id 14558127 -> "Ash Blossom & Joyous
         # Spring") is expected to fan out to three tracked printings.
         canonical = "Ash Blossom & Joyous Spring"
         printings = resolve_card_printings(conn, canonical)
@@ -414,11 +414,11 @@ class CollectorBridgeIntegrationTests(unittest.TestCase):
             return json.load(f)
 
     def _bridge(self, mapping, calls=None):
-        def _fn(passcodes, cache_path=None, session=None, timeout=None):
+        def _fn(card_ids, cache_path=None, session=None, timeout=None):
             if calls is not None:
-                calls.append(list(passcodes))
-            resolved = {p: mapping[p] for p in passcodes if p in mapping}
-            unresolved = sorted(p for p in passcodes if p not in mapping)
+                calls.append(list(card_ids))
+            resolved = {p: mapping[p] for p in card_ids if p in mapping}
+            unresolved = sorted(p for p in card_ids if p not in mapping)
             return resolved, unresolved, False
 
         return _fn
@@ -443,7 +443,7 @@ class CollectorBridgeIntegrationTests(unittest.TestCase):
             sleep=lambda s: None,
             now=now,
             card_cache_path=self.cache_path,
-            resolve_passcodes_fn=self._bridge(mapping),
+            resolve_card_ids_fn=self._bridge(mapping),
         )
         self.assertIsNone(report["endpoint_failure"])
         self.assertIsNone(report["card_bridge_failure"])
@@ -463,7 +463,7 @@ class CollectorBridgeIntegrationTests(unittest.TestCase):
             for entry in obs[field]:
                 self.assertFalse(
                     entry["name"].isdigit(),
-                    msg=f"numeric passcode leaked into stored observation: {entry}",
+                    msg=f"numeric card_id leaked into stored observation: {entry}",
                 )
 
     def test_unresolved_ids_reject_observation_and_leave_dataset_unchanged(self):
@@ -488,7 +488,7 @@ class CollectorBridgeIntegrationTests(unittest.TestCase):
             sleep=lambda s: None,
             now=now,
             card_cache_path=self.cache_path,
-            resolve_passcodes_fn=self._bridge(mapping),
+            resolve_card_ids_fn=self._bridge(mapping),
         )
         # Deck 1 imported; deck 2 rejected honestly with a clear reason.
         self.assertEqual(report["import"]["added"], 1)
@@ -504,7 +504,7 @@ class CollectorBridgeIntegrationTests(unittest.TestCase):
         rows = [_row(deckNum=1)]
         session = _CollectorSession(pages={0: rows})
 
-        def _failing_bridge(passcodes, cache_path=None, session=None, timeout=None):
+        def _failing_bridge(card_ids, cache_path=None, session=None, timeout=None):
             raise CardBridgeError("cardinfo unreachable")
 
         from datetime import datetime, timezone
@@ -518,7 +518,7 @@ class CollectorBridgeIntegrationTests(unittest.TestCase):
             sleep=lambda s: None,
             now=now,
             card_cache_path=self.cache_path,
-            resolve_passcodes_fn=_failing_bridge,
+            resolve_card_ids_fn=_failing_bridge,
         )
         self.assertIsNotNone(report["card_bridge_failure"])
         self.assertIn("cardinfo unreachable", report["card_bridge_failure"]["error"])
@@ -597,9 +597,9 @@ class BackfillCLITests(unittest.TestCase):
         }
 
     def _bridge(self, mapping):
-        def _fn(passcodes, cache_path=None, session=None, timeout=None):
-            resolved = {p: mapping[p] for p in passcodes if p in mapping}
-            unresolved = sorted(p for p in passcodes if p not in mapping)
+        def _fn(card_ids, cache_path=None, session=None, timeout=None):
+            resolved = {p: mapping[p] for p in card_ids if p in mapping}
+            unresolved = sorted(p for p in card_ids if p not in mapping)
             return resolved, unresolved, False
 
         return _fn
@@ -614,7 +614,7 @@ class BackfillCLITests(unittest.TestCase):
             dataset_path=self.dataset_path,
             card_cache_path=self.cache_path,
             apply=False,
-            resolve_passcodes_fn=self._bridge(
+            resolve_card_ids_fn=self._bridge(
                 {
                     "11": "Ash Blossom & Joyous Spring",
                     "22": "Maxx \"C\"",
@@ -637,7 +637,7 @@ class BackfillCLITests(unittest.TestCase):
             dataset_path=self.dataset_path,
             card_cache_path=self.cache_path,
             apply=True,
-            resolve_passcodes_fn=self._bridge(
+            resolve_card_ids_fn=self._bridge(
                 {
                     "11": "Ash Blossom & Joyous Spring",
                     "22": "Maxx \"C\"",
@@ -678,18 +678,18 @@ class BackfillCLITests(unittest.TestCase):
             dataset_path=self.dataset_path,
             card_cache_path=self.cache_path,
             apply=True,
-            resolve_passcodes_fn=self._bridge(mapping),
+            resolve_card_ids_fn=self._bridge(mapping),
         )
         self.assertEqual(first["observations_rewritten"], 1)
         after_first = Path(self.dataset_path).read_bytes()
 
         # Second apply with the SAME mapping: no changes and a bridge
         # that fails if it's asked to resolve anything (proving no
-        # numeric passcodes remain).
-        def _explode(passcodes, cache_path=None, session=None, timeout=None):
-            if list(passcodes):
+        # numeric card_ids remain).
+        def _explode(card_ids, cache_path=None, session=None, timeout=None):
+            if list(card_ids):
                 raise AssertionError(
-                    f"idempotence violated: bridge invoked for {list(passcodes)}"
+                    f"idempotence violated: bridge invoked for {list(card_ids)}"
                 )
             return {}, [], False
 
@@ -697,7 +697,7 @@ class BackfillCLITests(unittest.TestCase):
             dataset_path=self.dataset_path,
             card_cache_path=self.cache_path,
             apply=True,
-            resolve_passcodes_fn=_explode,
+            resolve_card_ids_fn=_explode,
         )
         self.assertEqual(second["observations_rewritten"], 0)
         self.assertEqual(second["observations_needing_backfill"], 0)
@@ -706,7 +706,7 @@ class BackfillCLITests(unittest.TestCase):
     def test_unresolved_ids_leave_that_observation_untouched(self):
         ygo_ok = self._ygoprodeck_obs_numeric("10")
         ygo_bad = self._ygoprodeck_obs_numeric("11")
-        # Break one entry so passcode "99" is unresolvable.
+        # Break one entry so card_id "99" is unresolvable.
         ygo_bad["main_deck"] = [
             {"name": "11", "count": 2},
             {"name": "99", "count": 1},
@@ -718,7 +718,7 @@ class BackfillCLITests(unittest.TestCase):
             dataset_path=self.dataset_path,
             card_cache_path=self.cache_path,
             apply=True,
-            resolve_passcodes_fn=self._bridge(
+            resolve_card_ids_fn=self._bridge(
                 {
                     "11": "Ash Blossom & Joyous Spring",
                     "22": "Maxx \"C\"",
@@ -746,14 +746,14 @@ class BackfillCLITests(unittest.TestCase):
         self._write_dataset([ygo])
         pre_bytes = Path(self.dataset_path).read_bytes()
 
-        def _failing(passcodes, cache_path=None, session=None, timeout=None):
+        def _failing(card_ids, cache_path=None, session=None, timeout=None):
             raise CardBridgeError("cardinfo down")
 
         report = backfill_cli.backfill(
             dataset_path=self.dataset_path,
             card_cache_path=self.cache_path,
             apply=True,
-            resolve_passcodes_fn=_failing,
+            resolve_card_ids_fn=_failing,
         )
         self.assertIsNotNone(report["card_bridge_failure"])
         self.assertEqual(report["observations_rewritten"], 0)
@@ -773,7 +773,7 @@ class BackfillCLITests(unittest.TestCase):
             dataset_path=self.dataset_path,
             card_cache_path=self.cache_path,
             apply=True,
-            resolve_passcodes_fn=self._bridge({"11": "Ash Blossom & Joyous Spring"}),
+            resolve_card_ids_fn=self._bridge({"11": "Ash Blossom & Joyous Spring"}),
         )
         self.assertEqual(report["ygoprodeck_observations"], 0)
         self.assertEqual(report["observations_needing_backfill"], 0)
@@ -781,7 +781,7 @@ class BackfillCLITests(unittest.TestCase):
         stored = self._read_dataset()["observations"]
         self.assertEqual(json.dumps(stored[0], sort_keys=True), legacy_snapshot)
 
-    def test_no_passcodes_means_no_endpoint_call_at_all(self):
+    def test_no_card_ids_means_no_endpoint_call_at_all(self):
         # A dataset containing only already-canonical YGOPRODeck rows
         # must complete without ever invoking the bridge (proving no
         # network call on the fast path).
@@ -791,14 +791,14 @@ class BackfillCLITests(unittest.TestCase):
         ygo["extra_deck"] = []
         self._write_dataset([ygo])
 
-        def _explode(passcodes, cache_path=None, session=None, timeout=None):
+        def _explode(card_ids, cache_path=None, session=None, timeout=None):
             raise AssertionError("bridge must not be called when nothing needs backfill")
 
         report = backfill_cli.backfill(
             dataset_path=self.dataset_path,
             card_cache_path=self.cache_path,
             apply=True,
-            resolve_passcodes_fn=_explode,
+            resolve_card_ids_fn=_explode,
         )
         self.assertEqual(report["observations_needing_backfill"], 0)
         self.assertEqual(report["observations_rewritten"], 0)

@@ -49,7 +49,7 @@ from scripts.ygoprodeck_card_bridge import (  # noqa: E402
     DEFAULT_CACHE_PATH as DEFAULT_BRIDGE_CACHE_PATH,
     CardBridgeError,
     rebuild_cards_with_canonical_names,
-    resolve_passcodes,
+    resolve_card_ids,
 )
 
 YGOPRODECK_API_URL = "https://ygoprodeck.com/api/decks/getDecks.php"
@@ -492,11 +492,11 @@ def collect_and_import(
     sleep=time.sleep,
     now=None,
     card_cache_path=DEFAULT_BRIDGE_CACHE_PATH,
-    resolve_passcodes_fn=resolve_passcodes,
+    resolve_card_ids_fn=resolve_card_ids,
 ):
     """
     Fetch the current TCG Advanced feed from YGOPRODeck, filter/normalise
-    rows into Meta Watch observations, resolve every passcode to its
+    rows into Meta Watch observations, resolve every card_id to its
     canonical card name via the YGOPRODeck card-identity bridge, and
     import the new ones.
 
@@ -604,21 +604,21 @@ def collect_and_import(
         seen_batch_dedupe_keys.add(key)
         candidates.append((row, observation))
 
-    # Collect every distinct passcode referenced by any candidate and
+    # Collect every distinct card_id referenced by any candidate and
     # resolve them all in one bridge call (which itself hits the cardinfo
     # endpoint at most once). We only fetch when there's actual work to do
     # so a run with zero candidates never touches the network.
-    all_passcodes = set()
+    all_card_ids = set()
     for _row, observation in candidates:
         for deck_field in ("main_deck", "side_deck", "extra_deck"):
             for entry in observation.get(deck_field, []):
-                all_passcodes.add(entry.get("name"))
+                all_card_ids.add(entry.get("name"))
 
     resolved = {}
     if candidates:
         try:
-            resolved, _unresolved_global, _fetched = resolve_passcodes_fn(
-                sorted(p for p in all_passcodes if p is not None),
+            resolved, _unresolved_global, _fetched = resolve_card_ids_fn(
+                sorted(p for p in all_card_ids if p is not None),
                 cache_path=card_cache_path,
                 session=session,
                 timeout=timeout,
@@ -700,7 +700,7 @@ def main():
     parser.add_argument(
         "--card-cache",
         default=DEFAULT_BRIDGE_CACHE_PATH,
-        help="Path to the passcode -> canonical name cache file",
+        help="Path to the card_id -> canonical name cache file",
     )
     args = parser.parse_args()
 
