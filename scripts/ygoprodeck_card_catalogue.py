@@ -44,12 +44,12 @@ class CatalogueError(RuntimeError):
     """Raised when the YGOPRODeck catalogue cannot be obtained honestly."""
 
 
-def _is_numeric_passcode(value):
+def _is_numeric_id(value):
     """A YGOPRODeck deck-array passcode is a non-empty string of digits."""
     return isinstance(value, str) and value.isdigit() and len(value) > 0
 
 
-def build_passcode_map(cards):
+def build_catalogue_map(cards):
     """
     Build a ``{passcode(str) -> canonical_name(str)}`` map from the API's
     ``data`` array. Only entries with an integer ``id`` and a non-empty
@@ -72,8 +72,8 @@ def build_passcode_map(cards):
         stripped = name.strip()
         if not stripped:
             continue
-        passcode = str(card_id)
-        mapping.setdefault(passcode, stripped)
+        card_key = str(card_id)
+        mapping.setdefault(card_key, stripped)
     return mapping
 
 
@@ -155,7 +155,7 @@ def fetch_catalogue(
     return payload
 
 
-def load_passcode_map(
+def load_catalogue_map(
     cache_dir,
     session=None,
     timeout=DEFAULT_TIMEOUT,
@@ -165,7 +165,7 @@ def load_passcode_map(
     force_refresh=False,
 ):
     """
-    Return ``(passcode_map, source)`` where ``source`` is ``"cache"`` if
+    Return ``(catalogue_map, source)`` where ``source`` is ``"cache"`` if
     the catalogue was reused from the local cache, or ``"api"`` if it was
     fetched fresh (and then written to the cache for later reuse).
 
@@ -176,7 +176,7 @@ def load_passcode_map(
     if not force_refresh:
         cached = _load_cache(cache_dir)
         if cached is not None and isinstance(cached.get("data"), list):
-            return build_passcode_map(cached["data"]), "cache"
+            return build_catalogue_map(cached["data"]), "cache"
 
     payload = fetch_catalogue(
         session=session,
@@ -187,10 +187,10 @@ def load_passcode_map(
     )
     if cache_dir:
         _write_cache(cache_dir, payload)
-    return build_passcode_map(payload["data"]), "api"
+    return build_catalogue_map(payload["data"]), "api"
 
 
-def resolve_zone(entries, passcode_map):
+def resolve_zone(entries, catalogue_map):
     """
     Resolve one deck-zone list ``[{"name": ..., "count": N}, ...]`` into
     ``(resolved_entries, unresolved_entries)``.
@@ -199,7 +199,7 @@ def resolve_zone(entries, passcode_map):
       passed through unchanged (this preserves legacy/non-YGOPRODeck
       names and any name the collector might supply directly in the
       future).
-    - Numeric passcode names are looked up in ``passcode_map`` and
+    - Numeric passcode names are looked up in ``catalogue_map`` and
       rewritten to the canonical card name. Copy counts are preserved.
       Two passcodes that map to the same canonical name (defensive) are
       merged and their counts summed.
@@ -218,8 +218,8 @@ def resolve_zone(entries, passcode_map):
         count = entry.get("count", 0)
         if not isinstance(count, int) or count <= 0:
             continue
-        if _is_numeric_passcode(name):
-            canonical = passcode_map.get(name)
+        if _is_numeric_id(name):
+            canonical = catalogue_map.get(name)
             if canonical is None:
                 unresolved.append({"passcode": name, "count": count})
                 continue
@@ -239,7 +239,7 @@ def resolve_zone(entries, passcode_map):
     return resolved_entries, unresolved
 
 
-def resolve_observation_cards(observation, passcode_map):
+def resolve_observation_cards(observation, catalogue_map):
     """
     Resolve all three deck zones on an observation dict.
 
@@ -255,7 +255,7 @@ def resolve_observation_cards(observation, passcode_map):
     unresolved_by_zone = {}
     resolved_zones = {}
     for zone in ("main_deck", "side_deck", "extra_deck"):
-        resolved, unresolved = resolve_zone(observation.get(zone) or [], passcode_map)
+        resolved, unresolved = resolve_zone(observation.get(zone) or [], catalogue_map)
         resolved_zones[zone] = resolved
         if unresolved:
             unresolved_by_zone[zone] = unresolved
@@ -266,7 +266,7 @@ def resolve_observation_cards(observation, passcode_map):
     return new_obs, {}
 
 
-def observation_has_numeric_passcodes(observation):
+def observation_has_numeric_ids(observation):
     """
     True if any deck zone contains at least one entry whose ``name`` is
     a pure-digit passcode string. Used by the backfill CLI to skip
@@ -274,6 +274,6 @@ def observation_has_numeric_passcodes(observation):
     """
     for zone in ("main_deck", "side_deck", "extra_deck"):
         for entry in observation.get(zone) or []:
-            if isinstance(entry, dict) and _is_numeric_passcode(entry.get("name")):
+            if isinstance(entry, dict) and _is_numeric_id(entry.get("name")):
                 return True
     return False

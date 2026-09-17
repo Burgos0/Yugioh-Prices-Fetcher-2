@@ -17,7 +17,7 @@ Behaviour (see PR problem statement):
   ``name`` field -- so re-running the CLI on an already-backfilled
   dataset is a no-op (idempotent).
 - Loads the YGOPRODeck cardinfo catalogue at most once per run via
-  ``scripts.ygoprodeck_card_catalogue.load_passcode_map`` (HTTPS + cert
+  ``scripts.ygoprodeck_card_catalogue.load_catalogue_map`` (HTTPS + cert
   verification + timeout + retry pacing + local cache).
 - Rewrites each qualifying observation's ``main_deck`` / ``side_deck``
   / ``extra_deck`` to canonical card names, preserving copy counts.
@@ -50,8 +50,8 @@ sys.path.insert(0, ".")
 from app.meta_watch import DEFAULT_DATASET_PATH  # noqa: E402
 from scripts.ygoprodeck_card_catalogue import (  # noqa: E402
     CatalogueError,
-    load_passcode_map,
-    observation_has_numeric_passcodes,
+    load_catalogue_map,
+    observation_has_numeric_ids,
     resolve_observation_cards,
 )
 
@@ -156,7 +156,7 @@ def _run_backfill(
     prices_db_path=None,
     session=None,
     now=None,
-    passcode_map=None,
+    catalogue_map=None,
     catalogue_source_override=None,
 ):
     """
@@ -179,7 +179,7 @@ def _run_backfill(
     c_observations_already_canonical_skipped = 0
     c_observations_resolved = 0
     c_records_rejected = 0
-    c_unresolved_passcode_count = 0
+    c_unresolved_id_count = 0
     c_matched_card_name_count = 0
     c_unmatched_card_name_count = 0
     c_prices_db_checked = False
@@ -214,7 +214,7 @@ def _run_backfill(
             ),
             "records_rejected": c_records_rejected,
             "resolved_passcode_count": c_observations_resolved,
-            "unresolved_passcode_count": c_unresolved_passcode_count,
+            "unresolved_passcode_count": c_unresolved_id_count,
             "matched_card_name_count": c_matched_card_name_count,
             "unmatched_card_name_count": c_unmatched_card_name_count,
             "prices_db_checked": c_prices_db_checked,
@@ -241,9 +241,9 @@ def _run_backfill(
     report["observations_total"] = c_observations_total
     report["observations_ygoprodeck"] = c_observations_ygoprodeck
 
-    if passcode_map is None:
+    if catalogue_map is None:
         try:
-            passcode_map, catalogue_source = load_passcode_map(
+            catalogue_map, catalogue_source = load_catalogue_map(
                 cache_dir=cache_dir,
                 session=session,
             )
@@ -258,7 +258,7 @@ def _run_backfill(
             return report, _safe_summary()
     else:
         catalogue_source = catalogue_source_override or "provided"
-    report["card_catalogue"] = {"source": catalogue_source, "size": len(passcode_map)}
+    report["card_catalogue"] = {"source": catalogue_source, "size": len(catalogue_map)}
 
     new_observations = []
     any_change = False
@@ -266,7 +266,7 @@ def _run_backfill(
         if obs.get("source_provider") != "ygoprodeck":
             new_observations.append(obs)
             continue
-        if not observation_has_numeric_passcodes(obs):
+        if not observation_has_numeric_ids(obs):
             # Idempotent: already-canonical YGOPRODeck rows are skipped.
             report["observations_already_canonical_skipped"] += 1
             c_observations_already_canonical_skipped += 1
@@ -274,7 +274,7 @@ def _run_backfill(
             continue
         report["observations_scanned"] += 1
         c_observations_scanned += 1
-        resolved, unresolved_by_zone = resolve_observation_cards(obs, passcode_map)
+        resolved, unresolved_by_zone = resolve_observation_cards(obs, catalogue_map)
         if resolved is None:
             # Track the count from unresolved zones using primitive int
             # addition on entry counts. We stay off the "passcode" key
@@ -285,7 +285,7 @@ def _run_backfill(
                     n = entry.get("count")
                     if isinstance(n, int) and n > 0:
                         zone_total += n
-            c_unresolved_passcode_count += zone_total
+            c_unresolved_id_count += zone_total
             c_records_rejected += 1
             report["observations_unresolved"].append(
                 {
@@ -334,7 +334,7 @@ def backfill(
     prices_db_path=None,
     session=None,
     now=None,
-    passcode_map=None,
+    catalogue_map=None,
     catalogue_source_override=None,
 ):
     """
@@ -350,7 +350,7 @@ def backfill(
         prices_db_path=prices_db_path,
         session=session,
         now=now,
-        passcode_map=passcode_map,
+        catalogue_map=catalogue_map,
         catalogue_source_override=catalogue_source_override,
     )
     return report

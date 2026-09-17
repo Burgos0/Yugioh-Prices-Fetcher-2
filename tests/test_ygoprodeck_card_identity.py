@@ -32,10 +32,10 @@ from scripts.collect_ygoprodeck_lists import collect_and_import
 from scripts.ygoprodeck_card_catalogue import (
     CatalogueError,
     YGOPRODECK_CARDINFO_URL,
-    build_passcode_map,
+    build_catalogue_map,
     fetch_catalogue,
-    load_passcode_map,
-    observation_has_numeric_passcodes,
+    load_catalogue_map,
+    observation_has_numeric_ids,
     resolve_observation_cards,
     resolve_zone,
 )
@@ -86,13 +86,13 @@ class _CardinfoSession:
 
 class BuildPasscodeMapTests(unittest.TestCase):
     def test_extracts_id_to_name_map(self):
-        m = build_passcode_map(CARDINFO_PAYLOAD["data"])
+        m = build_catalogue_map(CARDINFO_PAYLOAD["data"])
         self.assertEqual(m["14558128"], "Ash Blossom & Joyous Spring")
         self.assertEqual(m["89631139"], "Blue-Eyes White Dragon")
         self.assertEqual(len(m), 6)
 
     def test_ignores_missing_or_malformed_entries(self):
-        m = build_passcode_map(
+        m = build_catalogue_map(
             [
                 {"id": 1, "name": "Ok"},
                 {"id": "not-int", "name": "Skip Me"},
@@ -106,8 +106,8 @@ class BuildPasscodeMapTests(unittest.TestCase):
         self.assertEqual(m, {"1": "Ok", "4": "trimmed"})
 
     def test_handles_non_list_gracefully(self):
-        self.assertEqual(build_passcode_map(None), {})
-        self.assertEqual(build_passcode_map({"data": "nope"}), {})
+        self.assertEqual(build_catalogue_map(None), {})
+        self.assertEqual(build_catalogue_map({"data": "nope"}), {})
 
 
 class ResolveZoneTests(unittest.TestCase):
@@ -202,12 +202,12 @@ class HasNumericPasscodesTests(unittest.TestCase):
         obs = {"main_deck": [{"name": "Ash Blossom & Joyous Spring", "count": 3}],
                "side_deck": [{"name": "14558128", "count": 1}],
                "extra_deck": []}
-        self.assertTrue(observation_has_numeric_passcodes(obs))
+        self.assertTrue(observation_has_numeric_ids(obs))
 
     def test_false_when_all_canonical(self):
         obs = {"main_deck": [{"name": "Ash Blossom & Joyous Spring", "count": 3}],
                "side_deck": [], "extra_deck": []}
-        self.assertFalse(observation_has_numeric_passcodes(obs))
+        self.assertFalse(observation_has_numeric_ids(obs))
 
 
 class FetchCatalogueTests(unittest.TestCase):
@@ -270,8 +270,8 @@ class LoadPasscodeMapCacheTests(unittest.TestCase):
     def test_cache_reuse_avoids_second_fetch(self):
         with tempfile.TemporaryDirectory() as cache_dir:
             session = _CardinfoSession()
-            m1, src1 = load_passcode_map(cache_dir=cache_dir, session=session)
-            m2, src2 = load_passcode_map(cache_dir=cache_dir, session=session)
+            m1, src1 = load_catalogue_map(cache_dir=cache_dir, session=session)
+            m2, src2 = load_catalogue_map(cache_dir=cache_dir, session=session)
             self.assertEqual(m1, m2)
             self.assertEqual(src1, "api")
             self.assertEqual(src2, "cache")
@@ -286,7 +286,7 @@ class LoadPasscodeMapCacheTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as cache_dir:
             session = _CardinfoSession(error=requests.ConnectionError("down"))
             with self.assertRaises(CatalogueError):
-                load_passcode_map(cache_dir=cache_dir, session=session)
+                load_catalogue_map(cache_dir=cache_dir, session=session)
 
 
 # --- Collector integration --------------------------------------------------
@@ -406,7 +406,7 @@ class CollectorResolvesPasscodesTests(unittest.TestCase):
             pacing_seconds=0,
             sleep=lambda s: None,
             now=NOW,
-            passcode_map=build_passcode_map(CARDINFO_PAYLOAD["data"]),
+            catalogue_map=build_catalogue_map(CARDINFO_PAYLOAD["data"]),
         )
         # Nothing imported; unresolved passcode reported honestly.
         self.assertEqual(report["import"]["added"], 0)
@@ -524,7 +524,7 @@ class BackfillTests(unittest.TestCase):
         self.dataset_path = str(Path(self.tmp.name) / "meta_watch_lists.json")
         self.report_path = str(Path(self.tmp.name) / "report.json")
         self.cache_dir = str(Path(self.tmp.name) / "cache")
-        self.passcode_map = build_passcode_map(CARDINFO_PAYLOAD["data"])
+        self.catalogue_map = build_catalogue_map(CARDINFO_PAYLOAD["data"])
 
     def _write(self, observations):
         with open(self.dataset_path, "w") as f:
@@ -546,7 +546,7 @@ class BackfillTests(unittest.TestCase):
             dataset_path=self.dataset_path,
             report_path=self.report_path,
             cache_dir=self.cache_dir,
-            passcode_map=self.passcode_map,
+            catalogue_map=self.catalogue_map,
         )
         self.assertEqual(report["observations_resolved"], 1)
         self.assertEqual(report["observations_ygoprodeck"], 1)
@@ -573,7 +573,7 @@ class BackfillTests(unittest.TestCase):
             dataset_path=self.dataset_path,
             report_path=self.report_path,
             cache_dir=self.cache_dir,
-            passcode_map=self.passcode_map,
+            catalogue_map=self.catalogue_map,
         )
         with open(self.dataset_path, "rb") as f:
             after_first = f.read()
@@ -581,7 +581,7 @@ class BackfillTests(unittest.TestCase):
             dataset_path=self.dataset_path,
             report_path=self.report_path,
             cache_dir=self.cache_dir,
-            passcode_map=self.passcode_map,
+            catalogue_map=self.catalogue_map,
         )
         with open(self.dataset_path, "rb") as f:
             after_second = f.read()
@@ -599,7 +599,7 @@ class BackfillTests(unittest.TestCase):
             dataset_path=self.dataset_path,
             report_path=self.report_path,
             cache_dir=self.cache_dir,
-            passcode_map=self.passcode_map,
+            catalogue_map=self.catalogue_map,
             dry_run=True,
         )
         with open(self.dataset_path, "rb") as f:
@@ -616,7 +616,7 @@ class BackfillTests(unittest.TestCase):
             dataset_path=self.dataset_path,
             report_path=self.report_path,
             cache_dir=self.cache_dir,
-            passcode_map=self.passcode_map,
+            catalogue_map=self.catalogue_map,
         )
         with open(self.dataset_path, "rb") as f:
             after = f.read()
@@ -726,7 +726,7 @@ class PricesDbCoverageTests(unittest.TestCase):
                 dataset_path=dataset_path,
                 report_path=report_path,
                 cache_dir=str(Path(d) / "cache"),
-                passcode_map=build_passcode_map(CARDINFO_PAYLOAD["data"]),
+                catalogue_map=build_catalogue_map(CARDINFO_PAYLOAD["data"]),
                 prices_db_path=db_path,
             )
         coverage = report["prices_db_coverage"]

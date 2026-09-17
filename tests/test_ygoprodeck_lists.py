@@ -399,7 +399,7 @@ class CollectAndImportTests(unittest.TestCase):
             pacing_seconds=0,
             sleep=lambda s: None,
             now=NOW,
-            passcode_map=self.PASSCODE_MAP,
+            catalogue_map=self.PASSCODE_MAP,
         )
 
         self.assertIsNone(report["endpoint_failure"])
@@ -460,7 +460,7 @@ class CollectAndImportTests(unittest.TestCase):
             pacing_seconds=0,
             sleep=lambda s: None,
             now=NOW,
-            passcode_map=self.PASSCODE_MAP,
+            catalogue_map=self.PASSCODE_MAP,
         )
         self.assertEqual(report["duplicate_existing_precheck_skipped"], 1)
         self.assertEqual(report["import"]["added"], 1)
@@ -482,7 +482,7 @@ class CollectAndImportTests(unittest.TestCase):
             pacing_seconds=0,
             sleep=lambda s: None,
             now=NOW,
-            passcode_map=self.PASSCODE_MAP,
+            catalogue_map=self.PASSCODE_MAP,
         )
         self.assertEqual(report["duplicate_in_batch_precheck_skipped"], 1)
         self.assertEqual(report["import"]["added"], 1)
@@ -518,7 +518,7 @@ class CollectAndImportTests(unittest.TestCase):
             pacing_seconds=0,
             sleep=lambda s: None,
             now=NOW,
-            passcode_map=self.PASSCODE_MAP,
+            catalogue_map=self.PASSCODE_MAP,
         )
         self.assertIsNotNone(report["endpoint_failure"])
         self.assertIn("network down", report["endpoint_failure"]["error"])
@@ -542,7 +542,7 @@ class CollectAndImportTests(unittest.TestCase):
             pacing_seconds=0,
             sleep=lambda s: None,
             now=NOW,
-            passcode_map=self.PASSCODE_MAP,
+            catalogue_map=self.PASSCODE_MAP,
         )
         self.assertEqual(report["import"]["added"], 0)
         reasons = {r["reason"] for r in report["rejected_records"]}
@@ -569,7 +569,7 @@ class CollectAndImportTests(unittest.TestCase):
             pacing_seconds=0,
             sleep=lambda s: None,
             now=NOW,
-            passcode_map=self.PASSCODE_MAP,
+            catalogue_map=self.PASSCODE_MAP,
         )
         self.assertEqual(report["records_excluded_non_tcg_advanced"], 4)
         self.assertEqual(report["import"]["added"], 0)

@@ -47,7 +47,7 @@ from app.meta_watch import (  # noqa: E402
 from scripts.import_meta_watch_lists import import_observations_payload  # noqa: E402
 from scripts.ygoprodeck_card_catalogue import (  # noqa: E402
     CatalogueError,
-    load_passcode_map,
+    load_catalogue_map,
     resolve_observation_cards,
 )
 
@@ -493,7 +493,7 @@ def _run_collect_and_import(
     sleep=time.sleep,
     now=None,
     cache_dir=DEFAULT_CACHE_DIR,
-    passcode_map=None,
+    catalogue_map=None,
     catalogue_session=None,
 ):
     """
@@ -517,8 +517,8 @@ def _run_collect_and_import(
     c_records_excluded_non_tcg_advanced = 0
     c_candidate_observations = 0
     c_records_rejected = 0
-    c_records_unresolved_passcodes = 0
-    c_unresolved_passcode_count = 0
+    c_records_with_unresolved_ids = 0
+    c_unresolved_id_count = 0
     c_dup_existing = 0
     c_dup_batch = 0
     c_observations_changed = 0
@@ -534,9 +534,9 @@ def _run_collect_and_import(
             "observations_scanned": c_records_fetched,
             "observations_changed": c_observations_changed,
             "records_rejected": c_records_rejected,
-            "records_unresolved_passcodes": c_records_unresolved_passcodes,
+            "records_unresolved_passcodes": c_records_with_unresolved_ids,
             "resolved_passcode_count": c_observations_changed,
-            "unresolved_passcode_count": c_unresolved_passcode_count,
+            "unresolved_passcode_count": c_unresolved_id_count,
             "duplicate_existing_precheck_skipped": c_dup_existing,
             "duplicate_in_batch_precheck_skipped": c_dup_batch,
         }
@@ -602,9 +602,9 @@ def _run_collect_and_import(
     # Fetch the card catalogue exactly once per run (or reuse the local
     # cache). Failure here leaves the dataset untouched and is reported
     # honestly -- we refuse to import passcodes as card names.
-    if passcode_map is None:
+    if catalogue_map is None:
         try:
-            passcode_map, catalogue_source = load_passcode_map(
+            catalogue_map, catalogue_source = load_catalogue_map(
                 cache_dir=cache_dir,
                 session=catalogue_session,
                 timeout=timeout,
@@ -629,7 +629,7 @@ def _run_collect_and_import(
             return report, _safe_summary()
     else:
         catalogue_source = "provided"
-    report["card_catalogue"] = {"source": catalogue_source, "size": len(passcode_map)}
+    report["card_catalogue"] = {"source": catalogue_source, "size": len(catalogue_map)}
 
     seen_batch_deck_ids = set()
     seen_batch_dedupe_keys = set()
@@ -658,7 +658,7 @@ def _run_collect_and_import(
         # entirely rather than silently producing a partial deck -- the
         # unresolved passcodes/counts are reported honestly.
         resolved_obs, unresolved_by_zone = resolve_observation_cards(
-            observation, passcode_map
+            observation, catalogue_map
         )
         if resolved_obs is None:
             # Sum unresolved copy-counts using only primitive int
@@ -670,8 +670,8 @@ def _run_collect_and_import(
                     n = entry.get("count")
                     if isinstance(n, int) and n > 0:
                         zone_total += n
-            c_unresolved_passcode_count += zone_total
-            c_records_unresolved_passcodes += 1
+            c_unresolved_id_count += zone_total
+            c_records_with_unresolved_ids += 1
             report["unresolved_passcode_records"].append(
                 {
                     "deckNum": deck_num,
@@ -745,7 +745,7 @@ def collect_and_import(
     sleep=time.sleep,
     now=None,
     cache_dir=DEFAULT_CACHE_DIR,
-    passcode_map=None,
+    catalogue_map=None,
     catalogue_session=None,
 ):
     """
@@ -765,7 +765,7 @@ def collect_and_import(
         sleep=sleep,
         now=now,
         cache_dir=cache_dir,
-        passcode_map=passcode_map,
+        catalogue_map=catalogue_map,
         catalogue_session=catalogue_session,
     )
     return report
