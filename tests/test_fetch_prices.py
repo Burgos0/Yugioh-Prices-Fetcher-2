@@ -25,6 +25,10 @@ class LiveFetchTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.db_path = str(Path(self.tmp.name) / "prices.db")
+        previous_request_time = fetch_prices._last_tcgcsv_request_at
+        fetch_prices._last_tcgcsv_request_at = None
+        self.addCleanup(
+            setattr, fetch_prices, "_last_tcgcsv_request_at", previous_request_time)
 
     @staticmethod
     def api_response(url):
@@ -56,6 +60,60 @@ class LiveFetchTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "HTTP 403"):
                 fetch_prices.fetch_json("https://example.invalid/groups")
         self.assertEqual(get.call_count, 1)
+
+    def test_tcgcsv_requests_are_paced_at_least_half_a_second_apart(self):
+        response = Mock(status_code=200)
+        response.json.return_value = []
+        url = f"{fetch_prices.BASE_API}/{fetch_prices.CATEGORY_ID}/groups"
+
+        with patch.object(fetch_prices.requests, "get", return_value=response), \
+                patch.object(fetch_prices.time, "monotonic", side_effect=[10.0, 10.1]), \
+                patch.object(fetch_prices.time, "sleep") as sleep:
+            fetch_prices.fetch_json(url)
+            fetch_prices.fetch_json(url)
+
+        sleep.assert_called_once()
+        self.assertAlmostEqual(sleep.call_args.args[0], 0.4)
+
+    def test_tcgcsv_401_retries_after_cooldown_and_recovers(self):
+        unauthorized = Mock(status_code=401)
+        success = Mock(status_code=200)
+        success.json.return_value = {"results": GROUPS}
+        url = f"{fetch_prices.BASE_API}/{fetch_prices.CATEGORY_ID}/groups"
+
+        with patch.object(
+                fetch_prices.requests, "get",
+                side_effect=[unauthorized, success]) as get, \
+                patch.object(fetch_prices, "pace_tcgcsv_request"), \
+                patch.object(fetch_prices.time, "sleep") as sleep:
+            self.assertEqual(fetch_prices.fetch_json(url), GROUPS)
+
+        self.assertEqual(get.call_count, 2)
+        sleep.assert_called_once_with(fetch_prices.TCGCSV_401_COOLDOWN)
+
+    def test_non_tcgcsv_401_is_terminal(self):
+        response = Mock(status_code=401)
+        with patch.object(
+                fetch_prices.requests, "get", return_value=response) as get, \
+                patch.object(fetch_prices.time, "sleep") as sleep:
+            with self.assertRaisesRegex(RuntimeError, "HTTP 401"):
+                fetch_prices.fetch_json("https://example.invalid/groups")
+
+        self.assertEqual(get.call_count, 1)
+        sleep.assert_not_called()
+
+    def test_exhausted_retries_never_create_database(self):
+        response = Mock(status_code=503)
+        with patch.object(fetch_prices, "DB_PATH", self.db_path), \
+                patch.object(fetch_prices, "current_utc_date", return_value="2026-09-17"), \
+                patch.object(fetch_prices.requests, "get", return_value=response) as get, \
+                patch.object(fetch_prices, "pace_tcgcsv_request"), \
+                patch.object(fetch_prices.time, "sleep"), \
+                patch.object(fetch_prices.sys, "argv", ["fetch_prices"]):
+            self.assertEqual(fetch_prices.main(), 1)
+
+        self.assertEqual(get.call_count, fetch_prices.MAX_RETRIES)
+        self.assertFalse(Path(self.db_path).exists())
 
     def test_partial_live_result_never_creates_database(self):
         with patch.object(fetch_prices, "DB_PATH", self.db_path), \
