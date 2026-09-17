@@ -57,6 +57,46 @@ class LiveFetchTests(unittest.TestCase):
                 fetch_prices.fetch_json("https://example.invalid/groups")
         self.assertEqual(get.call_count, 1)
 
+    def test_tcgcsv_requests_are_paced(self):
+        responses = [Mock(status_code=200, json=lambda: GROUPS),
+                     Mock(status_code=200, json=lambda: GROUPS)]
+        with patch.object(fetch_prices, "_last_tcgcsv_request_at", None), \
+                patch.object(fetch_prices.time, "monotonic", side_effect=[100.0, 100.1]), \
+                patch.object(fetch_prices.time, "sleep") as sleep, \
+                patch.object(fetch_prices.requests, "get", side_effect=responses):
+            fetch_prices.fetch_json("https://tcgcsv.com/tcgplayer/2/groups")
+            fetch_prices.fetch_json("https://tcgcsv.com/tcgplayer/2/groups")
+
+        sleep.assert_called_once()
+        self.assertAlmostEqual(sleep.call_args.args[0], 0.4)
+
+    def test_tcgcsv_401_is_retried_after_cooldown(self):
+        responses = [
+            Mock(status_code=401),
+            Mock(status_code=200, json=lambda: GROUPS),
+        ]
+        with patch.object(fetch_prices, "_last_tcgcsv_request_at", None), \
+                patch.object(fetch_prices.time, "monotonic", side_effect=[100.0, 160.0]), \
+                patch.object(fetch_prices.time, "sleep") as sleep, \
+                patch.object(fetch_prices.requests, "get", side_effect=responses) as get:
+            self.assertEqual(
+                fetch_prices.fetch_json("https://tcgcsv.com/tcgplayer/2/groups"),
+                GROUPS,
+            )
+
+        self.assertEqual(get.call_count, 2)
+        sleep.assert_called_once_with(60)
+
+    def test_non_tcgcsv_401_is_terminal(self):
+        response = Mock(status_code=401)
+        with patch.object(fetch_prices.requests, "get", return_value=response) as get, \
+                patch.object(fetch_prices.time, "sleep") as sleep:
+            with self.assertRaisesRegex(RuntimeError, "HTTP 401"):
+                fetch_prices.fetch_json("https://example.invalid/groups")
+
+        self.assertEqual(get.call_count, 1)
+        sleep.assert_not_called()
+
     def test_partial_live_result_never_creates_database(self):
         with patch.object(fetch_prices, "DB_PATH", self.db_path), \
                 patch.object(fetch_prices, "MIN_EXPECTED_DAILY_ROWS", 2), \
@@ -78,6 +118,22 @@ class LiveFetchTests(unittest.TestCase):
         with patch.object(fetch_prices, "DB_PATH", self.db_path), \
                 patch.object(fetch_prices, "current_utc_date", return_value="2026-09-17"), \
                 patch.object(fetch_prices, "fetch_json", side_effect=response), \
+                patch.object(fetch_prices.sys, "argv", ["fetch_prices"]):
+            self.assertEqual(fetch_prices.main(), 1)
+
+        self.assertFalse(Path(self.db_path).exists())
+
+    def test_exhausted_live_retries_do_not_write_database(self):
+        groups_response = Mock(status_code=200, json=lambda: {"results": GROUPS})
+        products_response = Mock(status_code=200, json=lambda: {"results": PRODUCTS})
+        failed_price_response = Mock(status_code=503)
+        responses = [groups_response, products_response] + [failed_price_response] * fetch_prices.MAX_RETRIES
+
+        with patch.object(fetch_prices, "DB_PATH", self.db_path), \
+                patch.object(fetch_prices, "MIN_EXPECTED_DAILY_ROWS", 1), \
+                patch.object(fetch_prices, "current_utc_date", return_value="2026-09-17"), \
+                patch.object(fetch_prices.time, "sleep"), \
+                patch.object(fetch_prices.requests, "get", side_effect=responses), \
                 patch.object(fetch_prices.sys, "argv", ["fetch_prices"]):
             self.assertEqual(fetch_prices.main(), 1)
 
