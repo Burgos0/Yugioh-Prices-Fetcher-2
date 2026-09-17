@@ -192,7 +192,7 @@ def fetch_set_names():
 
 
 def fetch_live_dataset(known_cards):
-    """Fetch Yu-Gi-Oh groups/products/prices; skip inaccessible client-error groups."""
+    """Fetch live data, skipping only products-endpoint 401/403/404 groups."""
     groups = fetch_json(f"{BASE_API}/{CATEGORY_ID}/groups")
     if not isinstance(groups, list) or not groups:
         raise RuntimeError("Live groups response was empty or invalid")
