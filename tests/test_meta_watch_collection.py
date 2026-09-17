@@ -1,4 +1,5 @@
 import json
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -173,6 +174,27 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("peter-evans/create-pull-request@v7", workflow)
         self.assertNotIn("git push", workflow)
         self.assertIn("scripts.collect_meta_watch_lists", workflow)
+        # YGOPRODeck backfill is wired into the same automated PR.
+        self.assertIn("scripts.collect_ygoprodeck_lists", workflow)
+        # The report JSONs are mentioned in the PR body for reference, but
+        # they must NOT be listed in add-paths -- otherwise a Konami=0 +
+        # YGOPRODeck failure/zero-additions run would open a report-only PR.
+        self.assertIn("data/meta_watch_ygoprodeck_report.json", workflow)
+
+    def test_meta_watch_workflow_add_paths_gate_only_on_dataset_change(self):
+        workflow = (
+            Path(__file__).resolve().parents[1]
+            / ".github"
+            / "workflows"
+            / "meta_watch_daily.yml"
+        ).read_text()
+        # Extract the add-paths block (indented lines after 'add-paths: |').
+        match = re.search(r"add-paths:\s*\|\s*\n((?:\s{10,}\S.*\n?)+)", workflow)
+        self.assertIsNotNone(match, "add-paths block not found in workflow")
+        add_paths = [line.strip() for line in match.group(1).splitlines() if line.strip()]
+        # Only the dataset file gates PR creation; report JSONs must not
+        # appear here or a report-only PR would be opened every run.
+        self.assertEqual(add_paths, ["data/meta_watch_lists.json"])
 
 
 if __name__ == "__main__":
