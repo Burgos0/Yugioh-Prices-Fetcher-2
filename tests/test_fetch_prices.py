@@ -98,6 +98,57 @@ class LiveFetchTests(unittest.TestCase):
             self.assertEqual(
                 conn.execute("SELECT COUNT(*) FROM product_subtypes").fetchone()[0], 0)
 
+    def test_same_day_rerun_removes_products_missing_from_new_snapshot(self):
+        with fetch_prices.init_db(self.db_path) as conn:
+            conn.executemany(
+                "INSERT INTO prices VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                [
+                    (100, "Current", "Set", 1.0, 2.0, 3.0, 2.5, None, "2026-09-17"),
+                    (101, "Stale", "Set", 1.0, 2.0, 3.0, 2.5, None, "2026-09-17"),
+                ],
+            )
+        records = [
+            (100, "Current", "Set", 2.0, 3.0, 4.0, 3.5, None, "2026-09-17")
+        ]
+
+        with patch.object(fetch_prices, "MIN_EXPECTED_DAILY_ROWS", 1):
+            rows_before, daily_rows = fetch_prices.write_records_atomically(
+                self.db_path, "2026-09-17", records, {})
+
+        with sqlite3.connect(self.db_path) as conn:
+            rows = conn.execute(
+                "SELECT product_id, market_price FROM prices WHERE date = ?",
+                ("2026-09-17",),
+            ).fetchall()
+        self.assertEqual((rows_before, daily_rows), (2, 1))
+        self.assertEqual(rows, [(100, 3.5)])
+
+    def test_exception_after_same_day_deletion_restores_prior_rows(self):
+        prior_row = (
+            101, "Prior", "Set", 1.0, 2.0, 3.0, 2.5, None, "2026-09-17"
+        )
+        with fetch_prices.init_db(self.db_path) as conn:
+            conn.execute(
+                "INSERT INTO prices VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", prior_row
+            )
+        replacement = [
+            (100, "New", "Set", 2.0, 3.0, 4.0, 3.5, None, "2026-09-17")
+        ]
+
+        with patch.object(fetch_prices, "MIN_EXPECTED_DAILY_ROWS", 1), \
+                patch.object(
+                    fetch_prices, "save_tracked_subtypes",
+                    side_effect=sqlite3.OperationalError("forced failure")):
+            with self.assertRaises(sqlite3.OperationalError):
+                fetch_prices.write_records_atomically(
+                    self.db_path, "2026-09-17", replacement, {})
+
+        with sqlite3.connect(self.db_path) as conn:
+            rows = conn.execute(
+                "SELECT * FROM prices WHERE date = ?", ("2026-09-17",)
+            ).fetchall()
+        self.assertEqual(rows, [prior_row])
+
     def test_fetch_crossing_utc_date_boundary_is_rejected(self):
         with patch.object(fetch_prices, "DB_PATH", self.db_path), \
                 patch.object(fetch_prices, "fetch_json", side_effect=self.api_response), \

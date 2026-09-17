@@ -328,6 +328,7 @@ def write_records_atomically(db_path, target_date_str, records, newly_establishe
         cur.execute("BEGIN")
         cur.execute("SELECT COUNT(*) FROM prices WHERE date = ?", (target_date_str,))
         rows_before = cur.fetchone()[0]
+        cur.execute("DELETE FROM prices WHERE date = ?", (target_date_str,))
         cur.executemany(
             """
             INSERT OR REPLACE INTO prices(
