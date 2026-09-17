@@ -168,6 +168,46 @@ Because this endpoint is not part of YGOPRODeck's documented card API guide,
 results from this check are used to evaluate viability and maintenance risk
 before any integration decision.
 
+## YGOPRODeck TCG Advanced secondary/backfill source
+
+Following the PR #8 audit, `scripts/collect_ygoprodeck_lists.py` promotes
+YGOPRODeck's `getDecks.php` catalogue into a **secondary/backfill** Meta
+Watch source that appends new observations alongside the Konami collector
+without replacing or rewriting it.
+
+- Endpoint: **only** `https://ygoprodeck.com/api/decks/getDecks.php` with
+  `_sft_category=Tournament Meta Decks`. The unavailable deck-detail API
+  endpoints and any HTML scraping are explicitly out of scope.
+- HTTPS certificate verification is always on (`requests` default,
+  `verify=True` passed explicitly); paginated requests are paced with a
+  conservative delay and cached in-memory to avoid duplicate calls.
+- Only TCG Advanced records survive filtering. Any record whose format,
+  deck name, tournament name, description, or excerpt hints at OCG,
+  Master Duel, Rush Duel, Genesys, Duel Links, online/remote/casual/test
+  markers is excluded and reported so it can never leak in as
+  `TCG_ADVANCED`.
+- Records are mapped into the existing observation model using only the
+  catalogue fields validated by the audit: `deckNum` as the stable source
+  id, `pretty_url` as the public deck URL, `format` /`tournamentName` /
+  `tournamentPlacement` / `tournamentPlayerName` / `tournamentPlayerCount`
+  / `submit_date` for provenance, and the comma-separated
+  `main_deck` / `extra_deck` / `side_deck` arrays split into per-zone
+  card entries.
+- Deduplication uses `deckNum` (and the standard event/player key) both
+  against the existing dataset and within the same batch, so a re-run
+  never double-imports.
+- Missing metadata is reported honestly (no tournament name, no player
+  name, no `pretty_url`, or a relative `submit_date` like "3 days ago"
+  are all recorded as rejected records rather than silently backfilled).
+- If the catalogue endpoint is unreachable the existing dataset is left
+  completely untouched and the failure is written into the report;
+  partial runs never rewrite pre-existing entries.
+
+Regression tests in `tests/test_ygoprodeck_lists.py` cover TCG Advanced
+filtering, `deckNum`-based dedup, relative `submit_date` handling,
+comma-separated deck array parsing, endpoint failure isolation, missing
+metadata reporting, and format separation.
+
 ## Remaining limitations
 
 - Only 6 lists have been imported (well below the unchanged minimum-sample
