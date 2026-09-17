@@ -97,7 +97,7 @@ class LiveFetchTests(unittest.TestCase):
             if "/10/prices" in url:
                 return PRICES
             if "/11/products" in url:
-                raise RuntimeError("HTTP 401")
+                raise fetch_prices.FetchHTTPStatusError(url, 401)
             if "/11/prices" in url:
                 raise AssertionError("prices should not be requested for inaccessible groups")
             raise AssertionError(url)
@@ -124,7 +124,7 @@ class LiveFetchTests(unittest.TestCase):
             if "/10/products" in url:
                 return PRODUCTS
             if "/10/prices" in url:
-                raise RuntimeError("HTTP 404")
+                raise fetch_prices.FetchHTTPStatusError(url, 404)
             raise AssertionError(url)
 
         with patch.object(fetch_prices, "DB_PATH", self.db_path), \

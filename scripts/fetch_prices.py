@@ -31,6 +31,15 @@ RETRY_DELAY = 1  # seconds, doubled each retry (exponential backoff)
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 yugioh-price-fetcher/2.0"
 
 
+class FetchHTTPStatusError(RuntimeError):
+    """Typed HTTP status failure returned by live API fetches."""
+
+    def __init__(self, url, status_code):
+        self.url = url
+        self.status_code = status_code
+        super().__init__(f"Failed to fetch {url}: HTTP {status_code}")
+
+
 def current_utc_date():
     return datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
@@ -72,9 +81,9 @@ def fetch_json(url):
                 except ValueError as e:
                     last_error = e
             elif r.status_code == 429 or r.status_code >= 500:
-                last_error = requests.HTTPError(f"HTTP {r.status_code} (retryable)")
+                last_error = FetchHTTPStatusError(url, r.status_code)
             else:
-                last_error = requests.HTTPError(f"HTTP {r.status_code}")
+                last_error = FetchHTTPStatusError(url, r.status_code)
                 # For 404 or other 4xx, stop retrying unless 429
                 if r.status_code != 429:
                     break
@@ -84,6 +93,8 @@ def fetch_json(url):
             print(f"  Request failed ({last_error}). Retrying in {sleep_time}s...")
             time.sleep(sleep_time)
 
+    if isinstance(last_error, FetchHTTPStatusError):
+        raise last_error
     raise RuntimeError(f"Failed to fetch {url}: {last_error}")
 
 
@@ -196,9 +207,8 @@ def fetch_live_dataset(known_cards):
         set_names[gid] = group.get("name")
         try:
             products = fetch_json(f"{BASE_API}/{CATEGORY_ID}/{gid}/products")
-        except RuntimeError as e:
-            message = str(e)
-            if any(code in message for code in ("HTTP 401", "HTTP 403", "HTTP 404")):
+        except FetchHTTPStatusError as e:
+            if e.status_code in (401, 403, 404):
                 print(f"Warning: Skipping inaccessible set {gid}: {e}")
                 continue
             raise
