@@ -40,8 +40,7 @@ sys.path.insert(0, ".")
 
 from app.meta_watch import (  # noqa: E402
     FORMAT_TCG_ADVANCED,
-    dedupe_key,
-    load_dataset,
+    revision_key,
     validate_observation,
 )
 from scripts.import_meta_watch_lists import import_observations_payload  # noqa: E402
@@ -508,15 +507,6 @@ def collect_and_import(
     now = now or _now_utc()
     from_date = (now - timedelta(days=int(lookback_days))).strftime("%Y-%m-%d")
 
-    existing = load_dataset(dataset_path)
-    existing_obs = existing.get("observations", [])
-    existing_deck_ids = {
-        _safe_str(o.get("source_deck_id"))
-        for o in existing_obs
-        if o.get("source_provider") == "ygoprodeck" and _safe_str(o.get("source_deck_id"))
-    }
-    existing_by_key = {dedupe_key(o): o for o in existing_obs}
-
     report = {
         "collected_at": _iso(now),
         "source": SOURCE_NAME,
@@ -540,6 +530,7 @@ def collect_and_import(
         "dataset_path": dataset_path,
         "dry_run": dry_run,
         "added": 0,
+        "revisions_added": 0,
         "duplicate_existing_skipped": 0,
         "duplicate_in_batch_skipped": 0,
         "rejected": [],
@@ -564,8 +555,7 @@ def collect_and_import(
 
     report["records_fetched"] = len(rows)
 
-    seen_batch_deck_ids = set()
-    seen_batch_dedupe_keys = set()
+    seen_batch_keys = set()
     candidates = []
 
     for row in rows:
@@ -584,24 +574,12 @@ def collect_and_import(
             )
             continue
 
-        deck_id = observation["source_deck_id"]
-        if deck_id in existing_deck_ids:
-            report["duplicate_existing_precheck_skipped"] += 1
-            continue
-        if deck_id in seen_batch_deck_ids:
+        key = revision_key(observation)
+        if key in seen_batch_keys:
             report["duplicate_in_batch_precheck_skipped"] += 1
             continue
 
-        key = dedupe_key(observation)
-        if key in existing_by_key:
-            report["duplicate_existing_precheck_skipped"] += 1
-            continue
-        if key in seen_batch_dedupe_keys:
-            report["duplicate_in_batch_precheck_skipped"] += 1
-            continue
-
-        seen_batch_deck_ids.add(deck_id)
-        seen_batch_dedupe_keys.add(key)
+        seen_batch_keys.add(key)
         candidates.append((row, observation))
 
     # Collect every distinct card_id referenced by any candidate and

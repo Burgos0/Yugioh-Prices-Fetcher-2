@@ -41,8 +41,9 @@ Fields the source articles did not label are recorded as explicit
 `"UNKNOWN"` (archetype) or `"UNKNOWN-YYYY-MM"` (banlist_id, kept distinct
 per event's known month so three different real-world banlist periods are
 never silently merged into one bucket) -- never guessed. `published_at`
-uses each article's stated publish date (its only available timestamp);
-`first_seen_at` is the actual UTC time this batch was imported.
+uses each article's stated publish date (its only available timestamp).
+`first_seen_at` and `archived_at` are importer-owned UTC timestamps; supplied
+values cannot backdate when a deck became available locally.
 
 ### Card identity matching note
 
@@ -69,7 +70,8 @@ printing; 0 remain unresolved.
   docstring for the exact input JSON schema.
 - `data/meta_watch_lists.json`: the versioned, append-only dataset of raw
   imported observations (kept separate from `prices.db`/`signals.db`).
-  Ships empty (`"observations": []`).
+  Original observations remain immutable. An optional top-level `revisions`
+  array stores full corrected observations.
 - `/meta-watch` route + nav link, rendering:
   - Overall published-list adoption stats per card (lists containing it /
     total observed lists, percentage-point change, average copies,
@@ -95,7 +97,10 @@ printing; 0 remain unresolved.
 
 - Only `source_type: "tournament"` observations count; casual uploads are
   excluded from adoption stats but not silently dropped from the dataset.
-- Same player + same event is deduplicated, keeping the first import.
+- Revision identity uses `(source_provider, source_deck_id)` when both are
+  available and otherwise falls back to event + player. Unchanged repeats are
+  skipped; changed deck content or corrected metadata appends one full
+  revision without rewriting the original.
 - Formats/banlists are never combined: TCG Advanced, OCG, Master Duel, Rush
   Duel, and `OTHER` are tracked as separate `format` values. Each
   `banlist_id` is evaluated as its own pair of 14-day windows.
@@ -124,6 +129,17 @@ full JSON schema. Usage:
 python -m scripts.import_meta_watch_lists path/to/sourced_batch.json
 python -m scripts.import_meta_watch_lists path/to/sourced_batch.json --dry-run
 python -m scripts.collect_meta_watch_lists --dry-run
+```
+
+Historical tournament-adoption and combined-candidate `--as-of YYYY-MM-DD`
+queries first choose the latest version whose importer-owned `archived_at` is
+no later than the end of that UTC day, then require `event_date <= as_of`.
+Versions with missing or invalid archive timestamps are excluded and counted
+in report fields rather than treated as old data. Price-history cutoffs remain
+unchanged. For example:
+
+```bash
+python scripts/rank_candidates.py --as-of 2026-09-15 --top 25
 ```
 
 Automated scheduling is in `.github/workflows/meta_watch_daily.yml`. It
@@ -193,9 +209,9 @@ without replacing or rewriting it.
   / `submit_date` for provenance, and the comma-separated
   `main_deck` / `extra_deck` / `side_deck` arrays split into per-zone
   card entries.
-- Deduplication uses `deckNum` (and the standard event/player key) both
-  against the existing dataset and within the same batch, so a re-run
-  never double-imports.
+- Revision identity uses `deckNum` with the `ygoprodeck` provider. A re-run
+  skips unchanged content, while a corrected record is archived as a full
+  revision and never overwrites the original observation.
 - Missing metadata is reported honestly (no tournament name, no player
   name, no `pretty_url`, or a relative `submit_date` like "3 days ago"
   are all recorded as rejected records rather than silently backfilled).

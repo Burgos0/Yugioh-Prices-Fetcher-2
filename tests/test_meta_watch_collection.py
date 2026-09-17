@@ -144,8 +144,8 @@ class CollectionIntegrationTests(unittest.TestCase):
             session=session,
         )
         self.assertEqual(second["import"]["added"], 0)
-        self.assertEqual(second["import"]["duplicate_existing_skipped"], 0)
-        self.assertEqual(second["duplicate_existing_precheck_skipped"], 1)
+        self.assertEqual(second["import"]["duplicate_existing_skipped"], 1)
+        self.assertEqual(second["duplicate_existing_precheck_skipped"], 0)
 
         changed_session = _FakeSession({
             "https://yugiohblog.konami.com/category/ycs/": self.index_html,
@@ -159,6 +159,7 @@ class CollectionIntegrationTests(unittest.TestCase):
             session=changed_session,
         )
         self.assertEqual(third["import"]["added"], 0)
+        self.assertEqual(third["import"]["revisions_added"], 1)
         self.assertEqual(third["import"]["duplicate_existing_skipped"], 0)
         self.assertEqual(len(third["changed_source_lists"]), 1)
 

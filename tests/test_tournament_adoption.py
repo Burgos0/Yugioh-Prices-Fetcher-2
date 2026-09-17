@@ -30,7 +30,7 @@ def make_obs(event_id, player, main=None, side=None, extra=None, *,
              placement="Winner", event_date="2026-08-30",
              source_provider=SOURCE_PROVIDER_YGOPRODECK,
              fmt=FORMAT_TCG_ADVANCED, source_type="tournament",
-             archetype="TestDeck"):
+             archetype="TestDeck", archived_at="2026-08-30T12:00:00Z"):
     """Build a decklist observation with sensible defaults for this suite."""
     def entries(items):
         if not items:
@@ -42,7 +42,7 @@ def make_obs(event_id, player, main=None, side=None, extra=None, *,
         "placement": placement, "archetype": archetype,
         "source_url": "https://example.com/coverage", "source_type": source_type,
         "source_provider": source_provider,
-        "published_at": None, "first_seen_at": "2026-09-01T00:00:00Z",
+        "published_at": None, "first_seen_at": archived_at, "archived_at": archived_at,
         "main_deck": entries(main), "side_deck": entries(side), "extra_deck": entries(extra),
     }
 

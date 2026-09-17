@@ -15,7 +15,7 @@ import requests
 
 sys.path.insert(0, ".")
 
-from app.meta_watch import FORMAT_TCG_ADVANCED, dedupe_key, load_dataset, validate_observation  # noqa: E402
+from app.meta_watch import FORMAT_TCG_ADVANCED, load_dataset, revision_key, validate_observation  # noqa: E402
 from scripts.import_meta_watch_lists import import_observations_payload  # noqa: E402
 
 DEFAULT_DATASET_PATH = "data/meta_watch_lists.json"
@@ -280,6 +280,7 @@ def parse_article_observations(article_html, article_url, source):
             "archetype": archetype or "UNKNOWN",
             "source_url": article_url,
             "source_type": "tournament",
+            "source_provider": "konami_blog",
             "published_at": published_at,
             "first_seen_at": first_seen,
             "main_deck": parsed["main_deck"],
@@ -316,7 +317,11 @@ def collect_and_import(
     client = session or requests.Session()
     sources = tuple(sources or DEFAULT_SOURCE_INDEXES)
     existing = load_dataset(dataset_path)
-    existing_by_key = {dedupe_key(obs): obs for obs in existing.get("observations", [])}
+    existing_by_key = {revision_key(obs): obs for obs in existing.get("observations", [])}
+    for revision in existing.get("revisions") or []:
+        key = revision_key(revision)
+        if key in existing_by_key:
+            existing_by_key[key] = revision
 
     source_failures = []
     article_failures = []
@@ -352,7 +357,7 @@ def collect_and_import(
         observations, rejected = parse_article_observations(response.text, article_url, source)
         rejected_records.extend(rejected)
         for obs in observations:
-            key = dedupe_key(obs)
+            key = revision_key(obs)
             existing_obs = existing_by_key.get(key)
             if existing_obs and existing_obs.get("source_url") == obs.get("source_url"):
                 if _deck_signature(existing_obs) != _deck_signature(obs):
@@ -364,16 +369,11 @@ def collect_and_import(
                             "existing_first_seen_at": existing_obs.get("first_seen_at"),
                         }
                     )
-                    continue
-            if key in existing_by_key:
-                duplicate_existing_precheck_skipped += 1
-                continue
             if key in seen_collected_keys:
                 duplicate_in_batch_precheck_skipped += 1
                 continue
             seen_collected_keys.add(key)
             collected.append(obs)
-            existing_by_key[key] = obs
 
     import_result = import_observations_payload({"observations": collected}, dataset_path=dataset_path, dry_run=dry_run)
     report = {

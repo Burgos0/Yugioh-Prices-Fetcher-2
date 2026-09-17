@@ -50,6 +50,7 @@ def make_obs(
     source_provider: str = SOURCE_PROVIDER_YGOPRODECK,
     source_type: str = "tournament",
     archetype: str = "TestDeck",
+    archived_at: str = "2026-08-30T12:00:00Z",
 ) -> Dict[str, Any]:
     return {
         "event_id": event_id,
@@ -65,7 +66,8 @@ def make_obs(
         "source_type": source_type,
         "source_provider": source_provider,
         "published_at": None,
-        "first_seen_at": "2026-09-01T00:00:00Z",
+        "first_seen_at": archived_at,
+        "archived_at": archived_at,
         "main_deck": [{"name": n, "count": c} for n, c in (main or [])],
         "side_deck": [],
         "extra_deck": [],
