@@ -201,6 +201,7 @@ class PrintingJoinTests(unittest.TestCase):
 
     def _make_conn(self, rows):
         conn = sqlite3.connect(":memory:")
+        self.addCleanup(conn.close)
         conn.execute(
             "CREATE TABLE prices (product_id INTEGER, card_name TEXT, set_name TEXT, "
             "date TEXT, market_price REAL)"

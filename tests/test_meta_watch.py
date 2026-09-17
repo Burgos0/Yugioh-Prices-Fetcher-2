@@ -294,6 +294,7 @@ class CardIdentityMatchingTests(unittest.TestCase):
     def test_shared_prefix_does_not_merge_distinct_cards(self):
         from app.meta_watch import resolve_card_printings
         conn = sqlite3.connect(self.prices_path)
+        self.addCleanup(conn.close)
         printings = resolve_card_printings(conn, "Ash Blossom & Joyous Spring")
         product_ids = {p["product_id"] for p in printings}
         self.assertEqual(product_ids, {1, 2})
@@ -302,6 +303,7 @@ class CardIdentityMatchingTests(unittest.TestCase):
     def test_dash_normalization_is_punctuation_only_not_fuzzy_merge(self):
         from app.meta_watch import build_normalized_name_index, resolve_card_printings_with_fallback
         conn = sqlite3.connect(self.prices_path)
+        self.addCleanup(conn.close)
         index = build_normalized_name_index(conn)
         # Source uses a plain hyphen; prices.db tracks it with an en dash -- still resolves.
         printings = resolve_card_printings_with_fallback(conn, "Sky Striker Ace - Kagari", index)
