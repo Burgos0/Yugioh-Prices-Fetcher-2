@@ -117,6 +117,8 @@ def backfill(
         "observations_rewritten": 0,
         "observations_unchanged": 0,
         "observations_with_unresolved_ids": [],
+        "source_limitation_ids": [],
+        "unresolved_id_count": 0,
         "card_bridge_failure": None,
         "fetched_from_endpoint": False,
     }
@@ -181,6 +183,16 @@ def backfill(
     if apply and mutated:
         dataset["observations"] = new_observations
         save_dataset(dataset, dataset_path)
+
+    # Union of every id the resolver could not resolve, from both the
+    # full-catalogue pass and the bounded single-card fallback. These
+    # represent YGOPRODeck's own source limitation for this run.
+    source_limitation_ids = sorted(
+        {cid for entry in report["observations_with_unresolved_ids"]
+         for cid in entry["unresolved_ids"]}
+    )
+    report["source_limitation_ids"] = source_limitation_ids
+    report["unresolved_id_count"] = len(source_limitation_ids)
 
     return report
 

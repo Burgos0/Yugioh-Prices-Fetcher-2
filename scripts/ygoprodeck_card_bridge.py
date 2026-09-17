@@ -33,6 +33,7 @@ Design invariants:
 """
 import json
 import os
+import time
 from datetime import datetime, timezone
 
 import requests
@@ -40,6 +41,16 @@ import requests
 CARDINFO_API_URL = "https://db.ygoprodeck.com/api/v7/cardinfo.php"
 DEFAULT_CACHE_PATH = "data/ygoprodeck_card_cache.json"
 DEFAULT_TIMEOUT = 60
+
+# The single-card fallback (``cardinfo.php?id=<card_id>``) is issued only
+# for the card ids that survive the full-catalogue pass. It is bounded to
+# keep any single run predictable even if the input dataset is unusually
+# large.
+DEFAULT_FALLBACK_MAX_LOOKUPS = 200
+# Pacing between fallback requests. YGOPRODeck's public rate-limit
+# guidance is 20 req/sec; 0.5 s is comfortably below that and keeps small
+# backfills quick.
+DEFAULT_FALLBACK_PACING_SECONDS = 0.5
 
 # Bumped whenever the parser changes in a way that makes older cache
 # files potentially incomplete (e.g. we started extracting an additional
@@ -207,17 +218,122 @@ def fetch_cardinfo_map(session=None, timeout=DEFAULT_TIMEOUT):
     return _extract_card_id_map(payload)
 
 
+def fetch_single_card_id(card_id, session=None, timeout=DEFAULT_TIMEOUT):
+    """
+    Resolve a single card_id against ``cardinfo.php?id=<card_id>``.
+
+    The endpoint is the officially documented single-card lookup and is
+    used only as a *bounded fallback* for card ids that YGOPRODeck's full
+    catalogue response happens to omit at the point in time we fetched
+    it (typically alt-art passcodes that were not folded into
+    ``card_images``). See the module docstring for the resolver contract.
+
+    Returns the canonical card name (str) on success. Returns ``None``
+    when the endpoint explicitly reports that no card with that id
+    exists (HTTP 400 with an ``error`` body, which YGOPRODeck uses to
+    signal "unknown id" rather than a transport problem). Raises
+    :class:`CardBridgeError` for any other transport or payload failure
+    so callers can preserve their no-write-on-failure semantics.
+    """
+    normalized = _normalize_card_id(card_id)
+    if normalized is None:
+        return None
+    client = session or requests.Session()
+    try:
+        response = client.get(
+            CARDINFO_API_URL,
+            params={"id": normalized},
+            timeout=timeout,
+            verify=True,
+        )
+    except requests.RequestException as exc:
+        raise CardBridgeError(
+            f"cardinfo single-id request failed for {normalized}: {exc}"
+        ) from exc
+    # YGOPRODeck returns HTTP 400 with a JSON body ``{"error": "..."}``
+    # for card ids that don't exist in its database. That is an honest
+    # "source limitation" signal and must be distinguished from a
+    # transport error.
+    if response.status_code == 400:
+        return None
+    try:
+        response.raise_for_status()
+        payload = response.json()
+    except requests.RequestException as exc:
+        raise CardBridgeError(
+            f"cardinfo single-id request failed for {normalized}: {exc}"
+        ) from exc
+    except ValueError as exc:
+        raise CardBridgeError(
+            f"cardinfo single-id payload was not valid JSON for {normalized}: {exc}"
+        ) from exc
+    try:
+        mapping = _extract_card_id_map(payload)
+    except CardBridgeError:
+        # Single-id lookups occasionally return an entry that doesn't
+        # list our requested id under card_images (e.g. legacy alt-art
+        # cleanup). Treat any single-id payload we cannot map cleanly as
+        # "source limitation" rather than corrupting the cache.
+        return None
+    name = mapping.get(normalized)
+    if name:
+        return name
+    # The endpoint answered with a card entry but our id wasn't in its
+    # id set. Fall back to the first entry's canonical name -- the
+    # single-id endpoint only returns an entry when it matched the id
+    # we asked for, so this is safe and honest.
+    for value in mapping.values():
+        return value
+    return None
+
+
+def _fetch_missing_via_endpoint(
+    missing_ids,
+    session=None,
+    timeout=DEFAULT_TIMEOUT,
+    pacing_seconds=DEFAULT_FALLBACK_PACING_SECONDS,
+    sleep=time.sleep,
+):
+    """
+    Resolve each id in ``missing_ids`` via the single-card endpoint,
+    pacing successive requests. Returns ``(resolved_map, still_missing)``.
+
+    Any transport/payload failure raises :class:`CardBridgeError` so the
+    resolver can bail out without modifying the cache. Ids the endpoint
+    explicitly rejects (HTTP 400) are returned in ``still_missing`` as
+    a documented source limitation.
+    """
+    resolved = {}
+    still_missing = []
+    client = session or requests.Session()
+    for index, card_id in enumerate(missing_ids):
+        if index > 0 and pacing_seconds > 0:
+            sleep(pacing_seconds)
+        name = fetch_single_card_id(card_id, session=client, timeout=timeout)
+        if name:
+            resolved[_normalize_card_id(card_id) or str(card_id)] = name
+        else:
+            still_missing.append(_normalize_card_id(card_id) or str(card_id))
+    return resolved, still_missing
+
+
 def resolve_card_ids(
     card_ids,
     cache_path=DEFAULT_CACHE_PATH,
     session=None,
     timeout=DEFAULT_TIMEOUT,
     fetch=None,
+    fallback_fetch=None,
+    fallback_max_lookups=DEFAULT_FALLBACK_MAX_LOOKUPS,
+    fallback_pacing_seconds=DEFAULT_FALLBACK_PACING_SECONDS,
+    sleep=time.sleep,
     persist=True,
 ):
     """
     Resolve every requested card_id against the on-disk cache, calling the
-    cardinfo endpoint **at most once** to fill any gaps.
+    cardinfo endpoint **at most once** to fill any gaps, and then falling
+    back to the single-card endpoint for any ids the full catalogue
+    happened to omit.
 
     Args:
         card_ids: iterable of card_id strings/ints to resolve.
@@ -226,15 +342,24 @@ def resolve_card_ids(
         timeout: HTTP timeout for the single fetch.
         fetch: optional dependency-injection hook -- callable returning a
             ``card_id -> name`` dict, used by tests to avoid real HTTP.
-        persist: when True (default) and a fetch occurred, rewrite the
+        fallback_fetch: optional DI hook for the single-card fallback.
+            Signature ``(missing_ids) -> (resolved_map, still_missing_ids)``.
+        fallback_max_lookups: hard cap on the number of ids the fallback
+            may query in a single run. Exceeding it raises
+            :class:`CardBridgeError` so we never silently fan out.
+        fallback_pacing_seconds: minimum delay between successive
+            single-card requests.
+        sleep: injectable sleep used for pacing (tests pass a no-op).
+        persist: when True (default) and any fetch occurred, rewrite the
             cache file atomically. Set to False to leave the file alone.
 
     Returns:
         ``(resolved, unresolved, fetched)`` where ``resolved`` is a dict of
         the card_ids that mapped to a canonical name, ``unresolved`` is a
-        sorted list of the ones that did not, and ``fetched`` is True if
-        this call actually hit the endpoint (i.e. incurred a network
-        request).
+        sorted list of the ones that neither the full catalogue nor the
+        single-card fallback could resolve (i.e. YGOPRODeck's own
+        documented source limitation), and ``fetched`` is True if this
+        call actually hit the endpoint (i.e. incurred a network request).
 
     Raises:
         CardBridgeError: if a fetch was needed but the endpoint failed.
@@ -262,6 +387,35 @@ def resolve_card_ids(
         # payload wins on collisions since it's the newest authority.
         cache.update({_normalize_card_id(k) or str(k): v for k, v in new_map.items() if v})
         fetched = True
+
+        # Any ids that the full catalogue *still* did not resolve are
+        # handed to the bounded single-card fallback. Alt-art passcodes
+        # that YGOPRODeck occasionally drops from the bulk response
+        # (observed live for 14558128 / Ash Blossom & Joyous Spring and
+        # 18144506 / Harpie's Feather Duster) come back from this path.
+        still_missing = [p for p in normalized_requests if p not in cache]
+        if still_missing:
+            if len(still_missing) > fallback_max_lookups:
+                raise CardBridgeError(
+                    f"card bridge fallback exceeded cap: "
+                    f"{len(still_missing)} > {fallback_max_lookups}"
+                )
+            fallback = fallback_fetch or (
+                lambda ids: _fetch_missing_via_endpoint(
+                    ids,
+                    session=session,
+                    timeout=timeout,
+                    pacing_seconds=fallback_pacing_seconds,
+                    sleep=sleep,
+                )
+            )
+            fallback_map, _ = fallback(still_missing)
+            if not isinstance(fallback_map, dict):
+                raise CardBridgeError("card bridge fallback returned no mapping")
+            cache.update(
+                {_normalize_card_id(k) or str(k): v for k, v in fallback_map.items() if v}
+            )
+
         if persist:
             save_cache(cache, cache_path)
 

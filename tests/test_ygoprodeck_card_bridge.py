@@ -18,6 +18,8 @@ the invariants called out in the task:
   downstream; the bridge itself never over-specifies.
 """
 import json
+import os
+import shutil
 import sqlite3
 import tempfile
 import unittest
@@ -26,6 +28,7 @@ from pathlib import Path
 import requests
 
 from scripts import backfill_ygoprodeck_card_names as backfill_cli
+from scripts import ygoprodeck_card_bridge
 from scripts.collect_ygoprodeck_lists import collect_and_import
 from scripts.ygoprodeck_card_bridge import (
     CACHE_SCHEMA_VERSION,
@@ -389,8 +392,16 @@ class ResolveCardIdsTests(unittest.TestCase):
         def _fetch():
             return {"11": "Ash Blossom & Joyous Spring"}
 
+        def _no_fallback(ids):
+            # Simulate the endpoint honestly rejecting each unknown id
+            # (HTTP 400) without ever performing real HTTP.
+            return {}, list(ids)
+
         resolved, unresolved, fetched = resolve_card_ids(
-            ["11", "99999999"], cache_path=self.cache_path, fetch=_fetch
+            ["11", "99999999"],
+            cache_path=self.cache_path,
+            fetch=_fetch,
+            fallback_fetch=_no_fallback,
         )
         self.assertEqual(resolved, {"11": "Ash Blossom & Joyous Spring"})
         self.assertEqual(unresolved, ["99999999"])
@@ -983,6 +994,342 @@ class BackfillCLITests(unittest.TestCase):
         )
         self.assertEqual(report["observations_needing_backfill"], 0)
         self.assertEqual(report["observations_rewritten"], 0)
+
+
+# ---------------------------------------------------------------------------
+# Single-card fallback: fetch_single_card_id / bounded resolve fallback
+# ---------------------------------------------------------------------------
+
+
+# Real-world API-shaped fixtures for the two alt-art passcodes the live
+# YGOPRODeck full-catalogue response was observed to drop from the bulk
+# ``card_images`` list. The single-card endpoint still resolves them.
+ASH_BLOSSOM_SINGLE_PAYLOAD = {
+    "data": [
+        {
+            "id": 14558127,
+            "name": "Ash Blossom & Joyous Spring",
+            "card_images": [
+                {"id": 14558127, "image_url": "https://images.ygoprodeck.com/images/cards/14558127.jpg"},
+                {"id": 14558128, "image_url": "https://images.ygoprodeck.com/images/cards/14558128.jpg"},
+            ],
+        }
+    ]
+}
+HARPIES_FEATHER_SINGLE_PAYLOAD = {
+    "data": [
+        {
+            "id": 18144507,
+            "name": "Harpie's Feather Duster",
+            "card_images": [
+                {"id": 18144507, "image_url": "https://images.ygoprodeck.com/images/cards/18144507.jpg"},
+                {"id": 18144506, "image_url": "https://images.ygoprodeck.com/images/cards/18144506.jpg"},
+            ],
+        }
+    ]
+}
+
+
+class _SingleIdSession:
+    """Simulates cardinfo.php?id=<X> responses keyed by requested id."""
+
+    def __init__(self, payload_by_id=None, error_by_id=None, status_by_id=None):
+        self.payload_by_id = payload_by_id or {}
+        self.error_by_id = error_by_id or {}
+        self.status_by_id = status_by_id or {}
+        self.calls = []
+
+    def get(self, url, params=None, timeout=None, verify=None):
+        card_id = str((params or {}).get("id"))
+        self.calls.append({"url": url, "params": dict(params or {}), "verify": verify})
+        if card_id in self.error_by_id:
+            raise self.error_by_id[card_id]
+        status = self.status_by_id.get(card_id, 200)
+        payload = self.payload_by_id.get(card_id)
+
+        class _Resp:
+            status_code = status
+
+            def raise_for_status(self):
+                if status >= 400:
+                    raise requests.HTTPError(f"HTTP {status}")
+
+            def json(self):
+                return payload
+
+        return _Resp()
+
+
+class FetchSingleCardIdTests(unittest.TestCase):
+    def test_ash_blossom_alt_art_resolves(self):
+        session = _SingleIdSession(payload_by_id={"14558128": ASH_BLOSSOM_SINGLE_PAYLOAD})
+        name = ygoprodeck_card_bridge.fetch_single_card_id("14558128", session=session)
+        self.assertEqual(name, "Ash Blossom & Joyous Spring")
+        # HTTPS + verify were enforced.
+        self.assertTrue(session.calls[0]["verify"])
+
+    def test_harpies_feather_duster_alt_art_resolves(self):
+        session = _SingleIdSession(payload_by_id={"18144506": HARPIES_FEATHER_SINGLE_PAYLOAD})
+        name = ygoprodeck_card_bridge.fetch_single_card_id("18144506", session=session)
+        self.assertEqual(name, "Harpie's Feather Duster")
+
+    def test_http_400_returns_none_source_limitation(self):
+        session = _SingleIdSession(status_by_id={"99999999": 400})
+        name = ygoprodeck_card_bridge.fetch_single_card_id("99999999", session=session)
+        self.assertIsNone(name)
+
+    def test_transport_error_raises_card_bridge_error(self):
+        session = _SingleIdSession(error_by_id={"14558128": requests.ConnectionError("boom")})
+        with self.assertRaises(ygoprodeck_card_bridge.CardBridgeError):
+            ygoprodeck_card_bridge.fetch_single_card_id("14558128", session=session)
+
+    def test_non_numeric_id_returns_none_without_call(self):
+        session = _SingleIdSession()
+        self.assertIsNone(ygoprodeck_card_bridge.fetch_single_card_id("abc", session=session))
+        self.assertEqual(session.calls, [])
+
+
+class ResolveCardIdsFallbackTests(unittest.TestCase):
+    """
+    Verifies that when the full-catalogue pass omits an alt-art passcode,
+    the bounded single-card fallback resolves it and honest failure
+    semantics are preserved.
+    """
+
+    def setUp(self):
+        self.tempdir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tempdir)
+        self.cache_path = os.path.join(self.tempdir, "cache.json")
+
+    def test_fallback_resolves_alt_art_ids_the_catalogue_omitted(self):
+        # Full catalogue omits 14558128 and 18144506 entirely (as in the
+        # live dry-run) -- only the primary ids are present.
+        catalogue = {
+            "14558127": "Ash Blossom & Joyous Spring",
+            "18144507": "Harpie's Feather Duster",
+        }
+        session = _SingleIdSession(
+            payload_by_id={
+                "14558128": ASH_BLOSSOM_SINGLE_PAYLOAD,
+                "18144506": HARPIES_FEATHER_SINGLE_PAYLOAD,
+            }
+        )
+        sleeps = []
+        resolved, unresolved, fetched = ygoprodeck_card_bridge.resolve_card_ids(
+            ["14558128", "18144506"],
+            cache_path=self.cache_path,
+            fetch=lambda: dict(catalogue),
+            session=session,
+            fallback_pacing_seconds=0.25,
+            sleep=lambda s: sleeps.append(s),
+        )
+        self.assertEqual(unresolved, [])
+        self.assertEqual(resolved["14558128"], "Ash Blossom & Joyous Spring")
+        self.assertEqual(resolved["18144506"], "Harpie's Feather Duster")
+        self.assertTrue(fetched)
+        # Pacing sleep happened between the two lookups (once, not
+        # before the first request).
+        self.assertEqual(sleeps, [0.25])
+        # Cache persisted the resolved names so subsequent runs skip the
+        # fallback entirely.
+        with open(self.cache_path) as f:
+            saved = json.load(f)
+        self.assertEqual(saved["card_id_to_name"]["14558128"], "Ash Blossom & Joyous Spring")
+        self.assertEqual(saved["card_id_to_name"]["18144506"], "Harpie's Feather Duster")
+
+    def test_fallback_reused_from_cache_on_subsequent_run(self):
+        # First run populates the cache via the fallback.
+        catalogue = {"14558127": "Ash Blossom & Joyous Spring"}
+        session = _SingleIdSession(
+            payload_by_id={"14558128": ASH_BLOSSOM_SINGLE_PAYLOAD}
+        )
+        ygoprodeck_card_bridge.resolve_card_ids(
+            ["14558128"],
+            cache_path=self.cache_path,
+            fetch=lambda: dict(catalogue),
+            session=session,
+            fallback_pacing_seconds=0,
+            sleep=lambda s: None,
+        )
+        # Second run must not touch the endpoint at all.
+        call_count = {"fetch": 0, "fallback": 0}
+
+        def _boom_fetch():
+            call_count["fetch"] += 1
+            raise AssertionError("fetch must not be called on cache hit")
+
+        def _boom_fallback(_ids):
+            call_count["fallback"] += 1
+            raise AssertionError("fallback must not be called on cache hit")
+
+        resolved, unresolved, fetched = ygoprodeck_card_bridge.resolve_card_ids(
+            ["14558128"],
+            cache_path=self.cache_path,
+            fetch=_boom_fetch,
+            fallback_fetch=_boom_fallback,
+        )
+        self.assertEqual(resolved, {"14558128": "Ash Blossom & Joyous Spring"})
+        self.assertEqual(unresolved, [])
+        self.assertFalse(fetched)
+        self.assertEqual(call_count, {"fetch": 0, "fallback": 0})
+
+    def test_fallback_source_limitation_ids_reported_honestly(self):
+        # The endpoint returns 400 for 99999999 -> honest "not in DB".
+        session = _SingleIdSession(status_by_id={"99999999": 400})
+        resolved, unresolved, fetched = ygoprodeck_card_bridge.resolve_card_ids(
+            ["99999999"],
+            cache_path=self.cache_path,
+            fetch=lambda: {"14558127": "Ash Blossom & Joyous Spring"},
+            session=session,
+            fallback_pacing_seconds=0,
+            sleep=lambda s: None,
+        )
+        self.assertEqual(resolved, {})
+        self.assertEqual(unresolved, ["99999999"])
+        self.assertTrue(fetched)
+        # Cache still persisted the catalogue map, but no bogus name for
+        # the unresolved id.
+        with open(self.cache_path) as f:
+            saved = json.load(f)
+        self.assertNotIn("99999999", saved["card_id_to_name"])
+        self.assertEqual(saved["card_id_to_name"]["14558127"], "Ash Blossom & Joyous Spring")
+
+    def test_fallback_transport_error_preserves_cache(self):
+        # Pre-existing cache file that must survive intact.
+        preexisting = {
+            "schema_version": ygoprodeck_card_bridge.CACHE_SCHEMA_VERSION,
+            "generated_at": "2026-01-01T00:00:00Z",
+            "source": ygoprodeck_card_bridge.CARDINFO_API_URL,
+            "card_id_to_name": {"11111111": "Existing Card"},
+        }
+        with open(self.cache_path, "w") as f:
+            json.dump(preexisting, f)
+        session = _SingleIdSession(
+            error_by_id={"14558128": requests.ConnectionError("network gone")}
+        )
+        with self.assertRaises(ygoprodeck_card_bridge.CardBridgeError):
+            ygoprodeck_card_bridge.resolve_card_ids(
+                ["14558128"],
+                cache_path=self.cache_path,
+                fetch=lambda: {"14558127": "Ash Blossom & Joyous Spring"},
+                session=session,
+                fallback_pacing_seconds=0,
+                sleep=lambda s: None,
+            )
+        # Cache file was NOT rewritten.
+        with open(self.cache_path) as f:
+            still_there = json.load(f)
+        self.assertEqual(still_there, preexisting)
+
+    def test_fallback_respects_max_lookups_cap(self):
+        session = _SingleIdSession()
+        with self.assertRaises(ygoprodeck_card_bridge.CardBridgeError) as ctx:
+            ygoprodeck_card_bridge.resolve_card_ids(
+                [str(1000000 + i) for i in range(5)],
+                cache_path=self.cache_path,
+                fetch=lambda: {"14558127": "Ash Blossom & Joyous Spring"},
+                session=session,
+                fallback_max_lookups=2,
+                fallback_pacing_seconds=0,
+                sleep=lambda s: None,
+            )
+        self.assertIn("fallback exceeded cap", str(ctx.exception))
+
+    def test_catalogue_hit_skips_fallback_entirely(self):
+        # If the catalogue already resolves everything (the happy path
+        # where card_images IS populated correctly), the fallback must
+        # not be invoked.
+        called = {"fallback": 0}
+
+        def _fallback(_ids):
+            called["fallback"] += 1
+            return {}, list(_ids)
+
+        resolved, unresolved, fetched = ygoprodeck_card_bridge.resolve_card_ids(
+            ["14558128"],
+            cache_path=self.cache_path,
+            fetch=lambda: {
+                "14558127": "Ash Blossom & Joyous Spring",
+                "14558128": "Ash Blossom & Joyous Spring",
+            },
+            fallback_fetch=_fallback,
+        )
+        self.assertEqual(resolved, {"14558128": "Ash Blossom & Joyous Spring"})
+        self.assertEqual(unresolved, [])
+        self.assertTrue(fetched)
+        self.assertEqual(called["fallback"], 0)
+
+
+class BackfillFallbackReportTests(unittest.TestCase):
+    """The dry-run report exposes the source-limitation ids explicitly."""
+
+    def setUp(self):
+        self.tempdir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tempdir)
+        self.dataset_path = os.path.join(self.tempdir, "dataset.json")
+        self.cache_path = os.path.join(self.tempdir, "cache.json")
+
+    def _write_dataset(self, observations):
+        with open(self.dataset_path, "w") as f:
+            json.dump({"observations": observations}, f)
+
+    def test_report_lists_source_limitation_ids(self):
+        # A single YGOPRODeck observation whose sole main-deck id the
+        # fallback declares unknown (HTTP 400).
+        obs = {
+            "source_provider": "ygoprodeck",
+            "event_id": "evt-1",
+            "source_deck_id": 42,
+            "main_deck": [{"name": "99999999", "count": 3}],
+        }
+        self._write_dataset([obs])
+
+        def _resolver(card_ids, cache_path=None, session=None, timeout=None):
+            # Simulate resolver behaviour where fallback returns nothing
+            # for 99999999.
+            return {}, sorted(str(c) for c in card_ids), True
+
+        report = backfill_cli.backfill(
+            dataset_path=self.dataset_path,
+            card_cache_path=self.cache_path,
+            resolve_card_ids_fn=_resolver,
+            apply=False,
+        )
+        self.assertEqual(report["unresolved_id_count"], 1)
+        self.assertEqual(report["source_limitation_ids"], ["99999999"])
+        self.assertEqual(report["observations_rewritten"], 0)
+
+    def test_report_zero_unresolved_after_fallback(self):
+        obs = {
+            "source_provider": "ygoprodeck",
+            "event_id": "evt-1",
+            "source_deck_id": 42,
+            "main_deck": [
+                {"name": "14558128", "count": 3},
+                {"name": "18144506", "count": 1},
+            ],
+        }
+        self._write_dataset([obs])
+
+        def _resolver(card_ids, cache_path=None, session=None, timeout=None):
+            return (
+                {
+                    "14558128": "Ash Blossom & Joyous Spring",
+                    "18144506": "Harpie's Feather Duster",
+                },
+                [],
+                True,
+            )
+
+        report = backfill_cli.backfill(
+            dataset_path=self.dataset_path,
+            card_cache_path=self.cache_path,
+            resolve_card_ids_fn=_resolver,
+            apply=False,
+        )
+        self.assertEqual(report["unresolved_id_count"], 0)
+        self.assertEqual(report["source_limitation_ids"], [])
+        self.assertEqual(report["observations_rewritten"], 1)
 
 
 if __name__ == "__main__":
