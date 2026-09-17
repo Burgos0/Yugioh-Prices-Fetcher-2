@@ -92,7 +92,7 @@ def validate_observation(obs):
     if event_date:
         try:
             datetime.strptime(event_date, "%Y-%m-%d")
-        except ValueError:
+        except (TypeError, ValueError):
             errors.append(f"invalid event_date: {event_date!r} (expected YYYY-MM-DD)")
 
     for ts_field in ("published_at", "first_seen_at", "archived_at"):

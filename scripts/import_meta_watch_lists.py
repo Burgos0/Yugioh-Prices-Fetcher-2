@@ -64,7 +64,18 @@ def _now_iso():
 
 
 def _comparable_observation(obs):
-    return {k: v for k, v in obs.items() if k not in ("archived_at", "first_seen_at")}
+    comparable = {
+        k: v
+        for k, v in obs.items()
+        if k not in ("archived_at", "first_seen_at", "main_deck", "side_deck", "extra_deck")
+    }
+    for zone in ("main_deck", "side_deck", "extra_deck"):
+        counts = {}
+        for entry in obs.get(zone) or []:
+            name = entry.get("name")
+            counts[name] = counts.get(name, 0) + entry.get("count", 0)
+        comparable[zone] = sorted(counts.items())
+    return comparable
 
 
 def import_observations_payload(payload, dataset_path=DEFAULT_DATASET_PATH, dry_run=False, input_path=None):

@@ -253,8 +253,10 @@ def build_adoption_features(dataset_path: str = DEFAULT_DATASET_PATH,
     raw = dataset.get("observations") or []
     revisions = dataset.get("revisions") or []
     selected, archive_exclusions = select_archived_observations(dataset, as_of=as_of)
+    raw_filtered = filter_source(raw, source_provider=source_provider, fmt=fmt)
+    _raw_deduped, duplicate_count = dedupe_observations(raw_filtered)
     filtered = filter_source(selected, source_provider=source_provider, fmt=fmt)
-    deduped, duplicate_count = dedupe_observations(filtered)
+    deduped, _selected_duplicate_count = dedupe_observations(filtered)
     agg = aggregate_adoption(deduped)
     return {
         "as_of": as_of,
