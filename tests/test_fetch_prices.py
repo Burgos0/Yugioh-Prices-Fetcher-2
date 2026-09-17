@@ -83,6 +83,38 @@ class LiveFetchTests(unittest.TestCase):
 
         self.assertFalse(Path(self.db_path).exists())
 
+    def test_inaccessible_group_is_skipped(self):
+        groups = [
+            {"groupId": 10, "name": "Accessible Set"},
+            {"groupId": 11, "name": "Restricted Set"},
+        ]
+
+        def response(url):
+            if url.endswith("/groups"):
+                return groups
+            if "/10/products" in url:
+                return PRODUCTS
+            if "/10/prices" in url:
+                return PRICES
+            if "/11/products" in url:
+                raise RuntimeError("HTTP 401")
+            if "/11/prices" in url:
+                raise AssertionError("prices should not be requested for inaccessible groups")
+            raise AssertionError(url)
+
+        with patch.object(fetch_prices, "DB_PATH", self.db_path), \
+                patch.object(fetch_prices, "MIN_EXPECTED_DAILY_ROWS", 1), \
+                patch.object(fetch_prices, "current_utc_date", return_value="2026-09-17"), \
+                patch.object(fetch_prices, "fetch_json", side_effect=response), \
+                patch.object(fetch_prices.sys, "argv", ["fetch_prices"]):
+            self.assertEqual(fetch_prices.main(), 0)
+
+        with sqlite3.connect(self.db_path) as conn:
+            rows = conn.execute(
+                "SELECT product_id, card_name, set_name, date FROM prices"
+            ).fetchall()
+        self.assertEqual(rows, [(100, "Test Card", "Accessible Set", "2026-09-17")])
+
     def test_transaction_failure_rolls_back_prices_and_subtypes(self):
         records = [(100, "Card", "Set", 1.0, 2.0, 3.0, 2.5, None, "2026-09-17")]
         with patch.object(fetch_prices, "MIN_EXPECTED_DAILY_ROWS", 1), \
