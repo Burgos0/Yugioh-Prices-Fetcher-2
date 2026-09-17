@@ -738,5 +738,364 @@ class PricesDbCoverageTests(unittest.TestCase):
         self.assertEqual(coverage["unmatched"], [])
 
 
+# --- Stdout summary safety (CodeQL: no sensitive data on stdout) -----------
+
+
+import subprocess  # noqa: E402
+
+
+# A sentinel secret-like value written into paths, cache dirs, and even
+# canonical card names for the collector test. Any leak of this value on
+# stdout would flag a real data-flow bug. It must never appear.
+SECRET_SENTINEL = "MW_SECRET_SENTINEL_0xDEADBEEF_TOKEN"
+
+
+def _run_cli(module, args, cwd):
+    return subprocess.run(
+        ["python", "-m", module, *args],
+        cwd=cwd,
+        capture_output=True,
+        text=True,
+        check=False,
+        env={
+            "PATH": os.environ.get("PATH", ""),
+            "PYTHONPATH": cwd,
+            # Deliberately do NOT propagate any secret-shaped env vars.
+        },
+    )
+
+
+class BackfillStdoutSafetyTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.repo_root = str(Path(__file__).resolve().parent.parent)
+        # Sentinel-tainted paths: if the CLI shallow-copied the report
+        # to stdout these substrings would leak.
+        self.dataset_path = str(
+            Path(self.tmp.name) / f"dataset_{SECRET_SENTINEL}.json"
+        )
+        self.report_path = str(
+            Path(self.tmp.name) / f"report_{SECRET_SENTINEL}.json"
+        )
+        self.cache_dir = str(Path(self.tmp.name) / f"cache_{SECRET_SENTINEL}")
+        self.prices_db_path = str(
+            Path(self.tmp.name) / f"prices_{SECRET_SENTINEL}.db"
+        )
+        # Seed a prices DB so the coverage block populates.
+        conn = sqlite3.connect(self.prices_db_path)
+        conn.execute(
+            "CREATE TABLE prices (product_id INTEGER, card_name TEXT, "
+            "set_name TEXT, price REAL, date TEXT)"
+        )
+        conn.execute(
+            "INSERT INTO prices VALUES (?,?,?,?,?)",
+            (1, "Ash Blossom & Joyous Spring", "Set-A", 1.0, "2026-09-15"),
+        )
+        conn.commit()
+        conn.close()
+        # Seed a YGOPRODeck-sourced observation that uses a passcode and
+        # one that will remain unresolved -- both should be visible only
+        # in the report file, never on stdout.
+        with open(self.dataset_path, "w") as f:
+            json.dump(
+                {
+                    "schema_version": 1,
+                    "observations": [
+                        _ygoprodeck_obs(
+                            42,
+                            main_ids=[("14558128", 3), ("99999999", 1)],
+                        ),
+                        _ygoprodeck_obs(
+                            43,
+                            main_ids=[("14558128", 2)],
+                        ),
+                    ],
+                },
+                f,
+            )
+        # Prime the cache so the CLI does not need real network access.
+        os.makedirs(self.cache_dir, exist_ok=True)
+        with open(
+            Path(self.cache_dir) / "ygoprodeck_cardinfo.json", "w"
+        ) as f:
+            json.dump(CARDINFO_PAYLOAD, f)
+
+    def test_stdout_contains_only_allowlisted_scalar_summary(self):
+        proc = _run_cli(
+            "scripts.backfill_ygoprodeck_card_names",
+            [
+                "--dataset", self.dataset_path,
+                "--report", self.report_path,
+                "--cache-dir", self.cache_dir,
+                "--prices-db", self.prices_db_path,
+            ],
+            cwd=self.repo_root,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        stdout = proc.stdout
+        summary = json.loads(stdout)
+
+        # Allowlist: only expected scalar fields.
+        allowed_keys = {
+            "status", "success", "dry_run",
+            "observations_scanned", "observations_changed",
+            "observations_already_canonical_skipped",
+            "records_rejected",
+            "resolved_passcode_count", "unresolved_passcode_count",
+            "matched_card_name_count", "unmatched_card_name_count",
+            "prices_db_checked",
+        }
+        self.assertEqual(set(summary.keys()), allowed_keys)
+        # Every value is a JSON scalar (bool/int/str) -- no nested dicts
+        # or lists that could carry paths, names, or exception bodies.
+        for k, v in summary.items():
+            self.assertIsInstance(v, (bool, int, str), msg=k)
+        # Type sanity for the counts we advertise.
+        for k in (
+            "observations_scanned", "observations_changed",
+            "observations_already_canonical_skipped",
+            "records_rejected",
+            "resolved_passcode_count", "unresolved_passcode_count",
+            "matched_card_name_count", "unmatched_card_name_count",
+        ):
+            self.assertIsInstance(summary[k], int, msg=k)
+
+        # Nothing sensitive on stdout: paths, endpoint URLs, canonical
+        # card names, passcodes, cache/db locations, sentinel.
+        forbidden = [
+            SECRET_SENTINEL,
+            self.dataset_path,
+            self.report_path,
+            self.cache_dir,
+            self.prices_db_path,
+            "Ash Blossom",
+            "Joyous Spring",
+            "14558128",
+            "99999999",
+            "db.ygoprodeck.com",
+            "ygoprodeck.com",
+            "cardinfo.php",
+            self.tmp.name,
+        ]
+        for needle in forbidden:
+            self.assertNotIn(needle, stdout, msg=f"leaked: {needle!r}")
+
+        # Confirm the full report was still written and does contain the
+        # detailed values we deliberately kept off stdout.
+        with open(self.report_path) as f:
+            report = json.load(f)
+        self.assertIn("dataset_path", report)
+        report_json = json.dumps(report)
+        self.assertIn("Ash Blossom & Joyous Spring", report_json)
+        self.assertIn("99999999", report_json)
+
+        # Sanity: the summary correctly reflects the seeded scenario.
+        # One observation had an unresolved passcode -> not changed;
+        # the other resolves to Ash Blossom -> changed.
+        self.assertTrue(summary["success"])
+        self.assertEqual(summary["observations_changed"], 1)
+        self.assertEqual(summary["records_rejected"], 1)
+        self.assertEqual(summary["unresolved_passcode_count"], 1)
+        self.assertEqual(summary["matched_card_name_count"], 1)
+        self.assertEqual(summary["unmatched_card_name_count"], 0)
+
+
+class CollectorStdoutSafetyTests(unittest.TestCase):
+    """
+    Same guarantees for scripts/collect_ygoprodeck_lists.py's CLI: the
+    stdout must be an allowlisted scalar summary; the full report is
+    written to --report.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.repo_root = str(Path(__file__).resolve().parent.parent)
+        self.dataset_path = str(
+            Path(self.tmp.name) / f"dataset_{SECRET_SENTINEL}.json"
+        )
+        self.report_path = str(
+            Path(self.tmp.name) / f"report_{SECRET_SENTINEL}.json"
+        )
+        self.cache_dir = str(Path(self.tmp.name) / f"cache_{SECRET_SENTINEL}")
+        with open(self.dataset_path, "w") as f:
+            json.dump({"schema_version": 1, "observations": []}, f)
+        # We won't run the collector against a live network, so force
+        # the catalogue cache to be present. Even so we still expect an
+        # endpoint failure from the decklist API -- which is fine, the
+        # CLI must still emit only a safe summary and set success=false.
+        os.makedirs(self.cache_dir, exist_ok=True)
+        with open(Path(self.cache_dir) / "ygoprodeck_cardinfo.json", "w") as f:
+            json.dump(CARDINFO_PAYLOAD, f)
+
+    def test_stdout_summary_is_scalar_only_even_on_endpoint_failure(self):
+        # Point --dataset at our sentinel path and disable the network
+        # by making the decklist endpoint unreachable (we rely on the
+        # fact that requests will fail against no-such-host in the
+        # sandbox). The intent of this test is stdout hygiene on
+        # failure paths, not network behaviour.
+        # We stub-import the collector's fetch path by monkey-patching
+        # via PYTHONPATH is not possible without changing code, so
+        # instead we exercise the CLI end-to-end and simply assert on
+        # allowlisted stdout keys regardless of network outcome.
+        proc = _run_cli(
+            "scripts.collect_ygoprodeck_lists",
+            [
+                "--dataset", self.dataset_path,
+                "--report", self.report_path,
+                "--cache-dir", self.cache_dir,
+                "--lookback-days", "1",
+                "--pacing-seconds", "0",
+                "--timeout", "1",
+            ],
+            cwd=self.repo_root,
+        )
+        # returncode may be 0 (network succeeded) or 1 (endpoint failure).
+        stdout = proc.stdout.strip()
+        # Even on failure the CLI must emit a parseable summary.
+        self.assertTrue(stdout, msg=proc.stderr)
+        summary = json.loads(stdout)
+        allowed_keys = {
+            "status", "success", "dry_run",
+            "records_fetched", "records_excluded_non_tcg_advanced",
+            "candidate_observations",
+            "observations_scanned", "observations_changed",
+            "records_rejected", "records_unresolved_passcodes",
+            "resolved_passcode_count", "unresolved_passcode_count",
+            "duplicate_existing_precheck_skipped",
+            "duplicate_in_batch_precheck_skipped",
+        }
+        self.assertEqual(set(summary.keys()), allowed_keys)
+        for k, v in summary.items():
+            self.assertIsInstance(v, (bool, int, str), msg=k)
+
+        forbidden = [
+            SECRET_SENTINEL,
+            self.dataset_path,
+            self.report_path,
+            self.cache_dir,
+            "db.ygoprodeck.com",
+            "ygoprodeck.com",
+            "getDecks.php",
+            "cardinfo.php",
+            "Ash Blossom",
+            "14558128",
+            self.tmp.name,
+        ]
+        for needle in forbidden:
+            self.assertNotIn(needle, stdout, msg=f"leaked: {needle!r}")
+
+        # Report file was written and contains the detailed values that
+        # were deliberately kept off stdout.
+        with open(self.report_path) as f:
+            report = json.load(f)
+        self.assertEqual(report["dataset_path"], self.dataset_path)
+        # Endpoint URL is preserved in the report -- just not on stdout.
+        self.assertIn("endpoint", report)
+
+
+class BuildStdoutSummaryUnitTests(unittest.TestCase):
+    """
+    Directly unit-test build_stdout_summary() to prove the summary is
+    independently constructed (not a shallow copy of the report) and
+    that no sensitive-shaped values from the input flow through.
+    """
+
+    def test_backfill_summary_omits_all_sensitive_fields(self):
+        from scripts.backfill_ygoprodeck_card_names import build_stdout_summary
+        poisoned_report = {
+            "backfilled_at": "2026-09-16T12:00:00Z",
+            "dataset_path": f"/tmp/{SECRET_SENTINEL}/dataset.json",
+            "cache_dir": f"/tmp/{SECRET_SENTINEL}/cache",
+            "report_path": f"/tmp/{SECRET_SENTINEL}/report.json",
+            "endpoint_failure": None,
+            "card_catalogue": {"source": "api", "size": 999},
+            "observations_total": 5,
+            "observations_ygoprodeck": 3,
+            "observations_scanned": 3,
+            "observations_already_canonical_skipped": 1,
+            "observations_resolved": 2,
+            "observations_unresolved": [
+                {
+                    "event_id": f"leak-{SECRET_SENTINEL}",
+                    "source_deck_id": SECRET_SENTINEL,
+                    "unresolved": {
+                        "main_deck": [{"passcode": "99999999", "count": 4}],
+                    },
+                }
+            ],
+            "prices_db_coverage": {
+                "prices_db_path": f"/tmp/{SECRET_SENTINEL}/prices.db",
+                "present": True,
+                "matched": [
+                    {"card_name": f"Ash Blossom {SECRET_SENTINEL}", "product_id_printings": 16}
+                ],
+                "unmatched": [f"Nonexistent {SECRET_SENTINEL} Card"],
+            },
+            "dry_run": True,
+        }
+        summary = build_stdout_summary(poisoned_report)
+        rendered = json.dumps(summary)
+        self.assertNotIn(SECRET_SENTINEL, rendered)
+        self.assertNotIn("Ash Blossom", rendered)
+        self.assertNotIn("99999999", rendered)
+        self.assertNotIn("/tmp/", rendered)
+        # Scalar counts remain correct.
+        self.assertEqual(summary["observations_changed"], 2)
+        self.assertEqual(summary["records_rejected"], 1)
+        self.assertEqual(summary["unresolved_passcode_count"], 4)
+        self.assertEqual(summary["matched_card_name_count"], 1)
+        self.assertEqual(summary["unmatched_card_name_count"], 1)
+        self.assertTrue(summary["dry_run"])
+        self.assertTrue(summary["success"])
+
+    def test_collector_summary_omits_all_sensitive_fields(self):
+        from scripts.collect_ygoprodeck_lists import build_stdout_summary
+        poisoned_report = {
+            "collected_at": "2026-09-16T12:00:00Z",
+            "source": SECRET_SENTINEL,
+            "endpoint": f"https://{SECRET_SENTINEL}.example/getDecks.php",
+            "dataset_path": f"/tmp/{SECRET_SENTINEL}/dataset.json",
+            "dry_run": False,
+            "endpoint_failure": {
+                "endpoint": f"https://{SECRET_SENTINEL}.example/getDecks.php",
+                "error": f"******",
+            },
+            "records_fetched": 7,
+            "records_excluded_non_tcg_advanced": 2,
+            "candidate_observations": 1,
+            "duplicate_existing_precheck_skipped": 3,
+            "duplicate_in_batch_precheck_skipped": 1,
+            "rejected_records": [
+                {"deckNum": "1", "pretty_url": SECRET_SENTINEL, "reason": SECRET_SENTINEL}
+            ],
+            "unresolved_passcode_records": [
+                {
+                    "deckNum": "2",
+                    "pretty_url": SECRET_SENTINEL,
+                    "unresolved": {
+                        "main_deck": [{"passcode": "99999999", "count": 2}],
+                        "side_deck": [{"passcode": "11111111", "count": 1}],
+                    },
+                }
+            ],
+            "import": {"added": 1},
+        }
+        summary = build_stdout_summary(poisoned_report)
+        rendered = json.dumps(summary)
+        self.assertNotIn(SECRET_SENTINEL, rendered)
+        self.assertNotIn("99999999", rendered)
+        self.assertNotIn("getDecks.php", rendered)
+        self.assertNotIn("password", rendered)
+        # Scalars still correct.
+        self.assertFalse(summary["success"])
+        self.assertEqual(summary["records_fetched"], 7)
+        self.assertEqual(summary["records_rejected"], 1)
+        self.assertEqual(summary["records_unresolved_passcodes"], 1)
+        self.assertEqual(summary["unresolved_passcode_count"], 3)
+        self.assertEqual(summary["observations_changed"], 1)
+
+
 if __name__ == "__main__":
     unittest.main()

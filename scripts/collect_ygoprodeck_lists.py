@@ -682,6 +682,56 @@ def collect_and_import(
     return report
 
 
+def build_stdout_summary(result):
+    """
+    Construct an independently-built, allowlisted stdout summary from a
+    collect-and-import report.
+
+    Only safe scalar counts and booleans are copied out one field at a
+    time -- never derived by shallow-copying or spreading the full
+    report. Endpoint URLs, dataset/cache paths, canonical card names,
+    passcodes, exception messages, and pretty_urls from rejected rows
+    are intentionally excluded so no potentially sensitive value can
+    flow from the report dict into stdout.
+    """
+    endpoint_failure = result.get("endpoint_failure")
+    import_block = result.get("import") or {}
+    unresolved_records = result.get("unresolved_passcode_records") or []
+    unresolved_passcode_count = 0
+    for record in unresolved_records:
+        zones = record.get("unresolved") or {}
+        for entries in zones.values():
+            for entry in entries or []:
+                count = entry.get("count")
+                if isinstance(count, int) and count > 0:
+                    unresolved_passcode_count += count
+
+    added = int(import_block.get("added") or 0)
+    summary = {
+        "status": "ok" if endpoint_failure is None else "endpoint_failure",
+        "success": endpoint_failure is None,
+        "dry_run": bool(result.get("dry_run")),
+        "records_fetched": int(result.get("records_fetched") or 0),
+        "records_excluded_non_tcg_advanced": int(
+            result.get("records_excluded_non_tcg_advanced") or 0
+        ),
+        "candidate_observations": int(result.get("candidate_observations") or 0),
+        "observations_scanned": int(result.get("records_fetched") or 0),
+        "observations_changed": added,
+        "records_rejected": len(result.get("rejected_records") or []),
+        "records_unresolved_passcodes": len(unresolved_records),
+        "resolved_passcode_count": added,
+        "unresolved_passcode_count": unresolved_passcode_count,
+        "duplicate_existing_precheck_skipped": int(
+            result.get("duplicate_existing_precheck_skipped") or 0
+        ),
+        "duplicate_in_batch_precheck_skipped": int(
+            result.get("duplicate_in_batch_precheck_skipped") or 0
+        ),
+    }
+    return summary
+
+
 def main():
     parser = argparse.ArgumentParser(
         description=(
@@ -717,8 +767,12 @@ def main():
         pacing_seconds=args.pacing_seconds,
         cache_dir=args.cache_dir,
     )
-    print(json.dumps(result, indent=2))
-    if result.get("endpoint_failure"):
+    # Full report is persisted to args.report by collect_and_import().
+    # Stdout only receives an independently-constructed, allowlisted
+    # summary of safe scalar counts -- never the report dict itself.
+    summary = build_stdout_summary(result)
+    sys.stdout.write(json.dumps(summary, indent=2, sort_keys=True) + "\n")
+    if not summary["success"]:
         sys.exit(1)
 
 

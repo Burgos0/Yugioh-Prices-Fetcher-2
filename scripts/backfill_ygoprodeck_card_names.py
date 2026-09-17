@@ -264,6 +264,51 @@ def backfill(
     return report
 
 
+def build_stdout_summary(result):
+    """
+    Construct an independently-built, allowlisted stdout summary from a
+    backfill report.
+
+    Only safe scalar counts and booleans are copied out one field at a
+    time -- never derived by shallow-copying or spreading the full
+    report. Paths, endpoint URLs, cache directories, canonical card
+    names, passcodes, exception messages, and any prices-db content are
+    intentionally excluded so no potentially sensitive value can flow
+    from the report dict into stdout.
+    """
+    endpoint_failure = result.get("endpoint_failure")
+    prices = result.get("prices_db_coverage") or {}
+    matched = prices.get("matched") or []
+    unmatched = prices.get("unmatched") or []
+    unresolved_records = result.get("observations_unresolved") or []
+    unresolved_passcode_count = 0
+    for record in unresolved_records:
+        zones = record.get("unresolved") or {}
+        for entries in zones.values():
+            for entry in entries or []:
+                count = entry.get("count")
+                if isinstance(count, int) and count > 0:
+                    unresolved_passcode_count += count
+
+    summary = {
+        "status": "ok" if endpoint_failure is None else "endpoint_failure",
+        "success": endpoint_failure is None,
+        "dry_run": bool(result.get("dry_run")),
+        "observations_scanned": int(result.get("observations_scanned") or 0),
+        "observations_changed": int(result.get("observations_resolved") or 0),
+        "observations_already_canonical_skipped": int(
+            result.get("observations_already_canonical_skipped") or 0
+        ),
+        "records_rejected": len(unresolved_records),
+        "resolved_passcode_count": int(result.get("observations_resolved") or 0),
+        "unresolved_passcode_count": unresolved_passcode_count,
+        "matched_card_name_count": len(matched),
+        "unmatched_card_name_count": len(unmatched),
+        "prices_db_checked": bool(prices) and bool(prices.get("present")),
+    }
+    return summary
+
+
 def main():
     parser = argparse.ArgumentParser(
         description=(
@@ -290,8 +335,12 @@ def main():
         dry_run=args.dry_run,
         prices_db_path=args.prices_db,
     )
-    print(json.dumps(result, indent=2))
-    if result.get("endpoint_failure"):
+    # Full report is persisted to args.report by backfill(). Stdout only
+    # receives an independently-constructed, allowlisted summary of safe
+    # scalar counts -- never the report dict itself.
+    summary = build_stdout_summary(result)
+    sys.stdout.write(json.dumps(summary, indent=2, sort_keys=True) + "\n")
+    if not summary["success"]:
         sys.exit(1)
 
 
