@@ -28,7 +28,10 @@ MIN_EXPECTED_DAILY_ROWS = 40000  # Normal daily count is ~47,000+
 REQUEST_TIMEOUT = 30
 MAX_RETRIES = 5
 RETRY_DELAY = 1  # seconds, doubled each retry (exponential backoff)
+TCGCSV_REQUEST_INTERVAL = 0.5
+TCGCSV_401_COOLDOWN = 60
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 yugioh-price-fetcher/2.0"
+_last_tcgcsv_request_at = None
 
 
 def current_utc_date():
@@ -52,13 +55,29 @@ def parse_target_date(date_arg=None):
     return observation_date
 
 
+def _pace_tcgcsv_request(url):
+    global _last_tcgcsv_request_at
+    if not url.startswith(f"{BASE_API}/"):
+        return
+
+    now = time.monotonic()
+    if _last_tcgcsv_request_at is not None:
+        wait_time = TCGCSV_REQUEST_INTERVAL - (now - _last_tcgcsv_request_at)
+        if wait_time > 0:
+            time.sleep(wait_time)
+            now += wait_time
+    _last_tcgcsv_request_at = now
+
+
 def fetch_json(url):
     """Fetch JSON with retry logic and exponential backoff."""
     headers = {"User-Agent": USER_AGENT}
     last_error = None
 
     for attempt in range(MAX_RETRIES):
+        retry_delay = None
         try:
+            _pace_tcgcsv_request(url)
             r = requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT)
         except (requests.exceptions.Timeout, requests.exceptions.ConnectionError, requests.exceptions.RequestException) as e:
             last_error = e
@@ -71,6 +90,9 @@ def fetch_json(url):
                     return data
                 except ValueError as e:
                     last_error = e
+            elif r.status_code == 401 and url.startswith(f"{BASE_API}/"):
+                last_error = requests.HTTPError("HTTP 401 (retryable for TCGCSV)")
+                retry_delay = TCGCSV_401_COOLDOWN
             elif r.status_code == 429 or r.status_code >= 500:
                 last_error = requests.HTTPError(f"HTTP {r.status_code} (retryable)")
             else:
@@ -80,7 +102,7 @@ def fetch_json(url):
                     break
 
         if attempt < MAX_RETRIES - 1:
-            sleep_time = RETRY_DELAY * (2 ** attempt)
+            sleep_time = retry_delay if retry_delay is not None else RETRY_DELAY * (2 ** attempt)
             print(f"  Request failed ({last_error}). Retrying in {sleep_time}s...")
             time.sleep(sleep_time)
 
