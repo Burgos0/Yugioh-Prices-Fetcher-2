@@ -349,6 +349,20 @@ class FetchTcgDecksTests(unittest.TestCase):
 
 
 class CollectAndImportTests(unittest.TestCase):
+    # Fixture map covering every numeric passcode used by _record() so
+    # collect_and_import can resolve them offline without hitting the
+    # real YGOPRODeck cardinfo endpoint. Deliberately shaped to look like
+    # a real API-derived map: string keys, canonical name values.
+    PASSCODE_MAP = {
+        "11": "Card Eleven",
+        "22": "Card Twenty-Two",
+        "33": "Card Thirty-Three",
+        "44": "Card Forty-Four",
+        "55": "Card Fifty-Five",
+        "66": "Card Sixty-Six",
+        "77": "Card Seventy-Seven",
+    }
+
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
@@ -385,6 +399,7 @@ class CollectAndImportTests(unittest.TestCase):
             pacing_seconds=0,
             sleep=lambda s: None,
             now=NOW,
+            passcode_map=self.PASSCODE_MAP,
         )
 
         self.assertIsNone(report["endpoint_failure"])
@@ -445,6 +460,7 @@ class CollectAndImportTests(unittest.TestCase):
             pacing_seconds=0,
             sleep=lambda s: None,
             now=NOW,
+            passcode_map=self.PASSCODE_MAP,
         )
         self.assertEqual(report["duplicate_existing_precheck_skipped"], 1)
         self.assertEqual(report["import"]["added"], 1)
@@ -466,6 +482,7 @@ class CollectAndImportTests(unittest.TestCase):
             pacing_seconds=0,
             sleep=lambda s: None,
             now=NOW,
+            passcode_map=self.PASSCODE_MAP,
         )
         self.assertEqual(report["duplicate_in_batch_precheck_skipped"], 1)
         self.assertEqual(report["import"]["added"], 1)
@@ -501,6 +518,7 @@ class CollectAndImportTests(unittest.TestCase):
             pacing_seconds=0,
             sleep=lambda s: None,
             now=NOW,
+            passcode_map=self.PASSCODE_MAP,
         )
         self.assertIsNotNone(report["endpoint_failure"])
         self.assertIn("network down", report["endpoint_failure"]["error"])
@@ -524,6 +542,7 @@ class CollectAndImportTests(unittest.TestCase):
             pacing_seconds=0,
             sleep=lambda s: None,
             now=NOW,
+            passcode_map=self.PASSCODE_MAP,
         )
         self.assertEqual(report["import"]["added"], 0)
         reasons = {r["reason"] for r in report["rejected_records"]}
@@ -550,6 +569,7 @@ class CollectAndImportTests(unittest.TestCase):
             pacing_seconds=0,
             sleep=lambda s: None,
             now=NOW,
+            passcode_map=self.PASSCODE_MAP,
         )
         self.assertEqual(report["records_excluded_non_tcg_advanced"], 4)
         self.assertEqual(report["import"]["added"], 0)

@@ -7,3 +7,9 @@ __pycache__/
 # just stop tracking them.
 data/prices.db
 data/signals.db
+
+# YGOPRODeck card catalogue cache and Meta Watch card-identity backfill/
+# collector reports are generated at run time; keep the artefacts local.
+data/cache/
+data/meta_watch_ygoprodeck_report.json
+data/meta_watch_ygoprodeck_backfill_report.json

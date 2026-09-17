@@ -45,6 +45,13 @@ from app.meta_watch import (  # noqa: E402
     validate_observation,
 )
 from scripts.import_meta_watch_lists import import_observations_payload  # noqa: E402
+from scripts.ygoprodeck_card_catalogue import (  # noqa: E402
+    CatalogueError,
+    load_passcode_map,
+    resolve_observation_cards,
+)
+
+DEFAULT_CACHE_DIR = "data/cache/ygoprodeck"
 
 YGOPRODECK_API_URL = "https://ygoprodeck.com/api/decks/getDecks.php"
 TCG_CATEGORY = "Tournament Meta Decks"
@@ -485,13 +492,23 @@ def collect_and_import(
     pacing_seconds=DEFAULT_REQUEST_PACING_SECONDS,
     sleep=time.sleep,
     now=None,
+    cache_dir=DEFAULT_CACHE_DIR,
+    passcode_map=None,
+    catalogue_session=None,
 ):
     """
     Fetch the current TCG Advanced feed from YGOPRODeck, filter/normalise
-    rows into Meta Watch observations, and import the new ones.
+    rows into Meta Watch observations, resolve YGOPRODeck deck-array
+    passcodes to canonical card names via the YGOPRODeck cardinfo
+    catalogue (fetched at most once per run and cached locally), and
+    import the resolved observations.
 
-    On a catalogue endpoint failure the dataset is left untouched and the
-    failure is reported in the returned report dict.
+    On a catalogue endpoint failure -- either the decklist feed or the
+    cardinfo catalogue -- the dataset is left untouched and the failure
+    is reported in the returned report dict.
+
+    ``passcode_map`` may be supplied by callers/tests to skip the
+    catalogue fetch entirely (useful for offline determinism).
     """
     now = now or _now_utc()
     from_date = (now - timedelta(days=int(lookback_days))).strftime("%Y-%m-%d")
@@ -520,6 +537,8 @@ def collect_and_import(
         "duplicate_existing_precheck_skipped": 0,
         "duplicate_in_batch_precheck_skipped": 0,
         "rejected_records": [],
+        "unresolved_passcode_records": [],
+        "card_catalogue": {"source": None, "size": 0},
         "import": None,
     }
 
@@ -550,6 +569,37 @@ def collect_and_import(
 
     report["records_fetched"] = len(rows)
 
+    # Fetch the card catalogue exactly once per run (or reuse the local
+    # cache). Failure here leaves the dataset untouched and is reported
+    # honestly -- we refuse to import passcodes as card names.
+    if passcode_map is None:
+        try:
+            passcode_map, catalogue_source = load_passcode_map(
+                cache_dir=cache_dir,
+                session=catalogue_session,
+                timeout=timeout,
+                sleep=sleep,
+            )
+        except CatalogueError as exc:
+            report["endpoint_failure"] = {
+                "endpoint": "ygoprodeck cardinfo",
+                "error": str(exc),
+            }
+            report["import"] = {
+                "input_path": None,
+                "dataset_path": dataset_path,
+                "dry_run": dry_run,
+                "added": 0,
+                "duplicate_existing_skipped": 0,
+                "duplicate_in_batch_skipped": 0,
+                "rejected": [],
+            }
+            _write_json(report_path, report)
+            return report
+    else:
+        catalogue_source = "provided"
+    report["card_catalogue"] = {"source": catalogue_source, "size": len(passcode_map)}
+
     seen_batch_deck_ids = set()
     seen_batch_dedupe_keys = set()
     candidates = []
@@ -569,6 +619,24 @@ def collect_and_import(
                 {"deckNum": deck_num, "pretty_url": _safe_str(row.get("pretty_url")), "reason": reason}
             )
             continue
+
+        # Resolve YGOPRODeck deck-array passcodes to canonical card
+        # names. If any passcode cannot be resolved we refuse the row
+        # entirely rather than silently producing a partial deck -- the
+        # unresolved passcodes/counts are reported honestly.
+        resolved_obs, unresolved_by_zone = resolve_observation_cards(
+            observation, passcode_map
+        )
+        if resolved_obs is None:
+            report["unresolved_passcode_records"].append(
+                {
+                    "deckNum": deck_num,
+                    "pretty_url": _safe_str(row.get("pretty_url")),
+                    "unresolved": unresolved_by_zone,
+                }
+            )
+            continue
+        observation = resolved_obs
 
         errors = validate_observation(observation)
         if errors:
@@ -633,6 +701,11 @@ def main():
         default=DEFAULT_REQUEST_PACING_SECONDS,
         help="Delay between paginated catalogue requests, in seconds",
     )
+    parser.add_argument(
+        "--cache-dir",
+        default=DEFAULT_CACHE_DIR,
+        help="Local directory for caching the YGOPRODeck cardinfo catalogue",
+    )
     args = parser.parse_args()
 
     result = collect_and_import(
@@ -642,6 +715,7 @@ def main():
         lookback_days=args.lookback_days,
         timeout=args.timeout,
         pacing_seconds=args.pacing_seconds,
+        cache_dir=args.cache_dir,
     )
     print(json.dumps(result, indent=2))
     if result.get("endpoint_failure"):
