@@ -85,6 +85,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     top = None if args.top is None or args.top <= 0 else args.top
     report["candidates"] = rank_and_limit(report["candidates"], top=top)
     report["returned_candidate_count"] = len(report["candidates"])
+    # Also truncate the auxiliary lists so the CLI stays deterministic
+    # under --top. Evidence-backed rows are the primary list; the
+    # price-only list surfaces movers separately and must never outrank
+    # evidence-backed candidates.
+    report["price_only_movers"] = rank_and_limit(
+        report.get("price_only_movers", []), top=top
+    )
+    report["returned_price_only_mover_count"] = len(report["price_only_movers"])
 
     indent = args.indent if args.indent and args.indent > 0 else None
     text = json.dumps(report, indent=indent, sort_keys=True, default=str)
