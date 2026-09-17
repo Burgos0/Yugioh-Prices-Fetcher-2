@@ -141,12 +141,66 @@ class SubmitDateClassificationTests(unittest.TestCase):
         self.assertEqual(published_at, "2026-09-14T10:00:00Z")
         self.assertEqual(quality, "timestamp")
 
-    def test_relative_value_is_refused_not_invented(self):
-        for raw in ("3 days ago", "1 week ago", "2 hours ago"):
+    def test_relative_values_are_anchored_to_run_time(self):
+        # Sub-day precision -> timestamp quality, published_at populated.
+        event_date, published_at, quality = _classify_submit_date("just now", NOW)
+        self.assertEqual(event_date, "2026-09-16")
+        self.assertEqual(published_at, "2026-09-16T12:00:00Z")
+        self.assertEqual(quality, "timestamp")
+
+        event_date, published_at, quality = _classify_submit_date("2 hours ago", NOW)
+        self.assertEqual(event_date, "2026-09-16")
+        self.assertEqual(published_at, "2026-09-16T10:00:00Z")
+        self.assertEqual(quality, "timestamp")
+
+        event_date, published_at, quality = _classify_submit_date("45 minutes ago", NOW)
+        self.assertEqual(event_date, "2026-09-16")
+        self.assertEqual(published_at, "2026-09-16T11:15:00Z")
+        self.assertEqual(quality, "timestamp")
+
+        # A minutes-ago value that crosses midnight rolls the event_date back.
+        early_now = datetime(2026, 9, 16, 0, 30, 0, tzinfo=timezone.utc)
+        event_date, published_at, quality = _classify_submit_date("90 minutes ago", early_now)
+        self.assertEqual(event_date, "2026-09-15")
+        self.assertEqual(published_at, "2026-09-15T23:00:00Z")
+        self.assertEqual(quality, "timestamp")
+
+    def test_relative_day_grained_values_are_date_only(self):
+        # Day-or-coarser precision -> event_date fixed, published_at None.
+        for raw, expected_date in (
+            ("today", "2026-09-16"),
+            ("yesterday", "2026-09-15"),
+            ("3 days ago", "2026-09-13"),
+            ("1 week ago", "2026-09-09"),
+            ("2 weeks ago", "2026-09-02"),
+            ("1 month ago", "2026-08-17"),
+            ("1 year ago", "2025-09-16"),
+        ):
+            event_date, published_at, quality = _classify_submit_date(raw, NOW)
+            self.assertEqual(event_date, expected_date, msg=raw)
+            self.assertIsNone(published_at, msg=raw)
+            self.assertEqual(quality, "date_only", msg=raw)
+
+    def test_relative_values_are_case_and_whitespace_tolerant(self):
+        for raw in ("  Today  ", "YESTERDAY", "Just Now", "  3   Days   Ago  "):
+            event_date, _published_at, quality = _classify_submit_date(raw, NOW)
+            self.assertIsNotNone(event_date, msg=raw)
+            self.assertIn(quality, {"timestamp", "date_only"}, msg=raw)
+
+    def test_vague_relative_values_are_still_rejected(self):
+        # Vague/unparseable expressions must not be invented into dates.
+        for raw in (
+            "a few days ago",
+            "recently",
+            "some time ago",
+            "last week",
+            "an hour ago",
+            "yesteryear",
+        ):
             event_date, published_at, quality = _classify_submit_date(raw, NOW)
             self.assertIsNone(event_date, msg=raw)
             self.assertIsNone(published_at, msg=raw)
-            self.assertEqual(quality, "relative", msg=raw)
+            self.assertEqual(quality, "unparseable", msg=raw)
 
     def test_missing_and_unparseable_values(self):
         self.assertEqual(_classify_submit_date("", NOW), (None, None, "missing"))
@@ -207,10 +261,48 @@ class RecordToObservationTests(unittest.TestCase):
         self.assertIsNone(observation)
         self.assertIn("tournamentPlayerName", reason)
 
-    def test_rejects_relative_submit_date(self):
-        observation, reason = record_to_observation(_record(submit_date="3 days ago"), now=NOW)
+    def test_relative_submit_date_is_accepted_and_anchored(self):
+        # "3 days ago" against NOW = 2026-09-16 -> event_date 2026-09-13,
+        # coarser-than-sub-day precision so published_at remains None.
+        observation, reason = record_to_observation(
+            _record(submit_date="3 days ago"), now=NOW
+        )
+        self.assertIsNone(reason)
+        self.assertIsNotNone(observation)
+        self.assertEqual(observation["event_date"], "2026-09-13")
+        self.assertIsNone(observation["published_at"])
+        self.assertEqual(observation["submit_date_quality"], "date_only")
+        # Sub-day precision -> published_at is populated.
+        observation, reason = record_to_observation(
+            _record(submit_date="2 hours ago"), now=NOW
+        )
+        self.assertIsNone(reason)
+        self.assertEqual(observation["event_date"], "2026-09-16")
+        self.assertEqual(observation["published_at"], "2026-09-16T10:00:00Z")
+        self.assertEqual(observation["submit_date_quality"], "timestamp")
+
+    def test_rejects_vague_submit_date(self):
+        # Vague relative expressions still fail honestly.
+        observation, reason = record_to_observation(
+            _record(submit_date="a few days ago"), now=NOW
+        )
         self.assertIsNone(observation)
-        self.assertIn("relative", reason)
+        self.assertIn("unparseable", reason)
+
+    def test_does_not_fall_back_to_updated_or_edit_date(self):
+        # Even when the record carries a perfectly good ``updated`` /
+        # ``edit_date``, an unparseable ``submit_date`` must still be
+        # rejected. The collector never substitutes those fields.
+        observation, reason = record_to_observation(
+            _record(
+                submit_date="a few days ago",
+                updated="2026-09-15",
+                edit_date="2026-09-15T10:00:00Z",
+            ),
+            now=NOW,
+        )
+        self.assertIsNone(observation)
+        self.assertIn("unparseable", reason)
 
     def test_rejects_empty_deck_arrays(self):
         observation, reason = record_to_observation(
@@ -298,10 +390,11 @@ class CollectAndImportTests(unittest.TestCase):
         self.assertIsNone(report["endpoint_failure"])
         self.assertEqual(report["records_fetched"], 5)
         self.assertEqual(report["records_excluded_non_tcg_advanced"], 2)
-        # Deck 4 rejected for relative submit_date -- honest reporting.
+        # Deck 4 uses a supported relative submit_date and is now imported
+        # (anchored to the run time) rather than rejected.
         rejections = {r["deckNum"] for r in report["rejected_records"]}
-        self.assertIn("4", rejections)
-        self.assertEqual(report["import"]["added"], 2)
+        self.assertNotIn("4", rejections)
+        self.assertEqual(report["import"]["added"], 3)
 
         dataset = self._read_dataset()
         formats = {o["format"] for o in dataset["observations"]}
@@ -310,7 +403,11 @@ class CollectAndImportTests(unittest.TestCase):
         providers = {o.get("source_provider") for o in dataset["observations"]}
         self.assertEqual(providers, {"ygoprodeck"})
         stored_deck_ids = {o["source_deck_id"] for o in dataset["observations"]}
-        self.assertEqual(stored_deck_ids, {"1", "5"})
+        self.assertEqual(stored_deck_ids, {"1", "4", "5"})
+        # Deck 4's event_date is anchored to NOW - 3 days.
+        deck4 = next(o for o in dataset["observations"] if o["source_deck_id"] == "4")
+        self.assertEqual(deck4["event_date"], "2026-09-13")
+        self.assertIsNone(deck4["published_at"])
 
     def test_deduplication_by_deck_num_against_existing_dataset(self):
         # Pre-existing YGOPRODeck observation with deckNum=42 must not be re-imported.

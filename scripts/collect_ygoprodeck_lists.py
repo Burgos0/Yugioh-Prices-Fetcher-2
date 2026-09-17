@@ -83,6 +83,19 @@ _RELATIVE_DATE_RE = re.compile(
     r"^\s*(\d+)\s+(minute|hour|day|week|month|year)s?\s+ago\s*$",
     re.IGNORECASE,
 )
+_JUST_NOW_RE = re.compile(r"^\s*just\s+now\s*$", re.IGNORECASE)
+_TODAY_RE = re.compile(r"^\s*today\s*$", re.IGNORECASE)
+_YESTERDAY_RE = re.compile(r"^\s*yesterday\s*$", re.IGNORECASE)
+
+# Approximate day counts for coarse relative units. Months/years do not have
+# a fixed length; using 30/365 gives an honest best-effort event_date while
+# forcing quality="date_only" so no invented sub-day precision leaks out.
+_RELATIVE_UNIT_DAYS = {
+    "day": 1,
+    "week": 7,
+    "month": 30,
+    "year": 365,
+}
 
 
 def _now_utc():
@@ -181,21 +194,76 @@ def _parse_absolute_timestamp(raw):
     return _iso(parsed.astimezone(timezone.utc))
 
 
+def _resolve_relative_submit_date(text, now):
+    """
+    Resolve a relative ``submit_date`` string against the collector's UTC
+    run time (``now``).
+
+    Accepted forms (case-insensitive, extra whitespace tolerated):
+
+    - ``"just now"`` -> sub-day precision, anchored at ``now``.
+    - ``"N minutes ago"`` / ``"N hours ago"`` -> sub-day precision,
+      ``now`` minus the delta.
+    - ``"today"`` -> today's UTC date, no sub-day precision.
+    - ``"yesterday"`` -> yesterday's UTC date, no sub-day precision.
+    - ``"N days/weeks/months/years ago"`` -> ``now`` minus an approximate
+      day-count delta (30/365 for months/years), no sub-day precision.
+
+    Returns ``(event_date, published_at, quality)`` where ``quality`` is
+    ``"timestamp"`` when we have sub-day precision, ``"date_only"`` when
+    we only have the calendar day, or ``None`` when ``text`` is not a
+    supported relative form (caller falls back to absolute parsing).
+
+    Vague expressions such as ``"a few days ago"`` or ``"recently"`` are
+    intentionally not recognised here -- they fall through and are
+    reported as ``unparseable`` upstream.
+    """
+    if _JUST_NOW_RE.match(text):
+        return now.strftime("%Y-%m-%d"), _iso(now), "timestamp"
+    if _TODAY_RE.match(text):
+        return now.strftime("%Y-%m-%d"), None, "date_only"
+    if _YESTERDAY_RE.match(text):
+        return (now - timedelta(days=1)).strftime("%Y-%m-%d"), None, "date_only"
+    match = _RELATIVE_DATE_RE.match(text)
+    if not match:
+        return None
+    amount = int(match.group(1))
+    unit = match.group(2).lower()
+    if unit == "minute":
+        anchored = now - timedelta(minutes=amount)
+        return anchored.strftime("%Y-%m-%d"), _iso(anchored), "timestamp"
+    if unit == "hour":
+        anchored = now - timedelta(hours=amount)
+        return anchored.strftime("%Y-%m-%d"), _iso(anchored), "timestamp"
+    days = _RELATIVE_UNIT_DAYS[unit] * amount
+    anchored = now - timedelta(days=days)
+    return anchored.strftime("%Y-%m-%d"), None, "date_only"
+
+
 def _classify_submit_date(raw, now):
     """
     Return ``(event_date, published_at, quality)`` for a submit_date value.
 
-    Relative values like ``"3 days ago"`` are classified as ``relative``
-    and do not produce an event_date -- we refuse to synthesise a precise
-    date we do not have. ``date_only`` values fix the event_date but leave
-    ``published_at`` null (honest missing sub-day precision). Full
-    timestamps fix both.
+    Recognised relative expressions (``"3 days ago"``, ``"today"``,
+    ``"yesterday"``, ``"just now"``, ``"N minutes/hours/days/weeks/months/
+    years ago"``) are anchored to the collector's UTC run time ``now`` so
+    the row can be imported. Sub-day precision (``just now``, minutes,
+    hours) produces a timestamp; coarser expressions produce a
+    ``date_only`` event_date with no ``published_at`` (we refuse to
+    invent a clock time we do not have).
+
+    Absolute values (``YYYY-MM-DD``, ISO8601 timestamps) behave as
+    before. Vague or unrecognised strings are reported as
+    ``unparseable``; empty values as ``missing``. We never fall back to
+    ``updated`` / ``edit_date`` here -- that is a caller-side decision
+    and is deliberately not done anywhere in this collector.
     """
     text = _safe_str(raw)
     if not text:
         return None, None, "missing"
-    if _RELATIVE_DATE_RE.match(text):
-        return None, None, "relative"
+    resolved = _resolve_relative_submit_date(text, now)
+    if resolved is not None:
+        return resolved
     event_date = _parse_absolute_date(text)
     if event_date is None:
         return None, None, "unparseable"
