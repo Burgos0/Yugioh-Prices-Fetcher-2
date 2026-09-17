@@ -354,6 +354,52 @@ class CollectAndImportTests(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.dataset_path = str(Path(self.tmp.name) / "meta_watch_lists.json")
         self.report_path = str(Path(self.tmp.name) / "ygoprodeck_report.json")
+        self.cache_path = str(Path(self.tmp.name) / "card_cache.json")
+
+    def _stub_bridge(self, mapping):
+        """Return a resolve_passcodes_fn stub that resolves from ``mapping``."""
+
+        def _fn(passcodes, cache_path=None, session=None, timeout=None):
+            resolved = {}
+            unresolved = []
+            for p in passcodes:
+                p_str = str(p)
+                if p_str in mapping:
+                    resolved[p_str] = mapping[p_str]
+                else:
+                    unresolved.append(p_str)
+            return resolved, sorted(unresolved), False
+
+        return _fn
+
+    def _default_bridge(self):
+        return self._stub_bridge(
+            {
+                "11": "Ash Blossom & Joyous Spring",
+                "22": "Maxx \"C\"",
+                "33": "Called by the Grave",
+                "44": "Accesscode Talker",
+                "55": "Apollousa, Bow of the Goddess",
+                "66": "Effect Veiler",
+                "77": "Nibiru, the Primal Being",
+                # extras used by other tests
+                "1": "Snake-Eye Ash",
+                "2": "Bystial Druiswurm",
+                "3": "Kashtira Fenrir",
+                "4": "Snake-Eye Diabellstar",
+                "5": "Diabellstar the Black Witch",
+                "7": "Snake-Eye Poplar",
+                "42": "Sky Striker Ace - Raye",
+                "43": "Sky Striker Ace - Roze",
+                "100": "PSY-Framegear Gamma",
+                "101": "PSY-Frame Driver",
+                "102": "Ghost Ogre & Snow Rabbit",
+                "200": "Fossil Dyna Pachycephalo",
+                "201": "Droll & Lock Bird",
+                "202": "Ghost Belle & Haunted Mansion",
+                "203": "D.D. Crow",
+            }
+        )
 
     def _write_dataset(self, observations):
         with open(self.dataset_path, "w") as f:
@@ -385,6 +431,8 @@ class CollectAndImportTests(unittest.TestCase):
             pacing_seconds=0,
             sleep=lambda s: None,
             now=NOW,
+            card_cache_path=self.cache_path,
+            resolve_passcodes_fn=self._default_bridge(),
         )
 
         self.assertIsNone(report["endpoint_failure"])
@@ -445,6 +493,8 @@ class CollectAndImportTests(unittest.TestCase):
             pacing_seconds=0,
             sleep=lambda s: None,
             now=NOW,
+            card_cache_path=self.cache_path,
+            resolve_passcodes_fn=self._default_bridge(),
         )
         self.assertEqual(report["duplicate_existing_precheck_skipped"], 1)
         self.assertEqual(report["import"]["added"], 1)
@@ -466,6 +516,8 @@ class CollectAndImportTests(unittest.TestCase):
             pacing_seconds=0,
             sleep=lambda s: None,
             now=NOW,
+            card_cache_path=self.cache_path,
+            resolve_passcodes_fn=self._default_bridge(),
         )
         self.assertEqual(report["duplicate_in_batch_precheck_skipped"], 1)
         self.assertEqual(report["import"]["added"], 1)
@@ -501,6 +553,8 @@ class CollectAndImportTests(unittest.TestCase):
             pacing_seconds=0,
             sleep=lambda s: None,
             now=NOW,
+            card_cache_path=self.cache_path,
+            resolve_passcodes_fn=self._default_bridge(),
         )
         self.assertIsNotNone(report["endpoint_failure"])
         self.assertIn("network down", report["endpoint_failure"]["error"])
@@ -524,6 +578,8 @@ class CollectAndImportTests(unittest.TestCase):
             pacing_seconds=0,
             sleep=lambda s: None,
             now=NOW,
+            card_cache_path=self.cache_path,
+            resolve_passcodes_fn=self._default_bridge(),
         )
         self.assertEqual(report["import"]["added"], 0)
         reasons = {r["reason"] for r in report["rejected_records"]}
@@ -550,6 +606,8 @@ class CollectAndImportTests(unittest.TestCase):
             pacing_seconds=0,
             sleep=lambda s: None,
             now=NOW,
+            card_cache_path=self.cache_path,
+            resolve_passcodes_fn=self._default_bridge(),
         )
         self.assertEqual(report["records_excluded_non_tcg_advanced"], 4)
         self.assertEqual(report["import"]["added"], 0)

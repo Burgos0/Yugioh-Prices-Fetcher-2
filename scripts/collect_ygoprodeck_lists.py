@@ -45,6 +45,12 @@ from app.meta_watch import (  # noqa: E402
     validate_observation,
 )
 from scripts.import_meta_watch_lists import import_observations_payload  # noqa: E402
+from scripts.ygoprodeck_card_bridge import (  # noqa: E402
+    DEFAULT_CACHE_PATH as DEFAULT_BRIDGE_CACHE_PATH,
+    CardBridgeError,
+    rebuild_cards_with_canonical_names,
+    resolve_passcodes,
+)
 
 YGOPRODECK_API_URL = "https://ygoprodeck.com/api/decks/getDecks.php"
 TCG_CATEGORY = "Tournament Meta Decks"
@@ -485,13 +491,19 @@ def collect_and_import(
     pacing_seconds=DEFAULT_REQUEST_PACING_SECONDS,
     sleep=time.sleep,
     now=None,
+    card_cache_path=DEFAULT_BRIDGE_CACHE_PATH,
+    resolve_passcodes_fn=resolve_passcodes,
 ):
     """
     Fetch the current TCG Advanced feed from YGOPRODeck, filter/normalise
-    rows into Meta Watch observations, and import the new ones.
+    rows into Meta Watch observations, resolve every passcode to its
+    canonical card name via the YGOPRODeck card-identity bridge, and
+    import the new ones.
 
     On a catalogue endpoint failure the dataset is left untouched and the
-    failure is reported in the returned report dict.
+    failure is reported in the returned report dict. The same is true for
+    a card-bridge failure: no observations are written and no cache file
+    is rewritten.
     """
     now = now or _now_utc()
     from_date = (now - timedelta(days=int(lookback_days))).strftime("%Y-%m-%d")
@@ -514,6 +526,7 @@ def collect_and_import(
         "lookback_days": lookback_days,
         "from_date": from_date,
         "endpoint_failure": None,
+        "card_bridge_failure": None,
         "records_fetched": 0,
         "records_excluded_non_tcg_advanced": 0,
         "candidate_observations": 0,
@@ -521,6 +534,15 @@ def collect_and_import(
         "duplicate_in_batch_precheck_skipped": 0,
         "rejected_records": [],
         "import": None,
+    }
+    empty_import = {
+        "input_path": None,
+        "dataset_path": dataset_path,
+        "dry_run": dry_run,
+        "added": 0,
+        "duplicate_existing_skipped": 0,
+        "duplicate_in_batch_skipped": 0,
+        "rejected": [],
     }
 
     try:
@@ -536,15 +558,7 @@ def collect_and_import(
             "endpoint": YGOPRODECK_API_URL,
             "error": str(exc),
         }
-        report["import"] = {
-            "input_path": None,
-            "dataset_path": dataset_path,
-            "dry_run": dry_run,
-            "added": 0,
-            "duplicate_existing_skipped": 0,
-            "duplicate_in_batch_skipped": 0,
-            "rejected": [],
-        }
+        report["import"] = empty_import
         _write_json(report_path, report)
         return report
 
@@ -570,17 +584,6 @@ def collect_and_import(
             )
             continue
 
-        errors = validate_observation(observation)
-        if errors:
-            report["rejected_records"].append(
-                {
-                    "deckNum": deck_num,
-                    "pretty_url": _safe_str(row.get("pretty_url")),
-                    "reason": "; ".join(errors),
-                }
-            )
-            continue
-
         deck_id = observation["source_deck_id"]
         if deck_id in existing_deck_ids:
             report["duplicate_existing_precheck_skipped"] += 1
@@ -599,16 +602,77 @@ def collect_and_import(
 
         seen_batch_deck_ids.add(deck_id)
         seen_batch_dedupe_keys.add(key)
-        candidates.append(observation)
+        candidates.append((row, observation))
 
-    report["candidate_observations"] = len(candidates)
+    # Collect every distinct passcode referenced by any candidate and
+    # resolve them all in one bridge call (which itself hits the cardinfo
+    # endpoint at most once). We only fetch when there's actual work to do
+    # so a run with zero candidates never touches the network.
+    all_passcodes = set()
+    for _row, observation in candidates:
+        for deck_field in ("main_deck", "side_deck", "extra_deck"):
+            for entry in observation.get(deck_field, []):
+                all_passcodes.add(entry.get("name"))
+
+    resolved = {}
+    if candidates:
+        try:
+            resolved, _unresolved_global, _fetched = resolve_passcodes_fn(
+                sorted(p for p in all_passcodes if p is not None),
+                cache_path=card_cache_path,
+                session=session,
+                timeout=timeout,
+            )
+        except CardBridgeError as exc:
+            report["card_bridge_failure"] = {
+                "endpoint": "cardinfo",
+                "error": str(exc),
+            }
+            report["import"] = empty_import
+            _write_json(report_path, report)
+            return report
+
+    accepted_observations = []
+    for row, observation in candidates:
+        deck_num = observation["source_deck_id"]
+        unresolved_ids = set()
+        rewritten = dict(observation)
+        for deck_field in ("main_deck", "side_deck", "extra_deck"):
+            new_cards, missing = rebuild_cards_with_canonical_names(
+                observation.get(deck_field, []), resolved
+            )
+            rewritten[deck_field] = new_cards
+            for m in missing:
+                unresolved_ids.add(m)
+        if unresolved_ids:
+            report["rejected_records"].append(
+                {
+                    "deckNum": deck_num,
+                    "pretty_url": _safe_str(row.get("pretty_url")),
+                    "reason": "unresolved card ids: " + ",".join(sorted(unresolved_ids)),
+                }
+            )
+            continue
+        errors = validate_observation(rewritten)
+        if errors:
+            report["rejected_records"].append(
+                {
+                    "deckNum": deck_num,
+                    "pretty_url": _safe_str(row.get("pretty_url")),
+                    "reason": "; ".join(errors),
+                }
+            )
+            continue
+        accepted_observations.append(rewritten)
+
+    report["candidate_observations"] = len(accepted_observations)
 
     import_result = import_observations_payload(
-        {"observations": candidates}, dataset_path=dataset_path, dry_run=dry_run
+        {"observations": accepted_observations}, dataset_path=dataset_path, dry_run=dry_run
     )
     report["import"] = import_result
     report["imported_provenance_sample"] = [
-        _extra_provenance_fields(obs) for obs in candidates[:5]
+        _extra_provenance_fields(obs) for obs in accepted_observations[:5]
     ]
     _write_json(report_path, report)
     return report
@@ -633,6 +697,11 @@ def main():
         default=DEFAULT_REQUEST_PACING_SECONDS,
         help="Delay between paginated catalogue requests, in seconds",
     )
+    parser.add_argument(
+        "--card-cache",
+        default=DEFAULT_BRIDGE_CACHE_PATH,
+        help="Path to the passcode -> canonical name cache file",
+    )
     args = parser.parse_args()
 
     result = collect_and_import(
@@ -642,9 +711,10 @@ def main():
         lookback_days=args.lookback_days,
         timeout=args.timeout,
         pacing_seconds=args.pacing_seconds,
+        card_cache_path=args.card_cache,
     )
     print(json.dumps(result, indent=2))
-    if result.get("endpoint_failure"):
+    if result.get("endpoint_failure") or result.get("card_bridge_failure"):
         sys.exit(1)
 
 
