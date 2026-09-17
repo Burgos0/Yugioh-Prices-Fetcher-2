@@ -41,6 +41,13 @@ CARDINFO_API_URL = "https://db.ygoprodeck.com/api/v7/cardinfo.php"
 DEFAULT_CACHE_PATH = "data/ygoprodeck_card_cache.json"
 DEFAULT_TIMEOUT = 60
 
+# Bumped whenever the parser changes in a way that makes older cache
+# files potentially incomplete (e.g. we started extracting an additional
+# id field). Caches written under a different schema_version are ignored
+# on load so a run built by an older, buggy parser cannot silently
+# short-circuit a fetch with a partial map.
+CACHE_SCHEMA_VERSION = 2
+
 
 class CardBridgeError(RuntimeError):
     """Raised when the cardinfo endpoint cannot be used honestly."""
@@ -71,7 +78,16 @@ def _normalize_card_id(value):
 
 
 def load_cache(cache_path=DEFAULT_CACHE_PATH):
-    """Load the card_id -> canonical name cache, or an empty dict."""
+    """
+    Load the card_id -> canonical name cache, or an empty dict.
+
+    A cache file is only trusted if its ``schema_version`` matches
+    :data:`CACHE_SCHEMA_VERSION`. Older, unversioned, corrupt, or
+    otherwise unrecognised files are ignored (returning ``{}``) so a
+    subsequent :func:`resolve_card_ids` call will always fetch the
+    catalogue afresh instead of silently returning an incomplete map
+    built by a previous, buggier version of the parser.
+    """
     if not os.path.exists(cache_path):
         return {}
     try:
@@ -79,7 +95,11 @@ def load_cache(cache_path=DEFAULT_CACHE_PATH):
             payload = json.load(f)
     except (OSError, ValueError):
         return {}
-    mapping = payload.get("card_id_to_name") if isinstance(payload, dict) else None
+    if not isinstance(payload, dict):
+        return {}
+    if payload.get("schema_version") != CACHE_SCHEMA_VERSION:
+        return {}
+    mapping = payload.get("card_id_to_name")
     if not isinstance(mapping, dict):
         return {}
     # Normalize keys to strings; keep only non-empty string values.
@@ -99,6 +119,7 @@ def save_cache(cache, cache_path=DEFAULT_CACHE_PATH):
     if directory:
         os.makedirs(directory, exist_ok=True)
     payload = {
+        "schema_version": CACHE_SCHEMA_VERSION,
         "generated_at": _iso_now(),
         "source": CARDINFO_API_URL,
         "card_id_to_name": {str(k): v for k, v in sorted(cache.items())},
@@ -114,9 +135,20 @@ def _extract_card_id_map(payload):
     Build a card_id -> canonical name map from a ``cardinfo.php`` payload.
 
     YGOPRODeck's response is ``{"data": [ {"id": 89631139, "name": "Blue-Eyes
-    White Dragon", ...}, ... ]}``. Each entry's ``id`` is the card's Konami
-    card_id, and ``name`` is the canonical English card name we want to
-    align with prices.db's ``card_name``.
+    White Dragon", "card_images": [{"id": 89631139, ...}, {"id": 89631140, ...}]},
+    ... ]}``. Each entry's top-level ``id`` is the card's Konami card id and
+    ``name`` is the canonical English card name we align with prices.db's
+    ``card_name``.
+
+    Crucially, a card can have **multiple ids** for the same canonical
+    name -- alt-art reprints get their own numeric ids that only appear
+    under ``card_images[i].id`` (never as a top-level ``id`` and never as
+    a separate ``data`` entry). YGOPRODeck deck arrays reference those
+    alt-art ids directly, so we must fold every ``card_images[i].id``
+    into the map alongside the top-level id. Missing this step is what
+    caused the live dry-run to leave alt-art passcodes such as
+    ``14558128`` (an alt-art id for "Ash Blossom & Joyous Spring", whose
+    primary id is ``14558127``) unresolved.
     """
     if not isinstance(payload, dict):
         raise CardBridgeError("cardinfo payload is not a JSON object")
@@ -127,11 +159,31 @@ def _extract_card_id_map(payload):
     for entry in data:
         if not isinstance(entry, dict):
             continue
-        card_id = _normalize_card_id(entry.get("id"))
         name = entry.get("name")
-        if card_id is None or not isinstance(name, str) or not name.strip():
+        if not isinstance(name, str) or not name.strip():
             continue
-        mapping[card_id] = name.strip()
+        canonical = name.strip()
+        # Collect every id this card is known by: the top-level id plus
+        # any per-artwork ids under card_images[]. Both feed the same
+        # canonical name; downstream fan-out to multiple prices.db
+        # printings is handled by app.meta_watch.resolve_card_printings.
+        ids_for_card = []
+        top_level_id = _normalize_card_id(entry.get("id"))
+        if top_level_id is not None:
+            ids_for_card.append(top_level_id)
+        images = entry.get("card_images")
+        if isinstance(images, list):
+            for image in images:
+                if not isinstance(image, dict):
+                    continue
+                image_id = _normalize_card_id(image.get("id"))
+                if image_id is not None:
+                    ids_for_card.append(image_id)
+        for cid in ids_for_card:
+            # First writer wins so a card whose top-level id also happens
+            # to appear as an alt-art id for another card (extremely
+            # rare, but the API does not forbid it) keeps its own name.
+            mapping.setdefault(cid, canonical)
     if not mapping:
         raise CardBridgeError("cardinfo payload produced no id -> name entries")
     return mapping

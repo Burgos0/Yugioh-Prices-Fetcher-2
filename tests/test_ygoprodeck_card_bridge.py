@@ -28,8 +28,10 @@ import requests
 from scripts import backfill_ygoprodeck_card_names as backfill_cli
 from scripts.collect_ygoprodeck_lists import collect_and_import
 from scripts.ygoprodeck_card_bridge import (
+    CACHE_SCHEMA_VERSION,
     CARDINFO_API_URL,
     CardBridgeError,
+    _extract_card_id_map,
     fetch_cardinfo_map,
     load_cache,
     rebuild_cards_with_canonical_names,
@@ -138,6 +140,185 @@ class FetchCardInfoTests(unittest.TestCase):
         session = _CardInfoSession(payload={"data": []})
         with self.assertRaises(CardBridgeError):
             fetch_cardinfo_map(session=session)
+
+
+class AltArtCardIdExtractionTests(unittest.TestCase):
+    """
+    Regression tests for the live dry-run bug where card id ``14558128``
+    (an alt-art id for "Ash Blossom & Joyous Spring", canonical id
+    ``14558127``) was reported as unresolved. YGOPRODeck's real
+    ``cardinfo.php`` response lists alt-art ids only inside
+    ``card_images[i].id``, never as a top-level ``id`` and never as a
+    separate ``data`` entry -- the parser must fold both into the map.
+    """
+
+    def _ash_blossom_entry(self):
+        # Exact shape of a real cardinfo.php entry for Ash Blossom &
+        # Joyous Spring, trimmed to the fields the bridge inspects.
+        return {
+            "id": 14558127,
+            "name": "Ash Blossom & Joyous Spring",
+            "type": "Effect Monster",
+            "card_images": [
+                {"id": 14558127, "image_url": "https://.../14558127.jpg"},
+                {"id": 14558128, "image_url": "https://.../14558128.jpg"},
+                {"id": 14558129, "image_url": "https://.../14558129.jpg"},
+            ],
+        }
+
+    def test_alt_art_ids_from_card_images_are_included(self):
+        mapping = _extract_card_id_map({"data": [self._ash_blossom_entry()]})
+        # All three ids resolve to the same canonical card name.
+        self.assertEqual(mapping.get("14558127"), "Ash Blossom & Joyous Spring")
+        self.assertEqual(mapping.get("14558128"), "Ash Blossom & Joyous Spring")
+        self.assertEqual(mapping.get("14558129"), "Ash Blossom & Joyous Spring")
+
+    def test_fetch_map_via_full_session_includes_alt_art_ids(self):
+        session = _CardInfoSession(payload={"data": [self._ash_blossom_entry()]})
+        mapping = fetch_cardinfo_map(session=session)
+        self.assertEqual(mapping.get("14558128"), "Ash Blossom & Joyous Spring")
+
+    def test_resolve_card_ids_resolves_alt_art_id_end_to_end(self):
+        # Simulate the exact live-dry-run failure: the deck array
+        # references 14558128 (alt art). With the fix, this must resolve
+        # end-to-end via the bridge without landing in the unresolved set.
+        session = _CardInfoSession(payload={"data": [self._ash_blossom_entry()]})
+        with tempfile.TemporaryDirectory() as tmp:
+            cache_path = str(Path(tmp) / "cache.json")
+            resolved, unresolved, fetched = resolve_card_ids(
+                ["14558128"],
+                cache_path=cache_path,
+                fetch=lambda: fetch_cardinfo_map(session=session),
+            )
+        self.assertEqual(unresolved, [])
+        self.assertEqual(resolved, {"14558128": "Ash Blossom & Joyous Spring"})
+        self.assertTrue(fetched)
+
+    def test_entries_without_top_level_id_still_map_alt_art_ids(self):
+        # Some records may omit the top-level id (extremely rare) but
+        # still ship a valid card_images list. We must still learn the
+        # alt-art ids for those cards from card_images.
+        entry = {
+            "name": "Tearlaments Kitkallos",
+            "card_images": [
+                {"id": 82633143},
+                {"id": 82633144},
+            ],
+        }
+        mapping = _extract_card_id_map({"data": [entry]})
+        self.assertEqual(mapping.get("82633143"), "Tearlaments Kitkallos")
+        self.assertEqual(mapping.get("82633144"), "Tearlaments Kitkallos")
+
+    def test_malformed_card_images_entries_are_skipped_not_fatal(self):
+        entry = {
+            "id": 89631139,
+            "name": "Blue-Eyes White Dragon",
+            "card_images": [
+                {"id": 89631139},
+                "not-a-dict",
+                {"id": None},
+                {"id": "not-numeric"},
+                {"id": 89631140},
+            ],
+        }
+        mapping = _extract_card_id_map({"data": [entry]})
+        self.assertEqual(mapping.get("89631139"), "Blue-Eyes White Dragon")
+        self.assertEqual(mapping.get("89631140"), "Blue-Eyes White Dragon")
+
+    def test_missing_card_images_is_tolerated(self):
+        # Entries without a card_images list must still contribute their
+        # top-level id.
+        entry = {"id": 42, "name": "The Answer"}
+        mapping = _extract_card_id_map({"data": [entry]})
+        self.assertEqual(mapping, {"42": "The Answer"})
+
+
+class CacheSchemaVersionTests(unittest.TestCase):
+    """
+    A cache file written by an older/buggy version of the parser (for
+    example, one that did not extract alt-art ids from ``card_images``)
+    could otherwise silently short-circuit :func:`resolve_card_ids` with
+    an incomplete map. To prevent that, the cache file carries a
+    ``schema_version`` that must match :data:`CACHE_SCHEMA_VERSION`;
+    any mismatch causes the loader to treat the file as absent so the
+    next resolve triggers a fresh fetch instead of returning stale data.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.cache_path = str(Path(self.tmp.name) / "cache.json")
+
+    def test_cache_missing_schema_version_is_ignored(self):
+        with open(self.cache_path, "w") as f:
+            json.dump(
+                {
+                    "generated_at": "2026-09-16T00:00:00Z",
+                    "card_id_to_name": {"14558127": "Ash Blossom & Joyous Spring"},
+                },
+                f,
+            )
+        self.assertEqual(load_cache(self.cache_path), {})
+
+    def test_cache_with_mismatched_schema_version_is_ignored(self):
+        with open(self.cache_path, "w") as f:
+            json.dump(
+                {
+                    "schema_version": CACHE_SCHEMA_VERSION - 1,
+                    "generated_at": "2026-09-16T00:00:00Z",
+                    "card_id_to_name": {"14558127": "Ash Blossom & Joyous Spring"},
+                },
+                f,
+            )
+        self.assertEqual(load_cache(self.cache_path), {})
+
+    def test_cache_with_matching_schema_version_is_loaded(self):
+        with open(self.cache_path, "w") as f:
+            json.dump(
+                {
+                    "schema_version": CACHE_SCHEMA_VERSION,
+                    "generated_at": "2026-09-16T00:00:00Z",
+                    "card_id_to_name": {"14558127": "Ash Blossom & Joyous Spring"},
+                },
+                f,
+            )
+        self.assertEqual(
+            load_cache(self.cache_path),
+            {"14558127": "Ash Blossom & Joyous Spring"},
+        )
+
+    def test_save_cache_writes_current_schema_version(self):
+        save_cache({"14558127": "Ash Blossom & Joyous Spring"}, self.cache_path)
+        with open(self.cache_path) as f:
+            payload = json.load(f)
+        self.assertEqual(payload["schema_version"], CACHE_SCHEMA_VERSION)
+
+    def test_stale_cache_triggers_fresh_fetch_not_silent_incomplete_map(self):
+        # A stale cache (from an older schema) that "resolves" an id
+        # must NOT satisfy resolve_card_ids on its own -- the loader
+        # discards it and resolve_card_ids fetches fresh data.
+        with open(self.cache_path, "w") as f:
+            json.dump(
+                {
+                    "schema_version": CACHE_SCHEMA_VERSION - 1,
+                    "card_id_to_name": {"14558128": "wrong-name-from-buggy-parser"},
+                },
+                f,
+            )
+
+        fetch_calls = []
+
+        def _fetch():
+            fetch_calls.append(True)
+            return {"14558128": "Ash Blossom & Joyous Spring"}
+
+        resolved, unresolved, fetched = resolve_card_ids(
+            ["14558128"], cache_path=self.cache_path, fetch=_fetch
+        )
+        self.assertEqual(len(fetch_calls), 1)
+        self.assertTrue(fetched)
+        self.assertEqual(resolved, {"14558128": "Ash Blossom & Joyous Spring"})
+        self.assertEqual(unresolved, [])
 
 
 class ResolveCardIdsTests(unittest.TestCase):
