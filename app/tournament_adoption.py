@@ -56,6 +56,7 @@ from app.meta_watch import (
     get_zone_entries,
     load_dataset,
     resolve_card_printings,
+    select_archived_observations,
 )
 
 SOURCE_PROVIDER_YGOPRODECK = "ygoprodeck"
@@ -141,25 +142,15 @@ def filter_source(observations: Iterable[Mapping[str, Any]],
 
 def apply_as_of_cutoff(observations: Iterable[Mapping[str, Any]],
                         as_of: Optional[str]) -> List[Mapping[str, Any]]:
-    """Drop observations whose ``event_date`` is strictly after ``as_of``.
+    """Select observations archived by ``as_of`` and drop future events.
 
-    Observations with an unparseable ``event_date`` are excluded when a
-    cutoff is requested (we can't prove they are in the past). When
-    ``as_of`` is ``None`` all observations are kept.
+    Unknown/invalid archive timestamps and event dates are excluded when a
+    cutoff is requested. When ``as_of`` is ``None`` all observations are kept.
     """
-    if as_of is None:
-        return list(observations)
-    cutoff = _parse_event_date(as_of)
-    if cutoff is None:
-        raise ValueError(f"invalid as_of date: {as_of!r} (expected YYYY-MM-DD)")
-    kept: List[Mapping[str, Any]] = []
-    for obs in observations:
-        ed = _parse_event_date(obs.get("event_date"))
-        if ed is None:
-            continue
-        if ed <= cutoff:
-            kept.append(obs)
-    return kept
+    selected, _exclusions = select_archived_observations(
+        {"observations": list(observations)}, as_of=as_of
+    )
+    return selected
 
 
 def _deck_card_copies(obs: Mapping[str, Any]) -> Dict[str, int]:
@@ -260,18 +251,22 @@ def build_adoption_features(dataset_path: str = DEFAULT_DATASET_PATH,
     """
     dataset = load_dataset(dataset_path)
     raw = dataset.get("observations") or []
-    filtered = filter_source(raw, source_provider=source_provider, fmt=fmt)
+    revisions = dataset.get("revisions") or []
+    selected, archive_exclusions = select_archived_observations(dataset, as_of=as_of)
+    filtered = filter_source(selected, source_provider=source_provider, fmt=fmt)
     deduped, duplicate_count = dedupe_observations(filtered)
-    windowed = apply_as_of_cutoff(deduped, as_of)
-    agg = aggregate_adoption(windowed)
+    agg = aggregate_adoption(deduped)
     return {
         "as_of": as_of,
         "source_provider": source_provider,
         "format": fmt,
         "dataset_path": dataset_path,
         "raw_observation_count": len(raw),
+        "revision_count": len(revisions),
+        "selected_observation_count": len(selected),
         "filtered_observation_count": len(filtered),
         "duplicate_dropped_count": duplicate_count,
+        **archive_exclusions,
         "total_decks": agg["total_decks"],
         "total_placement_weight": agg["total_placement_weight"],
         "cards": agg["cards"],
@@ -339,8 +334,13 @@ def build_report(dataset_path: str = DEFAULT_DATASET_PATH,
         "prices_db_path": prices_db_path,
         "printings_joined": printings_joined,
         "raw_observation_count": features["raw_observation_count"],
+        "revision_count": features["revision_count"],
+        "selected_observation_count": features["selected_observation_count"],
         "filtered_observation_count": features["filtered_observation_count"],
         "duplicate_dropped_count": features["duplicate_dropped_count"],
+        "unknown_archive_timestamp_excluded": features["unknown_archive_timestamp_excluded"],
+        "invalid_event_date_excluded": features["invalid_event_date_excluded"],
+        "future_event_date_excluded": features["future_event_date_excluded"],
         "total_decks": features["total_decks"],
         "total_placement_weight": features["total_placement_weight"],
         "returned_card_count": len(cards_slice),

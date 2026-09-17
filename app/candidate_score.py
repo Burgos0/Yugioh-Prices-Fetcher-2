@@ -529,6 +529,12 @@ def build_candidates(
         "momentum_cap_pct": MOMENTUM_CAP_PCT,
         "trend_cap": TREND_CAP,
         "adoption_total_decks": adoption["total_decks"],
+        "adoption_revision_count": adoption["revision_count"],
+        "adoption_unknown_archive_timestamp_excluded": adoption[
+            "unknown_archive_timestamp_excluded"
+        ],
+        "adoption_invalid_event_date_excluded": adoption["invalid_event_date_excluded"],
+        "adoption_future_event_date_excluded": adoption["future_event_date_excluded"],
         "adoption_source_provider": adoption["source_provider"],
         "adoption_format": adoption["format"],
         "price_product_count": len(price_features),

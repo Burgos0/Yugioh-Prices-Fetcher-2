@@ -29,16 +29,16 @@ Input file format: a JSON array of observation objects, or
   "extra_deck": [...]   # optional, defaults to []
 }
 
-first_seen_at is set automatically to the import time (UTC) if not
-supplied. Card names should match the card's TCGPlayer-tracked name as
+first_seen_at and archived_at are set automatically to the import time
+(UTC); incoming values are ignored. Card names should match the card's TCGPlayer-tracked name as
 closely as possible; unresolved names are reported by the analysis layer
 rather than guessed.
 
 Validation rejects (and reports, without importing) any observation
 missing a required field, with an unrecognized format/source_type, an
-unparseable date, or malformed deck entries. Duplicate (event_id, player)
-pairs -- against the existing dataset or within the same input file -- are
-skipped and counted, never double-counted.
+unparseable date, or malformed deck entries. Stable provider/deck ids are
+preferred for identity, with (event_id, player) as the fallback. Unchanged
+repeats are skipped; corrected versions are appended to ``revisions``.
 
 Usage:
     python -m scripts.import_meta_watch_lists path/to/input.json [--dataset data/meta_watch_lists.json] [--dry-run]
@@ -52,8 +52,8 @@ sys.path.insert(0, ".")
 
 from app.meta_watch import (  # noqa: E402
     DEFAULT_DATASET_PATH,
-    dedupe_key,
     load_dataset,
+    revision_key,
     save_dataset,
     validate_observation,
 )
@@ -63,46 +63,71 @@ def _now_iso():
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+def _comparable_observation(obs):
+    return {k: v for k, v in obs.items() if k not in ("archived_at", "first_seen_at")}
+
+
 def import_observations_payload(payload, dataset_path=DEFAULT_DATASET_PATH, dry_run=False, input_path=None):
     raw_observations = payload.get("observations", []) if isinstance(payload, dict) else payload
     if not isinstance(raw_observations, list):
         raise ValueError("Input must be a JSON list of observations, or {'observations': [...]}")
 
     dataset = load_dataset(dataset_path)
-    existing_keys = {dedupe_key(o) for o in dataset["observations"]}
+    existing_by_key = {revision_key(o): o for o in dataset["observations"]}
+    for revision in dataset.get("revisions") or []:
+        key = revision_key(revision)
+        if key in existing_by_key:
+            existing_by_key[key] = revision
 
     added = []
+    revisions_added = []
     rejected = []
     duplicate_existing = 0
     duplicate_in_batch = 0
     seen_batch_keys = set()
+    archived_at = _now_iso()
 
     for index, raw in enumerate(raw_observations):
-        errors = validate_observation(raw)
+        candidate = dict(raw) if isinstance(raw, dict) else raw
+        if isinstance(candidate, dict):
+            candidate.pop("archived_at", None)
+            candidate.pop("first_seen_at", None)
+        errors = validate_observation(candidate)
         if errors:
             rejected.append({"index": index, "event_id": raw.get("event_id") if isinstance(raw, dict) else None,
                               "errors": errors})
             continue
 
-        key = dedupe_key(raw)
-        if key in existing_keys:
-            duplicate_existing += 1
-            continue
+        key = revision_key(candidate)
         if key in seen_batch_keys:
             duplicate_in_batch += 1
             continue
         seen_batch_keys.add(key)
 
-        obs = dict(raw)
+        obs = dict(candidate)
         obs.setdefault("published_at", None)
         obs.setdefault("placement", None)
         obs.setdefault("side_deck", [])
         obs.setdefault("extra_deck", [])
-        obs.setdefault("first_seen_at", _now_iso())
-        added.append(obs)
+        obs["archived_at"] = archived_at
 
-    if added and not dry_run:
+        existing = existing_by_key.get(key)
+        if existing is None:
+            obs["first_seen_at"] = archived_at
+            added.append(obs)
+            existing_by_key[key] = obs
+            continue
+
+        obs["first_seen_at"] = existing.get("first_seen_at") or existing.get("archived_at") or archived_at
+        if _comparable_observation(existing) == _comparable_observation(obs):
+            duplicate_existing += 1
+            continue
+        revisions_added.append(obs)
+        existing_by_key[key] = obs
+
+    if (added or revisions_added) and not dry_run:
         dataset["observations"].extend(added)
+        dataset.setdefault("revisions", []).extend(revisions_added)
         save_dataset(dataset, dataset_path)
 
     return {
@@ -110,6 +135,7 @@ def import_observations_payload(payload, dataset_path=DEFAULT_DATASET_PATH, dry_
         "dataset_path": dataset_path,
         "dry_run": dry_run,
         "added": len(added),
+        "revisions_added": len(revisions_added),
         "duplicate_existing_skipped": duplicate_existing,
         "duplicate_in_batch_skipped": duplicate_in_batch,
         "rejected": rejected,

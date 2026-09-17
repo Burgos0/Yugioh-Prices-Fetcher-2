@@ -496,7 +496,8 @@ class CollectAndImportTests(unittest.TestCase):
             card_cache_path=self.cache_path,
             resolve_card_ids_fn=self._default_bridge(),
         )
-        self.assertEqual(report["duplicate_existing_precheck_skipped"], 1)
+        self.assertEqual(report["duplicate_existing_precheck_skipped"], 0)
+        self.assertEqual(report["import"]["revisions_added"], 1)
         self.assertEqual(report["import"]["added"], 1)
         dataset = self._read_dataset()
         deck_ids = {o.get("source_deck_id") for o in dataset["observations"]}

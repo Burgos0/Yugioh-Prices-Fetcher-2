@@ -24,16 +24,18 @@ and validation rules):
       "archetype": str, "source_url": str, "source_type": "tournament"|"casual",
       "published_at": "YYYY-MM-DDTHH:MM:SSZ"|null,
       "first_seen_at": "YYYY-MM-DDTHH:MM:SSZ",
+      "archived_at": "YYYY-MM-DDTHH:MM:SSZ",
       "main_deck": [{"name": str, "count": int}], "side_deck": [...], "extra_deck": [...]
     }, ...
-  ]
+  ],
+  "revisions": [ ...full corrected observations... ]
 }
 """
 import json
 import os
 import sqlite3
 from collections import Counter, defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta, timezone
 
 DEFAULT_DATASET_PATH = "data/meta_watch_lists.json"
 SCHEMA_VERSION = 1
@@ -93,7 +95,7 @@ def validate_observation(obs):
         except ValueError:
             errors.append(f"invalid event_date: {event_date!r} (expected YYYY-MM-DD)")
 
-    for ts_field in ("published_at", "first_seen_at"):
+    for ts_field in ("published_at", "first_seen_at", "archived_at"):
         ts = obs.get(ts_field)
         if ts:
             try:
@@ -133,13 +135,22 @@ def dedupe_key(obs):
     return (str(obs.get("event_id", "")).strip().lower(), str(obs.get("player", "")).strip().lower())
 
 
+def revision_key(obs):
+    """Prefer a provider's stable deck id, falling back to event/player identity."""
+    provider = str(obs.get("source_provider", "")).strip().lower()
+    deck_id = str(obs.get("source_deck_id", "")).strip()
+    if provider and deck_id:
+        return ("source", provider, deck_id)
+    return ("event_player",) + dedupe_key(obs)
+
+
 def dedupe_observations(observations):
-    """Keep the first occurrence per (event_id, player); report how many were dropped."""
+    """Keep the first occurrence per stable revision identity; report dropped rows."""
     seen = set()
     deduped = []
     duplicate_count = 0
     for obs in observations:
-        key = dedupe_key(obs)
+        key = revision_key(obs)
         if key in seen:
             duplicate_count += 1
             continue
@@ -184,6 +195,71 @@ def get_cutoff_datetime(obs):
     if not ts:
         return None
     return _parse_timestamp(ts)
+
+
+def select_archived_observations(dataset, as_of=None):
+    """Select the latest archived version per deck, optionally at a UTC-day cutoff.
+
+    Historical selection trusts only importer-owned ``archived_at`` values.
+    Missing or invalid archive timestamps are excluded and counted. After
+    version selection, observations with an invalid or future ``event_date``
+    are also excluded and counted.
+    """
+    originals = list(dataset.get("observations") or [])
+    revisions = list(dataset.get("revisions") or [])
+    if as_of is None:
+        latest = {revision_key(obs): obs for obs in originals}
+        for revision in revisions:
+            key = revision_key(revision)
+            if key in latest:
+                latest[key] = revision
+        return list(latest.values()), {
+            "unknown_archive_timestamp_excluded": 0,
+            "invalid_event_date_excluded": 0,
+            "future_event_date_excluded": 0,
+        }
+
+    try:
+        cutoff_day = datetime.strptime(as_of, "%Y-%m-%d").date()
+    except (TypeError, ValueError):
+        raise ValueError(f"invalid as_of date: {as_of!r} (expected YYYY-MM-DD)")
+    cutoff = datetime.combine(cutoff_day, time.max, tzinfo=timezone.utc)
+
+    latest = {}
+    latest_archived = {}
+    unknown_archive = 0
+    for obs in originals + revisions:
+        archived_at = obs.get("archived_at")
+        try:
+            archived = _parse_timestamp(archived_at).replace(tzinfo=timezone.utc)
+        except (TypeError, ValueError):
+            unknown_archive += 1
+            continue
+        if archived > cutoff:
+            continue
+        key = revision_key(obs)
+        if key not in latest_archived or archived >= latest_archived[key]:
+            latest[key] = obs
+            latest_archived[key] = archived
+
+    selected = []
+    invalid_event_date = 0
+    future_event_date = 0
+    for obs in latest.values():
+        try:
+            event_date = datetime.strptime(obs.get("event_date"), "%Y-%m-%d").date()
+        except (TypeError, ValueError):
+            invalid_event_date += 1
+            continue
+        if event_date > cutoff_day:
+            future_event_date += 1
+            continue
+        selected.append(obs)
+    return selected, {
+        "unknown_archive_timestamp_excluded": unknown_archive,
+        "invalid_event_date_excluded": invalid_event_date,
+        "future_event_date_excluded": future_event_date,
+    }
 
 
 def filter_tournament(observations):
