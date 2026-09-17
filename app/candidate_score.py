@@ -37,6 +37,19 @@ Fusion rules
   ``missing_flags`` and lowers ``confidence``. This means a row with
   only adoption evidence does not silently look identical to a row
   with strong bearish price evidence.
+* **Evidence-backed candidates are ranked separately from price-only
+  movers.** Because missing components are dropped from the weighted
+  average, a card with strong price momentum but *zero* tournament
+  adoption could otherwise renormalize to ``final_score == 1.0`` and
+  outrank a card that has real deck-adoption evidence. To prevent
+  that, the primary ranked list (``candidates``) contains only rows
+  that have **both** adoption and price evidence. Price-only movers
+  (price evidence but no adoption) are surfaced in a separate
+  ``price_only_movers`` list, and adoption-only cards with no
+  matching tracked printing are surfaced in
+  ``unresolved_adoption_cards``. All three lists preserve honest
+  missing-data flags and deterministic ordering; only the *routing*
+  changes.
 
 The module is read-only: no writes to ``prices.db``, no cached
 datasets, no changes to the UI or existing PR-#7/#8 flows.
@@ -377,6 +390,32 @@ def _adoption_by_product_id(
     return by_pid, printings_per_card
 
 
+def _has_adoption_evidence(entry: Optional[Mapping[str, Any]]) -> bool:
+    """A row has adoption evidence iff at least one qualifying deck adopted it.
+
+    We check ``unique_decks`` rather than the presence of the entry so a
+    zero-decks entry (should not happen in practice, but be defensive)
+    is not treated as evidence.
+    """
+    if entry is None:
+        return False
+    unique = entry.get("unique_decks")
+    try:
+        return int(unique or 0) > 0
+    except (TypeError, ValueError):
+        return False
+
+
+def _has_price_evidence(entry: Optional[Mapping[str, Any]]) -> bool:
+    """A row has price evidence iff we have at least one valid observation."""
+    if entry is None:
+        return False
+    try:
+        return int(entry.get("history_count") or 0) > 0
+    except (TypeError, ValueError):
+        return False
+
+
 def build_candidates(
     dataset_path: str = DEFAULT_DATASET_PATH,
     prices_db_path: Optional[str] = None,
@@ -391,7 +430,16 @@ def build_candidates(
     * ``weights``: the documented deterministic weight table.
     * ``adoption_total_decks``: how many qualifying decks fed the
       adoption layer (used by callers to reason about confidence).
-    * ``candidates``: list of ranked rows (see :func:`_build_row`).
+    * ``candidates``: **primary** ranked list — rows with BOTH
+      adoption and price evidence, sorted by ``final_score`` desc
+      then ``product_id`` asc.
+    * ``price_only_movers``: rows with price evidence but no
+      adoption. Deterministically ordered but *never* mixed into
+      ``candidates``, so a strong price-only mover cannot outrank an
+      evidence-backed candidate.
+    * ``unresolved_adoption_cards``: adoption cards with zero
+      matching tracked printings (product_id is ``None``). Ordered
+      by card_name asc.
     """
     adoption = build_adoption_features(dataset_path=dataset_path, as_of=as_of)
     adoption_cards = adoption["cards"]
@@ -410,7 +458,9 @@ def build_candidates(
 
     all_pids = sorted(set(price_by_pid) | set(by_pid))
 
-    candidates: List[Dict[str, Any]] = []
+    evidence_backed: List[Dict[str, Any]] = []
+    price_only: List[Dict[str, Any]] = []
+    adoption_only_product_rows: List[Dict[str, Any]] = []
     for pid in all_pids:
         pf = price_by_pid.get(pid)
         adoption_hit = by_pid.get(pid)
@@ -420,38 +470,56 @@ def build_candidates(
             card_name = pf["card_name"] if pf else None
             adoption_entry = None
             printing_count = 0
-        candidates.append(
-            _build_row(
-                product_id=pid,
-                card_name=card_name,
-                adoption_entry=adoption_entry,
-                price_entry=pf,
-                adoption_total_decks=adoption["total_decks"],
-                printing_count_for_card=printing_count,
-            )
+        row = _build_row(
+            product_id=pid,
+            card_name=card_name,
+            adoption_entry=adoption_entry,
+            price_entry=pf,
+            adoption_total_decks=adoption["total_decks"],
+            printing_count_for_card=printing_count,
         )
+        # Route rows. Only rows with BOTH adoption AND price evidence go
+        # to the primary ranked list. This is what prevents a strong
+        # price-only mover from renormalizing its weighted average to
+        # 1.0 and outranking a real, adoption-backed candidate.
+        has_adopt = _has_adoption_evidence(adoption_entry)
+        has_price = _has_price_evidence(pf)
+        if has_adopt and has_price:
+            evidence_backed.append(row)
+        elif has_price and not has_adopt:
+            price_only.append(row)
+        else:
+            # Adoption-only product row (adoption entry present but no
+            # price history). Not a recommendation, but surfaced so the
+            # identity-level evidence is not silently dropped.
+            adoption_only_product_rows.append(row)
 
-    # Also surface adoption cards that have zero tracked printings so the
-    # identity-level evidence is not silently dropped. These rows have
-    # product_id=None and are sorted last (after the ranked product rows).
+    evidence_backed.sort(
+        key=lambda r: (-r["final_score"], r["product_id"] if r["product_id"] is not None else 0)
+    )
+    price_only.sort(
+        key=lambda r: (-r["final_score"], r["product_id"] if r["product_id"] is not None else 0)
+    )
+    adoption_only_product_rows.sort(
+        key=lambda r: (r["card_name"] or "", r["product_id"] if r["product_id"] is not None else 0)
+    )
+
+    # Adoption cards with zero tracked printings — pure identity-level
+    # evidence with no product to attach to. Sort by card_name asc.
     unresolved_cards = [
         c for c in adoption_cards if printings_per_card.get(c["card_name"], 0) == 0
     ]
-    # Sort ranked product rows deterministically by score desc, then
-    # product_id asc; unresolved-card rows come after them, sorted by
-    # card_name asc.
-    candidates.sort(key=lambda r: (-r["final_score"], r["product_id"] if r["product_id"] is not None else 0))
-    for c in sorted(unresolved_cards, key=lambda x: x["card_name"]):
-        candidates.append(
-            _build_row(
-                product_id=None,
-                card_name=c["card_name"],
-                adoption_entry=c,
-                price_entry=None,
-                adoption_total_decks=adoption["total_decks"],
-                printing_count_for_card=0,
-            )
+    unresolved_rows: List[Dict[str, Any]] = [
+        _build_row(
+            product_id=None,
+            card_name=c["card_name"],
+            adoption_entry=c,
+            price_entry=None,
+            adoption_total_decks=adoption["total_decks"],
+            printing_count_for_card=0,
         )
+        for c in sorted(unresolved_cards, key=lambda x: x["card_name"])
+    ]
 
     return {
         "as_of": as_of,
@@ -464,8 +532,14 @@ def build_candidates(
         "adoption_source_provider": adoption["source_provider"],
         "adoption_format": adoption["format"],
         "price_product_count": len(price_features),
-        "candidate_count": len(candidates),
-        "candidates": candidates,
+        "candidate_count": len(evidence_backed),
+        "candidates": evidence_backed,
+        "price_only_mover_count": len(price_only),
+        "price_only_movers": price_only,
+        "adoption_only_product_count": len(adoption_only_product_rows),
+        "adoption_only_product_rows": adoption_only_product_rows,
+        "unresolved_adoption_card_count": len(unresolved_rows),
+        "unresolved_adoption_cards": unresolved_rows,
     }
 
 
