@@ -126,8 +126,11 @@ class DeckArchivingTests(unittest.TestCase):
         invalid = _observation(
             source_deck_id="invalid", archived_at="not-a-timestamp"
         )
+        unrelated = _observation(
+            source_provider="konami_blog", source_deck_id="other"
+        )
         Path(self.dataset_path).write_text(
-            json.dumps({"observations": [missing, invalid]})
+            json.dumps({"observations": [missing, invalid, unrelated]})
         )
         report = build_adoption_features(self.dataset_path, as_of="2026-09-15")
         self.assertEqual(report["total_decks"], 0)

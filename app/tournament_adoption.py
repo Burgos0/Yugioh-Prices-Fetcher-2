@@ -252,11 +252,17 @@ def build_adoption_features(dataset_path: str = DEFAULT_DATASET_PATH,
     dataset = load_dataset(dataset_path)
     raw = dataset.get("observations") or []
     revisions = dataset.get("revisions") or []
-    selected, archive_exclusions = select_archived_observations(dataset, as_of=as_of)
+    in_scope = lambda obs: (
+        obs.get("source_provider") == source_provider
+        and obs.get("format") == fmt
+        and obs.get("source_type") == SOURCE_TOURNAMENT
+    )
+    selected, archive_exclusions = select_archived_observations(
+        dataset, as_of=as_of, include=in_scope
+    )
     raw_filtered = filter_source(raw, source_provider=source_provider, fmt=fmt)
     _raw_deduped, duplicate_count = dedupe_observations(raw_filtered)
-    filtered = filter_source(selected, source_provider=source_provider, fmt=fmt)
-    deduped, _selected_duplicate_count = dedupe_observations(filtered)
+    deduped, _selected_duplicate_count = dedupe_observations(selected)
     agg = aggregate_adoption(deduped)
     return {
         "as_of": as_of,
@@ -264,9 +270,9 @@ def build_adoption_features(dataset_path: str = DEFAULT_DATASET_PATH,
         "format": fmt,
         "dataset_path": dataset_path,
         "raw_observation_count": len(raw),
-        "revision_count": len(revisions),
+        "revision_count": sum(1 for revision in revisions if in_scope(revision)),
         "selected_observation_count": len(selected),
-        "filtered_observation_count": len(filtered),
+        "filtered_observation_count": len(selected),
         "duplicate_dropped_count": duplicate_count,
         **archive_exclusions,
         "total_decks": agg["total_decks"],

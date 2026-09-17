@@ -197,7 +197,7 @@ def get_cutoff_datetime(obs):
     return _parse_timestamp(ts)
 
 
-def select_archived_observations(dataset, as_of=None):
+def select_archived_observations(dataset, as_of=None, include=None):
     """Select the latest archived version per deck, optionally at a UTC-day cutoff.
 
     Historical selection trusts only importer-owned ``archived_at`` values.
@@ -213,7 +213,10 @@ def select_archived_observations(dataset, as_of=None):
             key = revision_key(revision)
             if key in latest:
                 latest[key] = revision
-        return list(latest.values()), {
+        selected = list(latest.values())
+        if include is not None:
+            selected = [obs for obs in selected if include(obs)]
+        return selected, {
             "unknown_archive_timestamp_excluded": 0,
             "invalid_event_date_excluded": 0,
             "future_event_date_excluded": 0,
@@ -233,7 +236,8 @@ def select_archived_observations(dataset, as_of=None):
         try:
             archived = _parse_timestamp(archived_at).replace(tzinfo=timezone.utc)
         except (TypeError, ValueError):
-            unknown_archive += 1
+            if include is None or include(obs):
+                unknown_archive += 1
             continue
         if archived > cutoff:
             continue
@@ -246,6 +250,8 @@ def select_archived_observations(dataset, as_of=None):
     invalid_event_date = 0
     future_event_date = 0
     for obs in latest.values():
+        if include is not None and not include(obs):
+            continue
         try:
             event_date = datetime.strptime(obs.get("event_date"), "%Y-%m-%d").date()
         except (TypeError, ValueError):
