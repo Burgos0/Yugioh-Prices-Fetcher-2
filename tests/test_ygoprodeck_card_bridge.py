@@ -524,6 +524,7 @@ class OneNameManyPrintingsTests(unittest.TestCase):
         from app.meta_watch import resolve_card_printings
 
         conn = sqlite3.connect(":memory:")
+        self.addCleanup(conn.close)
         conn.execute(
             "CREATE TABLE prices ("
             "product_id INTEGER, card_name TEXT, set_name TEXT,"
