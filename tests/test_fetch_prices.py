@@ -115,6 +115,27 @@ class LiveFetchTests(unittest.TestCase):
             ).fetchall()
         self.assertEqual(rows, [(100, "Test Card", "Accessible Set", "2026-09-17")])
 
+    def test_prices_error_after_products_fetch_still_fails_run(self):
+        groups = [{"groupId": 10, "name": "Broken Set"}]
+
+        def response(url):
+            if url.endswith("/groups"):
+                return groups
+            if "/10/products" in url:
+                return PRODUCTS
+            if "/10/prices" in url:
+                raise RuntimeError("HTTP 404")
+            raise AssertionError(url)
+
+        with patch.object(fetch_prices, "DB_PATH", self.db_path), \
+                patch.object(fetch_prices, "MIN_EXPECTED_DAILY_ROWS", 1), \
+                patch.object(fetch_prices, "current_utc_date", return_value="2026-09-17"), \
+                patch.object(fetch_prices, "fetch_json", side_effect=response), \
+                patch.object(fetch_prices.sys, "argv", ["fetch_prices"]):
+            self.assertEqual(fetch_prices.main(), 1)
+
+        self.assertFalse(Path(self.db_path).exists())
+
     def test_transaction_failure_rolls_back_prices_and_subtypes(self):
         records = [(100, "Card", "Set", 1.0, 2.0, 3.0, 2.5, None, "2026-09-17")]
         with patch.object(fetch_prices, "MIN_EXPECTED_DAILY_ROWS", 1), \

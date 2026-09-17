@@ -196,13 +196,13 @@ def fetch_live_dataset(known_cards):
         set_names[gid] = group.get("name")
         try:
             products = fetch_json(f"{BASE_API}/{CATEGORY_ID}/{gid}/products")
-            prices = fetch_json(f"{BASE_API}/{CATEGORY_ID}/{gid}/prices")
         except RuntimeError as e:
             message = str(e)
             if any(code in message for code in ("HTTP 401", "HTTP 403", "HTTP 404")):
                 print(f"Warning: Skipping inaccessible set {gid}: {e}")
                 continue
             raise
+        prices = fetch_json(f"{BASE_API}/{CATEGORY_ID}/{gid}/prices")
         if not isinstance(products, list) or not isinstance(prices, list):
             raise RuntimeError(f"Group {gid} returned an invalid products or prices response")
         for product in products:
