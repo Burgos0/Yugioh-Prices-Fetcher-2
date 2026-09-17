@@ -696,13 +696,22 @@ def _classify_field(value, *, field_type="text"):
     return "MISSING"
 
 
-def verify_deck_sample(list_row, detail_payload, *, observed_at, cache_hit=False, now=None):
+def verify_deck_sample(list_row, detail_payload, *, observed_at, cache_hit=False, now=None, detail_source="detail"):
     """Produce a sanitized per-deck verification row with explicit
     PASS / MISSING / FAIL states for every required field. Never fabricates
     tournament dates, placements, player counts, or publication timestamps.
 
     ``now`` sets the reference for relative-timestamp decoding (e.g.
-    ``3 days ago``). Defaults to ``_now_utc()``."""
+    ``3 days ago``). Defaults to ``_now_utc()``.
+
+    ``detail_source`` records where the deck-array data came from: one of
+    ``"detail"`` (the JSON detail endpoint returned it), ``"catalogue"``
+    (the catalogue row's own ``main_deck``/``extra_deck``/``side_deck``
+    fields were used because the detail endpoint was unavailable), or
+    ``"none"`` (neither source had the data). It is stamped verbatim onto
+    each of ``main_deck_source``/``extra_deck_source``/``side_deck_source``
+    so downstream summaries can report catalogue-only vs detail-API
+    completeness separately."""
     if list_row is None:
         list_row = {}
     detail = detail_payload if isinstance(detail_payload, dict) else {}
@@ -806,6 +815,14 @@ def verify_deck_sample(list_row, detail_payload, *, observed_at, cache_hit=False
 
     publication_quality = _publication_timestamp_quality(raw_event_date)
 
+    # Per-array provenance for the catalogue-vs-detail split summary. If the
+    # array is absent everywhere, the source is "none"; otherwise it's
+    # whatever the caller declared (the fetcher/sampler knows).
+    def _source_for(arr):
+        if arr is None:
+            return "none"
+        return detail_source
+
     return {
         "deck_id": deck_id,
         "deck_url": deck_url,
@@ -827,13 +844,21 @@ def verify_deck_sample(list_row, detail_payload, *, observed_at, cache_hit=False
         "main_deck_present_status": main_present,
         "main_deck_nonempty_status": main_nonempty,
         "main_deck_count": len(main_arr) if main_arr is not None else None,
+        "main_deck_source": _source_for(main_arr),
         "extra_deck_present_status": extra_present,
         "extra_deck_nonempty_status": extra_nonempty,
         "extra_deck_count": len(extra_arr) if extra_arr is not None else None,
+        "extra_deck_source": _source_for(extra_arr),
         "side_deck_present_status": side_present,
         "side_deck_nonempty_status": side_nonempty,
         "side_deck_count": len(side_arr) if side_arr is not None else None,
+        "side_deck_source": _source_for(side_arr),
         "structure_complete_status": structure_complete,
+        "structure_complete_source": (
+            detail_source
+            if structure_complete == "PASS"
+            else "none"
+        ),
         "event_date_key_used": event_date_key_used,
         "detail_cache_hit": bool(cache_hit),
         "sample_kind": "top_cut_only",
@@ -1019,6 +1044,8 @@ def sample_top_cut_details(
     http_status_counter = defaultdict(lambda: defaultdict(int))
     details = []
     errors = []
+    detail_success_count = 0
+    detail_failure_count = 0
     for row in selected:
         deck_id = _extract_deck_id(row)
         try:
@@ -1033,10 +1060,12 @@ def sample_top_cut_details(
             )
         except (requests.RequestException, ValueError) as exc:
             errors.append({"deck_id": deck_id, "error": str(exc)})
+            detail_failure_count += 1
             # Detail HTTP failed. Fall back on card arrays the *catalogue*
             # row already carries (comma-separated strings or JSON arrays).
             # This is not substitution from an unrelated field — it's the
-            # same field the source already delivered.
+            # same field the source already delivered. Provenance is
+            # explicitly recorded as `catalogue`.
             details.append(
                 verify_deck_sample(
                     row,
@@ -1044,9 +1073,11 @@ def sample_top_cut_details(
                     observed_at=observed_at,
                     cache_hit=False,
                     now=now,
+                    detail_source="catalogue",
                 )
             )
             continue
+        detail_success_count += 1
         details.append(
             verify_deck_sample(
                 row,
@@ -1054,6 +1085,7 @@ def sample_top_cut_details(
                 observed_at=observed_at,
                 cache_hit=cache_hit,
                 now=now,
+                detail_source="detail",
             )
         )
 
@@ -1066,6 +1098,18 @@ def sample_top_cut_details(
             if state not in ("PASS", "MISSING", "FAIL"):
                 state = "MISSING"
             totals[field][state] += 1
+
+    # Split coverage summaries: (a) catalogue-only, i.e. what getDecks.php
+    # ALONE delivered; (b) detail-API, marked unavailable when every
+    # candidate URL 404s. These are always both emitted so a reader can
+    # judge the source without inferring provenance from field_totals.
+    catalogue_only_coverage = _summarize_catalogue_only(details)
+    detail_api_coverage = _summarize_detail_api(
+        details,
+        http_status_counter,
+        detail_success_count=detail_success_count,
+        detail_failure_count=detail_failure_count,
+    )
 
     return {
         "sample_size_target": sample_size,
@@ -1084,6 +1128,105 @@ def sample_top_cut_details(
         "decks": details,
         "detail_errors": errors,
         "exclusion_reason_counts": exclusion_reasons,
+        "catalogue_only_coverage": catalogue_only_coverage,
+        "detail_api_coverage": detail_api_coverage,
+    }
+
+
+_METADATA_STATUS_FIELDS_CATALOGUE = (
+    "tournament_name_status",
+    "event_date_status",
+    "player_name_status",
+    "placement_status",
+    "player_count_status",
+)
+
+
+def _summarize_catalogue_only(details):
+    """Report completeness attributable to the catalogue (`getDecks.php`)
+    endpoint ALONE. Every record in ``details`` is inspected: metadata is
+    ALWAYS catalogue-sourced (list-row-first extraction is verified), and
+    the deck-array subtotals count only rows whose ``*_source`` marker is
+    ``catalogue``. Provenance is stamped verbatim so this block is safe
+    to interpret as "what getDecks.php delivered on its own"."""
+    sample_size = len(details)
+    metadata_totals = {
+        field: {"PASS": 0, "MISSING": 0, "FAIL": 0}
+        for field in _METADATA_STATUS_FIELDS_CATALOGUE
+    }
+    metadata_complete = 0
+    structure_complete_from_catalogue = 0
+    main_from_catalogue = 0
+    extra_from_catalogue = 0
+    side_from_catalogue = 0
+    for record in details:
+        record_metadata_pass = True
+        for field in _METADATA_STATUS_FIELDS_CATALOGUE:
+            state = record.get(field, "MISSING")
+            if state not in ("PASS", "MISSING", "FAIL"):
+                state = "MISSING"
+            metadata_totals[field][state] += 1
+            if state != "PASS":
+                record_metadata_pass = False
+        if record_metadata_pass:
+            metadata_complete += 1
+        if record.get("main_deck_source") == "catalogue":
+            main_from_catalogue += 1
+        if record.get("extra_deck_source") == "catalogue":
+            extra_from_catalogue += 1
+        if record.get("side_deck_source") == "catalogue":
+            side_from_catalogue += 1
+        if (
+            record.get("structure_complete_status") == "PASS"
+            and record.get("structure_complete_source") == "catalogue"
+        ):
+            structure_complete_from_catalogue += 1
+    return {
+        "provenance": "getDecks.php (catalogue)",
+        "sample_size": sample_size,
+        "metadata_field_totals": metadata_totals,
+        "metadata_complete_count": metadata_complete,
+        "structure_complete_from_catalogue": structure_complete_from_catalogue,
+        "main_deck_from_catalogue": main_from_catalogue,
+        "extra_deck_from_catalogue": extra_from_catalogue,
+        "side_deck_from_catalogue": side_from_catalogue,
+    }
+
+
+def _summarize_detail_api(
+    details,
+    http_status_counter,
+    *,
+    detail_success_count,
+    detail_failure_count,
+):
+    """Report detail-endpoint availability and, when available, its
+    contribution to structure-complete. When EVERY candidate URL returned
+    only non-2xx (or every attempt errored), status is marked
+    ``"unavailable"`` and structure counts sourced from detail are zero
+    by definition."""
+    any_2xx = any(
+        any(str(code).startswith("2") for code in statuses)
+        for statuses in http_status_counter.values()
+    )
+    structure_complete_from_detail = sum(
+        1
+        for record in details
+        if record.get("structure_complete_status") == "PASS"
+        and record.get("structure_complete_source") == "detail"
+    )
+    status = "available" if any_2xx else "unavailable"
+    return {
+        "provenance": "get.php / getDeck.php / deck.php (JSON detail endpoints)",
+        "candidate_urls": [url for url, _ in YGOPRODECK_DECK_DETAIL_URL_CANDIDATES],
+        "http_status_summary": {
+            url: {str(status): count for status, count in statuses.items()}
+            for url, statuses in http_status_counter.items()
+        },
+        "detail_success_count": detail_success_count,
+        "detail_failure_count": detail_failure_count,
+        "structure_complete_from_detail": structure_complete_from_detail,
+        "status": status,
     }
 
 
@@ -1109,10 +1252,25 @@ def run_experiment(
     cache_dir=None,
     min_interval_seconds=DETAIL_MIN_INTERVAL_SECONDS,
     session=None,
+    repeatability_runs=1,
 ):
     from_date = (_now_utc() - timedelta(days=int(lookback_days))).strftime("%Y-%m-%d")
     client = session or requests.Session()
-    rows = fetch_tcg_decks(from_date=from_date, timeout=timeout, session=client)
+
+    # Repeatability: fetch the catalogue N times and record deckNum-set
+    # stability. N=1 skips the extra fetches. Every extra fetch is paced
+    # by the same rate-limit floor and can be seeded by cache when the
+    # cache_dir points at a shared location.
+    repeatability_runs = max(1, int(repeatability_runs))
+    catalogue_runs = []
+    for _ in range(repeatability_runs):
+        run_rows = fetch_tcg_decks(from_date=from_date, timeout=timeout, session=client)
+        # Deterministic pacing between repeat calls.
+        if min_interval_seconds > 0 and repeatability_runs > 1:
+            time.sleep(min_interval_seconds)
+        catalogue_runs.append(run_rows)
+    # The first run's rows drive the actual coverage evaluation.
+    rows = catalogue_runs[0]
     diagnostics = build_list_response_diagnostics(rows)
     report = build_coverage_report(rows)
     report["list_response_diagnostics"] = diagnostics
@@ -1125,28 +1283,148 @@ def run_experiment(
         min_interval_seconds=min_interval_seconds,
     )
     report["top_cut_sample"] = sample_block
-    # A zero-candidate run must be labeled INCONCLUSIVE; do not predeclare
-    # success. The overall_status flag is what the workflow step exits on.
+    # Promote the two coverage sub-blocks to top level so consumers do not
+    # need to reach into `top_cut_sample` to distinguish catalogue vs
+    # detail-API results.
+    catalogue_coverage = dict(sample_block["catalogue_only_coverage"])
+    detail_api_coverage = dict(sample_block["detail_api_coverage"])
+    report["catalogue_coverage"] = catalogue_coverage
+    report["detail_api_coverage"] = detail_api_coverage
+
+    # Repeatability block: how stable are the catalogue's deckNum sets
+    # across repeated fetches? A `sufficient_for_decklist` verdict is
+    # only meaningful if the catalogue itself is deterministic run-to-run.
+    report["repeatability"] = _build_repeatability_report(catalogue_runs)
+
+    # Sufficiency verdict: is getDecks.php ALONE enough to satisfy this
+    # project's decklist + metadata requirements?
+    verdict = _decide_catalogue_sufficiency(
+        catalogue_coverage,
+        detail_api_coverage,
+        sample_size=sample_block["sample_size_actual"],
+    )
+    report["catalogue_sufficient_for_decklist"] = verdict["sufficient"]
+    report["recommendation"] = verdict["recommendation"]
+    report["decision_rationale"] = verdict["rationale"]
+
+    # Overall status: INCONCLUSIVE if the sample is zero, OR if both
+    # sources fail to yield any complete decklist. Otherwise OK — even if
+    # only the catalogue succeeded, because that is a legitimate result
+    # the split summary makes explicit.
     structure_pass = (
         sample_block.get("field_totals", {})
-        .get("structure_complete", {})
+        .get("structure_complete_status", {})
         .get("PASS", 0)
-    )
-    detail_probe = sample_block.get("detail_probe_summary", {})
-    any_detail_2xx = any(
-        any(str(code).startswith("2") for code in statuses)
-        for statuses in detail_probe.values()
     )
     if sample_block["sample_size_actual"] == 0:
         report["overall_status"] = "INCONCLUSIVE"
-    elif structure_pass == 0 and not any_detail_2xx:
-        # 20 samples selected but no detail endpoint returned a usable
-        # payload and no catalogue row carried complete arrays.
+    elif structure_pass == 0 and detail_api_coverage["status"] == "unavailable":
         report["overall_status"] = "INCONCLUSIVE"
     else:
         report["overall_status"] = "OK"
     write_report(output_path, report)
     return report
+
+
+_CATALOGUE_METADATA_SUFFICIENCY_THRESHOLD = 0.90
+_CATALOGUE_STRUCTURE_SUFFICIENCY_THRESHOLD = 0.90
+
+
+def _decide_catalogue_sufficiency(catalogue_coverage, detail_api_coverage, *, sample_size):
+    """Return {sufficient, recommendation, rationale} evaluating whether
+    getDecks.php ALONE is sufficient for the project's decklist +
+    metadata requirements.
+
+    Definition of "sufficient": ≥90% of the sampled decks have complete
+    Main/Extra/Side sourced from the catalogue AND ≥90% have complete
+    tournament metadata (tournament name, event date, player name,
+    placement, player count). If either threshold fails, or the sample
+    is empty, the answer is False.
+
+    A recommendation string is included so the artifact tells a human
+    reader exactly what to do next (repeatability check vs. rejection)."""
+    if sample_size <= 0:
+        return {
+            "sufficient": False,
+            "recommendation": "INCONCLUSIVE",
+            "rationale": (
+                "Sample size is zero; cannot evaluate sufficiency. "
+                "Re-run after fixing catalogue selection."
+            ),
+        }
+    structure_from_catalogue = catalogue_coverage["structure_complete_from_catalogue"]
+    metadata_complete = catalogue_coverage["metadata_complete_count"]
+    structure_ratio = structure_from_catalogue / sample_size
+    metadata_ratio = metadata_complete / sample_size
+    structure_ok = structure_ratio >= _CATALOGUE_STRUCTURE_SUFFICIENCY_THRESHOLD
+    metadata_ok = metadata_ratio >= _CATALOGUE_METADATA_SUFFICIENCY_THRESHOLD
+
+    if structure_ok and metadata_ok:
+        return {
+            "sufficient": True,
+            "recommendation": (
+                "USE_CATALOGUE_ONLY: getDecks.php alone satisfies decklist "
+                "and metadata requirements. Confirm with a repeatability "
+                "check across multiple workflow runs before promoting."
+            ),
+            "rationale": (
+                f"structure_complete_from_catalogue={structure_from_catalogue}/{sample_size} "
+                f"({structure_ratio:.0%}); metadata_complete_count={metadata_complete}/{sample_size} "
+                f"({metadata_ratio:.0%}); detail_api_status={detail_api_coverage['status']}."
+            ),
+        }
+    return {
+        "sufficient": False,
+        "recommendation": (
+            "REJECT_FOR_DECKLIST_PIPELINE: getDecks.php alone is below the "
+            "sufficiency thresholds and the detail API is not usable. Do "
+            "not add more guessed URLs; look at an alternate source."
+        ),
+        "rationale": (
+            f"structure_complete_from_catalogue={structure_from_catalogue}/{sample_size} "
+            f"({structure_ratio:.0%}, need >= {_CATALOGUE_STRUCTURE_SUFFICIENCY_THRESHOLD:.0%}); "
+            f"metadata_complete_count={metadata_complete}/{sample_size} "
+            f"({metadata_ratio:.0%}, need >= {_CATALOGUE_METADATA_SUFFICIENCY_THRESHOLD:.0%}); "
+            f"detail_api_status={detail_api_coverage['status']}."
+        ),
+    }
+
+
+def _build_repeatability_report(catalogue_runs):
+    """Compare the catalogue's top-N deckNum set across repeated fetches.
+    Returns a sanitized dict with run count, per-run row counts, and set
+    intersection metrics. Never surfaces card names or player data."""
+    run_count = len(catalogue_runs)
+    per_run_row_counts = [len(rows) for rows in catalogue_runs]
+    per_run_deck_id_sets = []
+    for rows in catalogue_runs:
+        ids = set()
+        for row in rows:
+            deck_id = _extract_deck_id(row) if isinstance(row, dict) else None
+            if deck_id is not None:
+                ids.add(deck_id)
+        per_run_deck_id_sets.append(ids)
+    if per_run_deck_id_sets:
+        intersection = set(per_run_deck_id_sets[0])
+        union = set(per_run_deck_id_sets[0])
+        for s in per_run_deck_id_sets[1:]:
+            intersection &= s
+            union |= s
+    else:
+        intersection = set()
+        union = set()
+    stable_ratio = (len(intersection) / len(union)) if union else 0.0
+    verdict = "STABLE" if run_count > 1 and stable_ratio >= 0.95 else (
+        "UNSTABLE" if run_count > 1 else "NOT_TESTED"
+    )
+    return {
+        "run_count": run_count,
+        "per_run_row_counts": per_run_row_counts,
+        "deck_id_set_intersection_size": len(intersection),
+        "deck_id_set_union_size": len(union),
+        "deck_id_set_stability_ratio": stable_ratio,
+        "verdict": verdict,
+    }
 
 
 def main():
@@ -1173,6 +1451,16 @@ def main():
         default=DETAIL_MIN_INTERVAL_SECONDS,
         help="Minimum seconds between detail-endpoint calls (>=1.0 keeps well under the 20 req/s limit)",
     )
+    parser.add_argument(
+        "--repeatability-runs",
+        type=int,
+        default=1,
+        help=(
+            "Number of catalogue fetches to perform (default 1). When >1, "
+            "the report includes a `repeatability` block comparing deckNum "
+            "sets across runs."
+        ),
+    )
     args = parser.parse_args()
 
     if args.min_interval_seconds < DETAIL_MIN_INTERVAL_SECONDS:
@@ -1188,6 +1476,7 @@ def main():
             sample_size=args.sample_size,
             cache_dir=args.cache_dir,
             min_interval_seconds=args.min_interval_seconds,
+            repeatability_runs=args.repeatability_runs,
         )
     except (requests.RequestException, ValueError) as exc:
         raise SystemExit(f"YGOPRODeck coverage check failed: {exc}") from exc
@@ -1198,6 +1487,14 @@ def main():
     summary = {
         "output": args.output,
         "overall_status": overall_status,
+        "catalogue_sufficient_for_decklist": report.get(
+            "catalogue_sufficient_for_decklist"
+        ),
+        "recommendation": report.get("recommendation"),
+        "decision_rationale": report.get("decision_rationale"),
+        "catalogue_coverage": report.get("catalogue_coverage"),
+        "detail_api_coverage": report.get("detail_api_coverage"),
+        "repeatability": report.get("repeatability"),
         "events_found": report["events_found"],
         "last_14_days_events": report["coverage_windows"]["last_14_days"]["events"],
         "last_30_days_events": report["coverage_windows"]["last_30_days"]["events"],

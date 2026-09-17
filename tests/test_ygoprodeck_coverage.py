@@ -1224,5 +1224,283 @@ class RelativeAgoSubmitDateEndToEndTests(unittest.TestCase):
         self.assertEqual(block["field_totals"]["event_date_status"]["PASS"], 3)
 
 
+class SplitCoverageAndSufficiencyTests(unittest.TestCase):
+    """After the latest live artifact showed the detail API 404 across all
+    candidate URLs while the catalogue fallback delivered 20/20 complete
+    Main/Extra/Side, PR #8 reports the catalogue and detail-API
+    contributions separately, states whether getDecks.php ALONE is
+    sufficient, and — if yes — supports a repeatability sweep. These
+    tests pin the split, the verdict, and the repeatability block."""
+
+    @staticmethod
+    def _catalogue_row(deck_num, submit_date="2026-09-14 12:00:00", **overrides):
+        row = {
+            "deckNum": deck_num,
+            "submit_date": submit_date,
+            "tournamentName": f"Event {deck_num}",
+            "tournamentPlacement": "Top 8",
+            "tournamentPlayerCount": 128,
+            "tournamentPlayerName": f"Player {deck_num}",
+            "format": "Tournament Meta Decks",
+            "pretty_url": f"deck-{deck_num}",
+            "main_deck": "1,2,3,4,5,6,7,8,9,10",
+            "extra_deck": "11,12,13",
+            "side_deck": "14,15,16",
+        }
+        row.update(overrides)
+        return row
+
+    def _all_404_session(self):
+        return _StubDetailSession(
+            {},
+            url_status_map={url: 404 for url, _ in YGOPRODECK_DECK_DETAIL_URL_CANDIDATES},
+        )
+
+    def test_sample_block_exposes_two_split_summaries(self):
+        rows = [self._catalogue_row(1000 + i) for i in range(3)]
+        session = self._all_404_session()
+        now = datetime(2026, 9, 16, tzinfo=timezone.utc)
+        block = sample_top_cut_details(
+            rows, sample_size=3, session=session, cache_dir=None,
+            min_interval_seconds=0.0, now=now,
+        )
+        self.assertIn("catalogue_only_coverage", block)
+        self.assertIn("detail_api_coverage", block)
+        cat = block["catalogue_only_coverage"]
+        det = block["detail_api_coverage"]
+        # Catalogue block reports its provenance verbatim.
+        self.assertIn("getDecks.php", cat["provenance"])
+        self.assertEqual(cat["sample_size"], 3)
+        self.assertEqual(cat["structure_complete_from_catalogue"], 3)
+        self.assertEqual(cat["main_deck_from_catalogue"], 3)
+        self.assertEqual(cat["extra_deck_from_catalogue"], 3)
+        self.assertEqual(cat["side_deck_from_catalogue"], 3)
+        # Metadata subtotals reflect the 5-field metadata contract.
+        for field in (
+            "tournament_name_status",
+            "event_date_status",
+            "player_name_status",
+            "placement_status",
+            "player_count_status",
+        ):
+            self.assertIn(field, cat["metadata_field_totals"])
+        # Detail API block is explicitly marked unavailable when all 404.
+        self.assertEqual(det["status"], "unavailable")
+        self.assertEqual(det["structure_complete_from_detail"], 0)
+        self.assertEqual(det["detail_success_count"], 0)
+        self.assertGreater(det["detail_failure_count"], 0)
+        self.assertEqual(
+            det["candidate_urls"],
+            [url for url, _ in YGOPRODECK_DECK_DETAIL_URL_CANDIDATES],
+        )
+
+    def test_detail_api_status_available_when_any_2xx(self):
+        # If the first candidate URL returns 200, detail_api_coverage is
+        # marked "available" and structure_complete counts from detail.
+        session = _StubDetailSession(
+            {
+                1000 + i: {
+                    "deckNum": 1000 + i,
+                    "main_deck": [1] * 40,
+                    "extra_deck": [2] * 15,
+                    "side_deck": [3] * 15,
+                }
+                for i in range(3)
+            }
+        )
+        rows = [self._catalogue_row(1000 + i, main_deck="", extra_deck="", side_deck="") for i in range(3)]
+        now = datetime(2026, 9, 16, tzinfo=timezone.utc)
+        block = sample_top_cut_details(
+            rows, sample_size=3, session=session, cache_dir=None,
+            min_interval_seconds=0.0, now=now,
+        )
+        det = block["detail_api_coverage"]
+        cat = block["catalogue_only_coverage"]
+        self.assertEqual(det["status"], "available")
+        self.assertEqual(det["detail_success_count"], 3)
+        self.assertEqual(det["structure_complete_from_detail"], 3)
+        # Catalogue did not carry the arrays, so structure_from_catalogue is 0.
+        self.assertEqual(cat["structure_complete_from_catalogue"], 0)
+
+    def test_verify_deck_sample_source_field_is_catalogue_when_declared(self):
+        list_row = self._catalogue_row(42)
+        # Simulate detail failure: pass the catalogue's own arrays and
+        # declare source=catalogue.
+        payload = {
+            "main_deck": list_row["main_deck"],
+            "extra_deck": list_row["extra_deck"],
+            "side_deck": list_row["side_deck"],
+        }
+        record = verify_deck_sample(
+            list_row, payload, observed_at="obs", detail_source="catalogue"
+        )
+        self.assertEqual(record["structure_complete_status"], "PASS")
+        self.assertEqual(record["structure_complete_source"], "catalogue")
+        self.assertEqual(record["main_deck_source"], "catalogue")
+        self.assertEqual(record["extra_deck_source"], "catalogue")
+        self.assertEqual(record["side_deck_source"], "catalogue")
+
+    def test_verify_deck_sample_source_field_is_detail_when_default(self):
+        list_row = self._catalogue_row(42, main_deck="", extra_deck="", side_deck="")
+        payload = {"main_deck": [1] * 40, "extra_deck": [1] * 15, "side_deck": [1] * 15}
+        record = verify_deck_sample(list_row, payload, observed_at="obs")
+        self.assertEqual(record["structure_complete_source"], "detail")
+        self.assertEqual(record["main_deck_source"], "detail")
+
+    def test_source_field_is_none_when_array_absent(self):
+        list_row = self._catalogue_row(42, main_deck="", extra_deck="", side_deck="")
+        record = verify_deck_sample(
+            list_row, {}, observed_at="obs", detail_source="catalogue"
+        )
+        # Empty arrays -> FAIL on the present check -> source stamped none.
+        self.assertEqual(record["main_deck_source"], "none")
+        self.assertEqual(record["extra_deck_source"], "none")
+        self.assertEqual(record["side_deck_source"], "none")
+
+    def test_run_experiment_promotes_split_coverage_and_verdict(self):
+        # End-to-end: 20/20 catalogue complete, all detail 404 -> verdict
+        # sufficient=True, recommendation USE_CATALOGUE_ONLY,
+        # overall_status=OK. Repeatability block still present with
+        # verdict=NOT_TESTED (default run_count=1).
+        from scripts import check_ygoprodeck_tcg_coverage as mod
+
+        rows = [self._catalogue_row(1000 + i) for i in range(20)]
+        session = self._all_404_session()
+
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        out = os.path.join(tmp.name, "report.json")
+
+        with mock.patch.object(mod, "fetch_tcg_decks", return_value=rows):
+            report = mod.run_experiment(
+                output_path=out,
+                lookback_days=90,
+                timeout=10,
+                sample_size=20,
+                cache_dir=None,
+                min_interval_seconds=0.0,
+                session=session,
+            )
+        # Split blocks are promoted to top level.
+        self.assertIn("catalogue_coverage", report)
+        self.assertIn("detail_api_coverage", report)
+        self.assertEqual(report["detail_api_coverage"]["status"], "unavailable")
+        self.assertEqual(report["catalogue_coverage"]["structure_complete_from_catalogue"], 20)
+        self.assertEqual(report["catalogue_coverage"]["metadata_complete_count"], 20)
+        # Verdict + recommendation.
+        self.assertTrue(report["catalogue_sufficient_for_decklist"])
+        self.assertIn("USE_CATALOGUE_ONLY", report["recommendation"])
+        # Overall status becomes OK even though detail is unavailable.
+        self.assertEqual(report["overall_status"], "OK")
+        # Repeatability block present.
+        self.assertEqual(report["repeatability"]["run_count"], 1)
+        self.assertEqual(report["repeatability"]["verdict"], "NOT_TESTED")
+
+    def test_run_experiment_verdict_reject_when_catalogue_incomplete(self):
+        # Rows that lack Main/Extra/Side and lack most metadata -> verdict
+        # sufficient=False, recommendation REJECT.
+        from scripts import check_ygoprodeck_tcg_coverage as mod
+
+        rows = [
+            self._catalogue_row(
+                1000 + i,
+                main_deck="",
+                extra_deck="",
+                side_deck="",
+                tournamentName="",
+                tournamentPlayerName="",
+                tournamentPlacement="",
+                tournamentPlayerCount=None,
+            )
+            for i in range(20)
+        ]
+        session = self._all_404_session()
+
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        out = os.path.join(tmp.name, "report.json")
+
+        with mock.patch.object(mod, "fetch_tcg_decks", return_value=rows):
+            report = mod.run_experiment(
+                output_path=out, lookback_days=90, timeout=10, sample_size=20,
+                cache_dir=None, min_interval_seconds=0.0, session=session,
+            )
+        self.assertFalse(report["catalogue_sufficient_for_decklist"])
+        self.assertIn("REJECT_FOR_DECKLIST_PIPELINE", report["recommendation"])
+        # Both sources failed -> INCONCLUSIVE.
+        self.assertEqual(report["overall_status"], "INCONCLUSIVE")
+
+    def test_repeatability_block_reports_stable_when_deck_ids_match(self):
+        # Three identical fetches -> STABLE verdict.
+        from scripts import check_ygoprodeck_tcg_coverage as mod
+
+        rows = [self._catalogue_row(1000 + i) for i in range(20)]
+        session = self._all_404_session()
+
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        out = os.path.join(tmp.name, "report.json")
+
+        with mock.patch.object(mod, "fetch_tcg_decks", return_value=rows):
+            report = mod.run_experiment(
+                output_path=out, lookback_days=90, timeout=10, sample_size=20,
+                cache_dir=None, min_interval_seconds=0.0, session=session,
+                repeatability_runs=3,
+            )
+        rep = report["repeatability"]
+        self.assertEqual(rep["run_count"], 3)
+        self.assertEqual(rep["per_run_row_counts"], [20, 20, 20])
+        self.assertEqual(rep["deck_id_set_intersection_size"], 20)
+        self.assertEqual(rep["deck_id_set_union_size"], 20)
+        self.assertEqual(rep["deck_id_set_stability_ratio"], 1.0)
+        self.assertEqual(rep["verdict"], "STABLE")
+
+    def test_repeatability_block_reports_unstable_when_deck_ids_drift(self):
+        from scripts import check_ygoprodeck_tcg_coverage as mod
+
+        # Simulate drift: each successive fetch returns a different set.
+        run_1 = [self._catalogue_row(i) for i in range(1, 21)]
+        run_2 = [self._catalogue_row(i) for i in range(11, 31)]  # 10 overlap
+        run_3 = [self._catalogue_row(i) for i in range(21, 41)]  # zero overlap w/ run_1
+
+        session = self._all_404_session()
+
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        out = os.path.join(tmp.name, "report.json")
+
+        with mock.patch.object(
+            mod, "fetch_tcg_decks", side_effect=[run_1, run_2, run_3, run_1, run_2, run_3],
+        ):
+            report = mod.run_experiment(
+                output_path=out, lookback_days=90, timeout=10, sample_size=5,
+                cache_dir=None, min_interval_seconds=0.0, session=session,
+                repeatability_runs=3,
+            )
+        rep = report["repeatability"]
+        self.assertEqual(rep["run_count"], 3)
+        # Intersection across all three is empty (run_1 and run_3 disjoint).
+        self.assertEqual(rep["deck_id_set_intersection_size"], 0)
+        self.assertLess(rep["deck_id_set_stability_ratio"], 0.95)
+        self.assertEqual(rep["verdict"], "UNSTABLE")
+
+    def test_no_guessed_url_added_beyond_documented_candidates(self):
+        # Governance test: the candidate list must not grow silently.
+        # Any addition should be a deliberate code change with a new
+        # documented URL, not a fifth guess.
+        self.assertEqual(len(YGOPRODECK_DECK_DETAIL_URL_CANDIDATES), 3)
+
+
+class WorkflowRepeatabilityInputTests(unittest.TestCase):
+    def test_workflow_accepts_repeatability_runs_input(self):
+        wf_path = Path(__file__).resolve().parents[1] / ".github/workflows/ygoprodeck_coverage_check.yml"
+        text = wf_path.read_text()
+        self.assertIn("repeatability_runs", text)
+        self.assertIn("--repeatability-runs", text)
+        # Still evaluation-only, artifact-only, manual dispatch.
+        self.assertIn("workflow_dispatch", text)
+        self.assertIn("upload-artifact", text)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -2,6 +2,11 @@ name: ygoprodeck coverage check
 
 on:
   workflow_dispatch:
+    inputs:
+      repeatability_runs:
+        description: "Number of catalogue fetches to perform (>=1). Use >=3 for a repeatability sweep."
+        required: false
+        default: "1"
 
 permissions:
   contents: read
@@ -26,6 +31,7 @@ jobs:
             --lookback-days 90 \
             --sample-size 20 \
             --min-interval-seconds 1.0 \
+            --repeatability-runs "${{ inputs.repeatability_runs || '1' }}" \
             --cache-dir "${{ runner.temp }}/ygoprodeck_detail_cache" \
             --output "${{ runner.temp }}/ygoprodeck_tcg_coverage_report.json"
 
