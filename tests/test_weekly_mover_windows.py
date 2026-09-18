@@ -26,13 +26,25 @@ class WeeklyMoverWindowTests(unittest.TestCase):
                 "CREATE TABLE prices (product_id INTEGER, card_name TEXT, "
                 "set_name TEXT, date TEXT, market_price REAL)"
             )
+            conn.execute(
+                "CREATE TABLE printing_prices (product_id INTEGER, printing TEXT, "
+                "card_name TEXT, set_name TEXT, date TEXT, market_price REAL, "
+                "PRIMARY KEY (product_id, printing, date))"
+            )
 
-    def insert_series(self, product_id, card_name, prices):
+    def insert_series(self, product_id, card_name, prices, printing="Unlimited"):
         with sqlite3.connect(self.db_path) as conn:
             conn.executemany(
                 "INSERT INTO prices VALUES (?, ?, ?, ?, ?)",
                 [
                     (product_id, card_name, "Test Set", date, price)
+                    for date, price in zip(self.SNAPSHOT_DATES, prices)
+                ],
+            )
+            conn.executemany(
+                "INSERT INTO printing_prices VALUES (?, ?, ?, ?, ?, ?)",
+                [
+                    (product_id, printing, card_name, "Test Set", date, price)
                     for date, price in zip(self.SNAPSHOT_DATES, prices)
                 ],
             )
@@ -44,6 +56,7 @@ class WeeklyMoverWindowTests(unittest.TestCase):
     def test_missing_calendar_dates_use_actual_snapshot_windows(self):
         self.add_relevant_set_support()
         self.insert_series(1, "Gain Card", [10.0, 10.0, 10.0, 99.0, 99.0, 99.0, 20.0, 20.0, 20.0])
+        self.insert_series(1, "Gain Card", [10.0, 10.0, 10.0, 99.0, 99.0, 99.0, 30.0, 30.0, 30.0], "1st Edition")
         self.insert_series(2, "Loss Card", [20.0, 20.0, 20.0, 99.0, 99.0, 99.0, 10.0, 10.0, 10.0])
         self.insert_series(3, "Penny Card", [1.0, 1.0, 1.0, 99.0, 99.0, 99.0, 2.0, 2.0, 2.0])
 
@@ -51,10 +64,16 @@ class WeeklyMoverWindowTests(unittest.TestCase):
         losers = calculate_top_losers(self.db_path)
         penny_movers = calculate_penny_movers(self.db_path)
 
-        gain = gainers[gainers["product_id"] == 1].iloc[0]
+        gain = gainers[
+            (gainers["product_id"] == 1) & (gainers["printing"] == "Unlimited")
+        ].iloc[0]
         loss = losers[losers["product_id"] == 2].iloc[0]
         penny = penny_movers[penny_movers["product_id"] == 3].iloc[0]
         self.assertEqual((gain["baseline_value"], gain["current_value"]), (10.0, 20.0))
+        first_edition = gainers[
+            (gainers["product_id"] == 1) & (gainers["printing"] == "1st Edition")
+        ].iloc[0]
+        self.assertEqual((first_edition["baseline_value"], first_edition["current_value"]), (10.0, 30.0))
         self.assertEqual((loss["baseline_value"], loss["current_value"]), (20.0, 10.0))
         self.assertEqual((penny["baseline_value"], penny["current_value"]), (1.0, 2.0))
 

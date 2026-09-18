@@ -139,6 +139,21 @@ def init_db(db_path=DB_PATH):
         established_date TEXT
     )
     """)
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS printing_prices (
+        product_id INTEGER,
+        printing TEXT,
+        card_name TEXT,
+        set_name TEXT,
+        low_price REAL,
+        mid_price REAL,
+        high_price REAL,
+        market_price REAL,
+        direct_low_price REAL,
+        date TEXT,
+        PRIMARY KEY (product_id, printing, date)
+    )
+    """)
     conn.commit()
     return conn
 
@@ -280,6 +295,31 @@ def build_records(parsed_group_prices, target_date_str, known_cards, set_names,
             skipped_missing_tracked_subtype)
 
 
+def build_printing_records(parsed_group_prices, target_date_str, known_cards, set_names):
+    """Build one record for every valid TCGCSV row, preserving its printing."""
+    records = []
+    for gid, items in parsed_group_prices.items():
+        set_name = set_names.get(str(gid))
+        for item in items:
+            product_id = item.get("productId")
+            if product_id is None:
+                continue
+            prices = (
+                item.get("lowPrice"),
+                item.get("midPrice"),
+                item.get("highPrice"),
+                item.get("marketPrice"),
+                item.get("directLowPrice"),
+            )
+            if not any(value is not None for value in prices):
+                continue
+            records.append(
+                (product_id, item.get("subTypeName") or "Unspecified",
+                 known_cards.get(product_id), set_name, *prices, target_date_str)
+            )
+    return records
+
+
 def parse_and_build_records(cat_dir, target_date_str, known_cards, set_names, tracked_subtypes=None):
     """
     Parse price files for all groups under the category directory.
@@ -342,8 +382,14 @@ def parse_and_build_records(cat_dir, target_date_str, known_cards, set_names, tr
         parsed_group_prices, target_date_str, known_cards, set_names, tracked_subtypes)
 
 
-def write_records_atomically(db_path, target_date_str, records, newly_established_subtypes):
+def write_records_atomically(db_path, target_date_str, records, newly_established_subtypes,
+                             printing_records=None):
     """Write and validate the complete observation in one SQLite transaction."""
+    if printing_records is None:
+        printing_records = [
+            (record[0], "Unspecified", record[1], record[2], *record[3:])
+            for record in records
+        ]
     conn = init_db(db_path)
     try:
         cur = conn.cursor()
@@ -351,6 +397,7 @@ def write_records_atomically(db_path, target_date_str, records, newly_establishe
         cur.execute("SELECT COUNT(*) FROM prices WHERE date = ?", (target_date_str,))
         rows_before = cur.fetchone()[0]
         cur.execute("DELETE FROM prices WHERE date = ?", (target_date_str,))
+        cur.execute("DELETE FROM printing_prices WHERE date = ?", (target_date_str,))
         cur.executemany(
             """
             INSERT OR REPLACE INTO prices(
@@ -360,12 +407,28 @@ def write_records_atomically(db_path, target_date_str, records, newly_establishe
             """,
             records
         )
+        cur.executemany(
+            """
+            INSERT OR REPLACE INTO printing_prices(
+                product_id, printing, card_name, set_name, low_price, mid_price,
+                high_price, market_price, direct_low_price, date
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            printing_records
+        )
         save_tracked_subtypes(conn, newly_established_subtypes, target_date_str)
         cur.execute("SELECT COUNT(*) FROM prices WHERE date = ?", (target_date_str,))
         daily_rows = cur.fetchone()[0]
         if daily_rows < MIN_EXPECTED_DAILY_ROWS:
             raise RuntimeError(
                 f"Database row count for {target_date_str} is {daily_rows:,}; "
+                f"expected at least {MIN_EXPECTED_DAILY_ROWS:,}")
+        printing_daily_rows = cur.execute(
+            "SELECT COUNT(*) FROM printing_prices WHERE date = ?", (target_date_str,)
+        ).fetchone()[0]
+        if printing_daily_rows < MIN_EXPECTED_DAILY_ROWS:
+            raise RuntimeError(
+                f"Printing database row count for {target_date_str} is {printing_daily_rows:,}; "
                 f"expected at least {MIN_EXPECTED_DAILY_ROWS:,}")
         conn.commit()
         return rows_before, daily_rows
@@ -399,18 +462,23 @@ def main():
                 "Fetch crossed a UTC date boundary; refusing mixed-date observations")
         records, sets_processed, newly_established_subtypes, _ = build_records(
             parsed_group_prices, target_date_str, known_cards, set_names, tracked_subtypes)
+        printing_records = build_printing_records(
+            parsed_group_prices, target_date_str, known_cards, set_names)
 
-        print(f"Parsed {len(records):,} valid price records across {sets_processed} sets.")
+        print(f"Parsed {len(records):,} legacy and {len(printing_records):,} printing "
+              f"price records across {sets_processed} sets.")
 
         # Validation: Check minimum expected rows before touching DB
-        if len(records) < MIN_EXPECTED_DAILY_ROWS:
-            print(f"\nERROR: Daily dataset is INCOMPLETE. Parsed {len(records):,} rows "
-                  f"(expected at least {MIN_EXPECTED_DAILY_ROWS:,}).")
+        if (len(records) < MIN_EXPECTED_DAILY_ROWS or
+                len(printing_records) < MIN_EXPECTED_DAILY_ROWS):
+            print(f"\nERROR: Daily dataset is INCOMPLETE. Parsed {len(records):,} legacy and "
+                  f"{len(printing_records):,} printing rows "
+                  f"(each expected at least {MIN_EXPECTED_DAILY_ROWS:,}).")
             print("Refusing to commit incomplete dataset to database.")
             return 1
 
         rows_before, daily_rows = write_records_atomically(
-            DB_PATH, target_date_str, records, newly_established_subtypes)
+            DB_PATH, target_date_str, records, newly_established_subtypes, printing_records)
 
         elapsed = time.time() - start_time
         print("\n" + "=" * 60)

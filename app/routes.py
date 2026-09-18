@@ -133,31 +133,40 @@ def meta_watch():
 @bp.route('/card/<int:product_id>')
 def card_detail(product_id):
     conn = sqlite3.connect('data/prices.db')
+    printing = request.args.get('printing')
+    price_table = 'printing_prices' if printing is not None else 'prices'
 
     history = conn.execute(
-        '''
+        f'''
         SELECT date, market_price
-        FROM prices
+        FROM {price_table}
         WHERE product_id = ?
+        {'AND printing = ?' if printing is not None else ''}
         AND market_price IS NOT NULL
         ORDER BY date
         ''',
-        (product_id,)
+        (product_id, printing) if printing is not None else (product_id,)
     ).fetchall()
 
     card_info = conn.execute(
-    '''
+    f'''
     SELECT card_name, set_name
-    FROM prices
+    FROM {price_table}
     WHERE product_id = ?
+    {'AND printing = ?' if printing is not None else ''}
     LIMIT 1
     ''',
-    (product_id,)
+    (product_id, printing) if printing is not None else (product_id,)
 ).fetchone()
 
     conn.close()
 
-    history_info = get_product_history_info('data/prices.db', product_id)
+    if printing is not None:
+        first_seen_date = history[0][0] if history else None
+        days_of_history = len(history)
+        history_info = {'first_seen_date': first_seen_date, 'days_of_history': days_of_history}
+    else:
+        history_info = get_product_history_info('data/prices.db', product_id)
 
     first_seen_date = history_info['first_seen_date']
     if first_seen_date:
@@ -171,6 +180,7 @@ def card_detail(product_id):
     prices=[row[1] for row in history],
     card_name=card_info[0],
     set_name=card_info[1],
+    printing=printing,
     first_seen_date=first_seen_date,
     days_of_history=history_info['days_of_history']
 )

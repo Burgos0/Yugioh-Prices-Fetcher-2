@@ -37,6 +37,7 @@
                     <th>Image</th>
                     <th>Card Name</th>
                     <th>Set</th>
+                    <th>Printing</th>
                     <th>Baseline</th>
                     <th>Current</th>
                     <th>Gain ($)</th>
@@ -63,13 +64,17 @@
                     </td>
 
                     <td class="card-name">
-                        <a href="{{ url_for('main.card_detail', product_id=gainer.product_id) }}">
+                        <a href="{{ url_for('main.card_detail', product_id=gainer.product_id, printing=gainer.printing) }}">
                             {{ gainer.card_name }}
                         </a>
                     </td>
 
                     <td class="set-name">
                         {{ gainer.set_name }}
+                    </td>
+
+                    <td class="printing">
+                        {{ gainer.printing }}
                     </td>
 
                     <td class="price">

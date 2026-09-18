@@ -27,7 +27,7 @@ print("="*130)
 print("TOP 50 WEEKLY LOSERS (Confirmed & Unconfirmed Drops)")
 print("="*130)
 print(
-    f"{'Rank':<6} {'Card Name':<40} {'Set':<35} {'Baseline':<12} {'Current':<12} "
+    f"{'Rank':<6} {'Card Name':<40} {'Set':<35} {'Printing':<16} {'Baseline':<12} {'Current':<12} "
     f"{'Loss $':<10} {'Loss %':<10} {'Status':<14}"
 )
 print("-"*130)
@@ -38,6 +38,7 @@ for _, row in losers.iterrows():
         f"{row['rank']:<6} "
         f"{row['card_name']:<40} "
         f"{row['set_name']:<35} "
+        f"{row['printing']:<16} "
         f"${row['baseline_value']:<11.2f} "
         f"${row['current_value']:<11.2f} "
         f"${row['dollar_change']:<9.2f} "

@@ -244,7 +244,8 @@ def _select_weekly_mover_windows(df):
     return snapshot_dates[-3:], snapshot_dates[-9:-6]
 
 
-def detect_spike(product_id, baseline_value, current_value, df, latest_date, recent_dates=None):
+def detect_spike(product_id, baseline_value, current_value, df, latest_date, recent_dates=None,
+                 printing=None):
     """
     Detect if a price increase is CONFIRMED or a suspicious UNCONFIRMED spike.
     
@@ -269,8 +270,11 @@ def detect_spike(product_id, baseline_value, current_value, df, latest_date, rec
     ]
     
     # RULE 1: Latest raw price more than 50% above recent 3-day median?
+    identity = (df["product_id"] == product_id)
+    if printing is not None:
+        identity &= df["printing"] == printing
     latest_price_row = df[
-        (df["product_id"] == product_id) &
+        identity &
         (df["date"] == latest_date) &
         (df["market_price"].notna())
     ]
@@ -282,7 +286,7 @@ def detect_spike(product_id, baseline_value, current_value, df, latest_date, rec
     
     # RULE 2: Persistence check - require 2+ of last 3 prices elevated (>= 10% above baseline)
     recent_prices = df[
-        (df["product_id"] == product_id) &
+        identity &
         (df["date"].isin(recent_dates)) &
         (df["market_price"].notna())
     ].sort_values("date")["market_price"].values
@@ -295,7 +299,8 @@ def detect_spike(product_id, baseline_value, current_value, df, latest_date, rec
     return "CONFIRMED"
 
 
-def detect_drop(product_id, baseline_value, current_value, df, latest_date, recent_dates=None):
+def detect_drop(product_id, baseline_value, current_value, df, latest_date, recent_dates=None,
+                printing=None):
     """
     Detect if a price decrease is CONFIRMED or a suspicious UNCONFIRMED dip.
     
@@ -320,8 +325,11 @@ def detect_drop(product_id, baseline_value, current_value, df, latest_date, rece
     ]
     
     # RULE 1: Latest raw price more than 50% below recent 3-day median?
+    identity = (df["product_id"] == product_id)
+    if printing is not None:
+        identity &= df["printing"] == printing
     latest_price_row = df[
-        (df["product_id"] == product_id) &
+        identity &
         (df["date"] == latest_date) &
         (df["market_price"].notna())
     ]
@@ -333,7 +341,7 @@ def detect_drop(product_id, baseline_value, current_value, df, latest_date, rece
     
     # RULE 2: Persistence check - require 2+ of last 3 prices depressed (<= 90% of baseline)
     recent_prices = df[
-        (df["product_id"] == product_id) &
+        identity &
         (df["date"].isin(recent_dates)) &
         (df["market_price"].notna())
     ].sort_values("date")["market_price"].values
@@ -344,6 +352,120 @@ def detect_drop(product_id, baseline_value, current_value, df, latest_date, rece
             return "UNCONFIRMED"
     
     return "CONFIRMED"
+
+
+def _load_printing_prices(db_path):
+    """Load market-watch history without inferring printing identity."""
+    try:
+        conn = sqlite3.connect(db_path)
+        try:
+            return pd.read_sql("SELECT * FROM printing_prices", conn)
+        finally:
+            conn.close()
+    except (OSError, sqlite3.Error, pd.errors.DatabaseError):
+        return pd.DataFrame()
+
+
+def _calculate_printing_movers(db_path, limit, mover_type):
+    df = _load_printing_prices(db_path)
+    if df.empty:
+        return pd.DataFrame()
+
+    df["date"] = pd.to_datetime(df["date"])
+    weekly_windows = _select_weekly_mover_windows(df)
+    if weekly_windows is None:
+        return pd.DataFrame()
+    recent_dates, baseline_dates = weekly_windows
+
+    relevant_sets = None
+    if mover_type in ("gainer", "loser"):
+        relevant_sets = _calculate_printing_relevant_sets(df)
+
+    recent = df[(df["date"].isin(recent_dates)) & df["market_price"].notna()]
+    baseline = df[(df["date"].isin(baseline_dates)) & df["market_price"].notna()]
+    identity = ["product_id", "printing"]
+    current_medians = recent.groupby(identity)["market_price"].median()
+    baseline_medians = baseline.groupby(identity)["market_price"].median()
+    complete_recent = recent.groupby(identity)["date"].nunique() == len(recent_dates)
+    complete_baseline = baseline.groupby(identity)["date"].nunique() == len(baseline_dates)
+    complete_pairs = complete_recent[complete_recent].index.intersection(
+        complete_baseline[complete_baseline].index
+    )
+    latest_date = df["date"].max()
+    results = []
+
+    for product_id, printing in complete_pairs:
+        pair = (product_id, printing)
+        pair_rows = df[(df["product_id"] == product_id) & (df["printing"] == printing)]
+        set_name = pair_rows["set_name"].iloc[0]
+        if relevant_sets is not None and set_name not in relevant_sets:
+            continue
+        baseline_value = baseline_medians[pair]
+        current_value = current_medians[pair]
+
+        if mover_type == "gainer":
+            if current_value < 3.0 or current_value <= baseline_value:
+                continue
+            dollar_change = current_value - baseline_value
+            percent_change = dollar_change / baseline_value * 100
+            status = detect_spike(product_id, baseline_value, current_value, df,
+                                  latest_date, recent_dates, printing)
+            result = {"dollar_gain": dollar_change, "percent_gain": percent_change}
+        elif mover_type == "loser":
+            if baseline_value < 3.0 or current_value >= baseline_value:
+                continue
+            dollar_change = current_value - baseline_value
+            percent_change = dollar_change / baseline_value * 100
+            status = detect_drop(product_id, baseline_value, current_value, df,
+                                 latest_date, recent_dates, printing)
+            result = {"dollar_change": dollar_change, "percent_change": percent_change}
+        else:
+            if not (0.25 <= baseline_value <= 5.00) or current_value <= baseline_value:
+                continue
+            dollar_change = current_value - baseline_value
+            percent_change = dollar_change / baseline_value * 100
+            if dollar_change < 0.25 or percent_change < 20:
+                continue
+            status = detect_spike(product_id, baseline_value, current_value, df,
+                                  latest_date, recent_dates, printing)
+            result = {"dollar_gain": dollar_change, "percent_gain": percent_change}
+
+        result.update({
+            "product_id": product_id,
+            "printing": printing,
+            "card_name": pair_rows["card_name"].iloc[0],
+            "set_name": set_name,
+            "baseline_value": baseline_value,
+            "current_value": current_value,
+            "status": status,
+        })
+        results.append(result)
+
+    results_df = pd.DataFrame(results)
+    if results_df.empty:
+        return results_df
+    sort_column = "percent_change" if mover_type == "loser" else "percent_gain"
+    results_df = results_df.sort_values(sort_column, ascending=mover_type == "loser").head(limit)
+    results_df.insert(0, "rank", range(1, len(results_df) + 1))
+    return results_df
+
+
+def _calculate_printing_relevant_sets(df):
+    """Apply the existing set relevance thresholds to printing-aware history."""
+    latest_date = df["date"].max()
+    valid = df[
+        (df["date"] >= latest_date - timedelta(days=7)) &
+        df["market_price"].notna()
+    ].sort_values("date")
+    stats = valid.groupby(["product_id", "printing"])["market_price"].agg(["count", "median", "last"])
+    card_prices = stats["median"].where(stats["count"] >= 7, stats["last"])
+    cards = df[["set_name", "product_id", "printing"]].drop_duplicates().copy()
+    cards["price"] = [card_prices.get((pid, printing))
+                       for pid, printing in zip(cards["product_id"], cards["printing"])]
+    for threshold in (3, 10, 25):
+        cards[f"over_{threshold}"] = cards["price"] >= threshold
+    counts = cards.groupby("set_name")[["over_3", "over_10", "over_25"]].sum()
+    return set(counts.index[(counts.over_3 >= 5) | (counts.over_10 >= 2) | (counts.over_25 >= 1)])
 
 
 def calculate_top_gainers(db_path, limit=50):
@@ -675,6 +797,21 @@ def calculate_penny_movers(db_path, limit=50):
     results_df.insert(0, 'rank', range(1, len(results_df) + 1))
     
     return results_df
+
+
+def calculate_top_gainers(db_path, limit=50):
+    """Calculate printing-aware weekly gainers from ``printing_prices``."""
+    return _calculate_printing_movers(db_path, limit, "gainer")
+
+
+def calculate_top_losers(db_path, limit=50):
+    """Calculate printing-aware weekly losers from ``printing_prices``."""
+    return _calculate_printing_movers(db_path, limit, "loser")
+
+
+def calculate_penny_movers(db_path, limit=50):
+    """Calculate printing-aware penny movers from ``printing_prices``."""
+    return _calculate_printing_movers(db_path, limit, "penny")
 
 
 def _load_subtype_established_dates(db_path):
