@@ -17,6 +17,14 @@ PRICES = [{
     "highPrice": 3.0,
     "marketPrice": 2.5,
     "directLowPrice": None,
+}, {
+    "productId": 100,
+    "subTypeName": "Unlimited",
+    "lowPrice": 0.8,
+    "midPrice": 1.8,
+    "highPrice": 2.8,
+    "marketPrice": 2.3,
+    "directLowPrice": None,
 }]
 
 
@@ -48,7 +56,11 @@ class LiveFetchTests(unittest.TestCase):
             row = conn.execute(
                 "SELECT product_id, card_name, set_name, date FROM prices"
             ).fetchone()
+            printings = conn.execute(
+                "SELECT product_id, printing, market_price FROM printing_prices"
+            ).fetchall()
         self.assertEqual(row, (100, "Test Card", "Test Set", "2026-09-17"))
+        self.assertEqual(printings, [(100, "1st Edition", 2.5), (100, "Unlimited", 2.3)])
 
     def test_http_error_is_not_retried_for_non_transient_status(self):
         response = Mock(status_code=403)
@@ -151,6 +163,7 @@ class LiveFetchTests(unittest.TestCase):
 
         with sqlite3.connect(self.db_path) as conn:
             self.assertEqual(conn.execute("SELECT COUNT(*) FROM prices").fetchone()[0], 0)
+            self.assertEqual(conn.execute("SELECT COUNT(*) FROM printing_prices").fetchone()[0], 0)
             self.assertEqual(
                 conn.execute("SELECT COUNT(*) FROM product_subtypes").fetchone()[0], 0)
 

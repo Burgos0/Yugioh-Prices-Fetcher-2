@@ -5,6 +5,9 @@
     <h1>{{ card_name }}</h1>
 
     <p>{{ set_name }}</p>
+    {% if printing %}
+    <p>Printing: {{ printing }}</p>
+    {% endif %}
 
     {% if first_seen_date %}
     <p class="card-history-meta">
