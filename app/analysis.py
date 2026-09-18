@@ -236,7 +236,15 @@ def calculate_relevant_sets(df):
     return set(counts.index[(counts.over_3 >= 5) | (counts.over_10 >= 2) | (counts.over_25 >= 1)])
 
 
-def detect_spike(product_id, baseline_value, current_value, df, latest_date):
+def _select_weekly_mover_windows(df):
+    """Return the recent and baseline snapshot dates for weekly movers."""
+    snapshot_dates = sorted(df["date"].dropna().unique())
+    if len(snapshot_dates) < 9:
+        return None
+    return snapshot_dates[-3:], snapshot_dates[-9:-6]
+
+
+def detect_spike(product_id, baseline_value, current_value, df, latest_date, recent_dates=None):
     """
     Detect if a price increase is CONFIRMED or a suspicious UNCONFIRMED spike.
     
@@ -256,7 +264,9 @@ def detect_spike(product_id, baseline_value, current_value, df, latest_date):
     Returns:
         "CONFIRMED" or "UNCONFIRMED"
     """
-    recent_3day_start = latest_date - timedelta(days=2)
+    recent_dates = recent_dates if recent_dates is not None else [
+        latest_date - timedelta(days=2), latest_date - timedelta(days=1), latest_date
+    ]
     
     # RULE 1: Latest raw price more than 50% above recent 3-day median?
     latest_price_row = df[
@@ -273,7 +283,7 @@ def detect_spike(product_id, baseline_value, current_value, df, latest_date):
     # RULE 2: Persistence check - require 2+ of last 3 prices elevated (>= 10% above baseline)
     recent_prices = df[
         (df["product_id"] == product_id) &
-        (df["date"] >= recent_3day_start) &
+        (df["date"].isin(recent_dates)) &
         (df["market_price"].notna())
     ].sort_values("date")["market_price"].values
     
@@ -285,7 +295,7 @@ def detect_spike(product_id, baseline_value, current_value, df, latest_date):
     return "CONFIRMED"
 
 
-def detect_drop(product_id, baseline_value, current_value, df, latest_date):
+def detect_drop(product_id, baseline_value, current_value, df, latest_date, recent_dates=None):
     """
     Detect if a price decrease is CONFIRMED or a suspicious UNCONFIRMED dip.
     
@@ -305,7 +315,9 @@ def detect_drop(product_id, baseline_value, current_value, df, latest_date):
     Returns:
         "CONFIRMED" or "UNCONFIRMED"
     """
-    recent_3day_start = latest_date - timedelta(days=2)
+    recent_dates = recent_dates if recent_dates is not None else [
+        latest_date - timedelta(days=2), latest_date - timedelta(days=1), latest_date
+    ]
     
     # RULE 1: Latest raw price more than 50% below recent 3-day median?
     latest_price_row = df[
@@ -322,7 +334,7 @@ def detect_drop(product_id, baseline_value, current_value, df, latest_date):
     # RULE 2: Persistence check - require 2+ of last 3 prices depressed (<= 90% of baseline)
     recent_prices = df[
         (df["product_id"] == product_id) &
-        (df["date"] >= recent_3day_start) &
+        (df["date"].isin(recent_dates)) &
         (df["market_price"].notna())
     ].sort_values("date")["market_price"].values
     
@@ -363,24 +375,28 @@ def calculate_top_gainers(db_path, limit=50):
     # Calculate relevant sets
     relevant_sets = calculate_relevant_sets(df)
     
-    # Define time windows
-    recent_3day_start = latest_date - timedelta(days=2)
-    baseline_window_start = latest_date - timedelta(days=8)
-    baseline_window_end = latest_date - timedelta(days=6)
+    weekly_windows = _select_weekly_mover_windows(df)
+    if weekly_windows is None:
+        return pd.DataFrame()
+    recent_dates, baseline_dates = weekly_windows
     
     # Calculate medians for each card
     df_recent_3day = df[
-        (df["date"] >= recent_3day_start) & 
+        (df["date"].isin(recent_dates)) &
         (df["market_price"].notna())
     ]
     current_medians = df_recent_3day.groupby("product_id")["market_price"].median()
     
     df_baseline = df[
-        (df["date"] >= baseline_window_start) & 
-        (df["date"] <= baseline_window_end) &
+        (df["date"].isin(baseline_dates)) &
         (df["market_price"].notna())
     ]
     baseline_medians = df_baseline.groupby("product_id")["market_price"].median()
+    complete_recent = df_recent_3day.groupby("product_id")["date"].nunique() == len(recent_dates)
+    complete_baseline = df_baseline.groupby("product_id")["date"].nunique() == len(baseline_dates)
+    complete_products = complete_recent[complete_recent].index.intersection(
+        complete_baseline[complete_baseline].index
+    )
     
     # Build results
     results = []
@@ -392,7 +408,7 @@ def calculate_top_gainers(db_path, limit=50):
             continue
         
         # Skip if missing baseline or current value
-        if product_id not in baseline_medians.index or product_id not in current_medians.index:
+        if product_id not in complete_products:
             continue
         
         baseline_value = baseline_medians[product_id]
@@ -411,7 +427,7 @@ def calculate_top_gainers(db_path, limit=50):
         percent_gain = (dollar_gain / baseline_value) * 100
         
         # Detect spike
-        status = detect_spike(product_id, baseline_value, current_value, df, latest_date)
+        status = detect_spike(product_id, baseline_value, current_value, df, latest_date, recent_dates)
         
         # Get card name
         card_name = df[df["product_id"] == product_id]["card_name"].iloc[0]
@@ -467,24 +483,28 @@ def calculate_top_losers(db_path, limit=50):
     # Calculate relevant sets
     relevant_sets = calculate_relevant_sets(df)
     
-    # Define time windows
-    recent_3day_start = latest_date - timedelta(days=2)
-    baseline_window_start = latest_date - timedelta(days=8)
-    baseline_window_end = latest_date - timedelta(days=6)
+    weekly_windows = _select_weekly_mover_windows(df)
+    if weekly_windows is None:
+        return pd.DataFrame()
+    recent_dates, baseline_dates = weekly_windows
     
     # Calculate medians for each card
     df_recent_3day = df[
-        (df["date"] >= recent_3day_start) & 
+        (df["date"].isin(recent_dates)) &
         (df["market_price"].notna())
     ]
     current_medians = df_recent_3day.groupby("product_id")["market_price"].median()
     
     df_baseline = df[
-        (df["date"] >= baseline_window_start) & 
-        (df["date"] <= baseline_window_end) &
+        (df["date"].isin(baseline_dates)) &
         (df["market_price"].notna())
     ]
     baseline_medians = df_baseline.groupby("product_id")["market_price"].median()
+    complete_recent = df_recent_3day.groupby("product_id")["date"].nunique() == len(recent_dates)
+    complete_baseline = df_baseline.groupby("product_id")["date"].nunique() == len(baseline_dates)
+    complete_products = complete_recent[complete_recent].index.intersection(
+        complete_baseline[complete_baseline].index
+    )
     
     # Build results
     results = []
@@ -496,7 +516,7 @@ def calculate_top_losers(db_path, limit=50):
             continue
         
         # Skip if missing baseline or current value
-        if product_id not in baseline_medians.index or product_id not in current_medians.index:
+        if product_id not in complete_products:
             continue
         
         baseline_value = baseline_medians[product_id]
@@ -515,7 +535,7 @@ def calculate_top_losers(db_path, limit=50):
         percent_change = (dollar_change / baseline_value) * 100
         
         # Detect drop
-        status = detect_drop(product_id, baseline_value, current_value, df, latest_date)
+        status = detect_drop(product_id, baseline_value, current_value, df, latest_date, recent_dates)
         
         # Get card name
         card_name = df[df["product_id"] == product_id]["card_name"].iloc[0]
@@ -578,31 +598,35 @@ def calculate_penny_movers(db_path, limit=50):
     df["date"] = pd.to_datetime(df["date"])
     latest_date = df["date"].max()
     
-    # Define time windows
-    recent_3day_start = latest_date - timedelta(days=2)
-    baseline_window_start = latest_date - timedelta(days=8)
-    baseline_window_end = latest_date - timedelta(days=6)
+    weekly_windows = _select_weekly_mover_windows(df)
+    if weekly_windows is None:
+        return pd.DataFrame()
+    recent_dates, baseline_dates = weekly_windows
     
     # Calculate medians for each card
     df_recent_3day = df[
-        (df["date"] >= recent_3day_start) & 
+        (df["date"].isin(recent_dates)) &
         (df["market_price"].notna())
     ]
     current_medians = df_recent_3day.groupby("product_id")["market_price"].median()
     
     df_baseline = df[
-        (df["date"] >= baseline_window_start) & 
-        (df["date"] <= baseline_window_end) &
+        (df["date"].isin(baseline_dates)) &
         (df["market_price"].notna())
     ]
     baseline_medians = df_baseline.groupby("product_id")["market_price"].median()
+    complete_recent = df_recent_3day.groupby("product_id")["date"].nunique() == len(recent_dates)
+    complete_baseline = df_baseline.groupby("product_id")["date"].nunique() == len(baseline_dates)
+    complete_products = complete_recent[complete_recent].index.intersection(
+        complete_baseline[complete_baseline].index
+    )
     
     # Build results
     results = []
     
     for product_id in df["product_id"].unique():
         # Skip if missing baseline or current value
-        if product_id not in baseline_medians.index or product_id not in current_medians.index:
+        if product_id not in complete_products:
             continue
         
         baseline_value = baseline_medians[product_id]
@@ -625,7 +649,7 @@ def calculate_penny_movers(db_path, limit=50):
             continue
         
         # Detect spike
-        status = detect_spike(product_id, baseline_value, current_value, df, latest_date)
+        status = detect_spike(product_id, baseline_value, current_value, df, latest_date, recent_dates)
         
         # Get card name and set
         set_name = df[df["product_id"] == product_id]["set_name"].iloc[0]
