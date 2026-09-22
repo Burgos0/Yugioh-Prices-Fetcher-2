@@ -1,6 +1,7 @@
 import sqlite3
 import tempfile
 import unittest
+import json
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -28,30 +29,44 @@ PRICES = [{
 }]
 
 
-class LiveFetchTests(unittest.TestCase):
+class ArchiveFetchTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.db_path = str(Path(self.tmp.name) / "prices.db")
 
-    @staticmethod
-    def api_response(url):
-        if url.endswith("/groups"):
-            return GROUPS
-        if url.endswith("/products"):
-            return PRODUCTS
-        if url.endswith("/prices"):
-            return PRICES
-        raise AssertionError(url)
+    def write_archive_tree(self, extract_dir):
+        group_dir = Path(extract_dir) / "2026-09-17" / "2" / "10"
+        group_dir.mkdir(parents=True)
+        (group_dir / "prices").write_text(json.dumps({"results": PRICES}))
 
-    def test_successful_live_responses_are_written(self):
+    def test_default_date_is_yesterday_utc(self):
+        with patch.object(fetch_prices, "current_utc_date", return_value="2026-09-18"):
+            self.assertEqual(fetch_prices.parse_target_date(), "2026-09-17")
+
+    def test_explicit_date_remains_exact(self):
+        with patch.object(fetch_prices, "current_utc_date", return_value="2026-09-18"):
+            self.assertEqual(
+                fetch_prices.parse_target_date("2024-02-29"), "2024-02-29")
+
+    def test_successful_archive_is_written_with_printings_and_subtype(self):
+        def extract(_archive_path, extract_dir):
+            self.write_archive_tree(extract_dir)
+
         with patch.object(fetch_prices, "DB_PATH", self.db_path), \
                 patch.object(fetch_prices, "MIN_EXPECTED_DAILY_ROWS", 1), \
-                patch.object(fetch_prices, "current_utc_date", return_value="2026-09-17"), \
-                patch.object(fetch_prices, "fetch_json", side_effect=self.api_response), \
-                patch.object(fetch_prices.sys, "argv", ["fetch_prices"]):
+                patch.object(fetch_prices, "check_7z_available"), \
+                patch.object(fetch_prices, "download_archive") as download, \
+                patch.object(fetch_prices, "extract_archive", side_effect=extract), \
+                patch.object(fetch_prices, "fetch_set_names", return_value={"10": "Test Set"}), \
+                patch.object(fetch_prices, "fetch_json", return_value=PRODUCTS) as fetch_json, \
+                patch.object(fetch_prices.sys, "argv", ["fetch_prices", "2026-09-17"]):
             self.assertEqual(fetch_prices.main(), 0)
 
+        self.assertEqual(download.call_count, 1)
+        self.assertEqual(download.call_args.args[0], "2026-09-17")
+        fetch_json.assert_called_once_with(
+            "https://tcgcsv.com/tcgplayer/2/10/products")
         with sqlite3.connect(self.db_path) as conn:
             row = conn.execute(
                 "SELECT product_id, card_name, set_name, date FROM prices"
@@ -59,8 +74,12 @@ class LiveFetchTests(unittest.TestCase):
             printings = conn.execute(
                 "SELECT product_id, printing, market_price FROM printing_prices"
             ).fetchall()
+            subtype = conn.execute(
+                "SELECT product_id, subtype, established_date FROM product_subtypes"
+            ).fetchone()
         self.assertEqual(row, (100, "Test Card", "Test Set", "2026-09-17"))
         self.assertEqual(printings, [(100, "1st Edition", 2.5), (100, "Unlimited", 2.3)])
+        self.assertEqual(subtype, (100, "1st Edition", "2026-09-17"))
 
     def test_http_error_is_not_retried_for_non_transient_status(self):
         response = Mock(status_code=403)
@@ -82,22 +101,14 @@ class LiveFetchTests(unittest.TestCase):
         sleep.assert_called_once()
         self.assertAlmostEqual(sleep.call_args.args[0], 0.4)
 
-    def test_tcgcsv_401_is_retried_after_cooldown(self):
-        responses = [
-            Mock(status_code=401),
-            Mock(status_code=200, json=lambda: GROUPS),
-        ]
-        with patch.object(fetch_prices, "_last_tcgcsv_request_at", None), \
-                patch.object(fetch_prices.time, "monotonic", side_effect=[100.0, 160.0]), \
-                patch.object(fetch_prices.time, "sleep") as sleep, \
-                patch.object(fetch_prices.requests, "get", side_effect=responses) as get:
-            self.assertEqual(
-                fetch_prices.fetch_json("https://tcgcsv.com/tcgplayer/2/groups"),
-                GROUPS,
-            )
-
-        self.assertEqual(get.call_count, 2)
-        sleep.assert_called_once_with(60)
+    def test_tcgcsv_401_is_terminal(self):
+        response = Mock(status_code=401)
+        with patch.object(fetch_prices.requests, "get", return_value=response) as get, \
+                patch.object(fetch_prices.time, "sleep") as sleep:
+            with self.assertRaisesRegex(RuntimeError, "HTTP 401"):
+                fetch_prices.fetch_json("https://tcgcsv.com/tcgplayer/2/groups")
+        self.assertEqual(get.call_count, 1)
+        sleep.assert_not_called()
 
     def test_non_tcgcsv_401_is_terminal(self):
         response = Mock(status_code=401)
@@ -109,47 +120,73 @@ class LiveFetchTests(unittest.TestCase):
         self.assertEqual(get.call_count, 1)
         sleep.assert_not_called()
 
-    def test_partial_live_result_never_creates_database(self):
+    def test_archive_below_minimum_cannot_modify_database(self):
+        def extract(_archive_path, extract_dir):
+            self.write_archive_tree(extract_dir)
+
+        prior_row = (
+            999, "Prior", "Prior Set", 1.0, 2.0, 3.0, 2.5, None, "2026-09-17"
+        )
+        with fetch_prices.init_db(self.db_path) as conn:
+            conn.execute("INSERT INTO prices VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", prior_row)
+
         with patch.object(fetch_prices, "DB_PATH", self.db_path), \
                 patch.object(fetch_prices, "MIN_EXPECTED_DAILY_ROWS", 2), \
-                patch.object(fetch_prices, "current_utc_date", return_value="2026-09-17"), \
-                patch.object(fetch_prices, "fetch_json", side_effect=self.api_response), \
-                patch.object(fetch_prices.sys, "argv", ["fetch_prices"]):
+                patch.object(fetch_prices, "check_7z_available"), \
+                patch.object(fetch_prices, "download_archive"), \
+                patch.object(fetch_prices, "extract_archive", side_effect=extract), \
+                patch.object(fetch_prices, "fetch_set_names", return_value={"10": "Test Set"}), \
+                patch.object(fetch_prices, "fetch_json", return_value=PRODUCTS), \
+                patch.object(fetch_prices.sys, "argv", ["fetch_prices", "2026-09-17"]):
             self.assertEqual(fetch_prices.main(), 1)
 
-        self.assertFalse(Path(self.db_path).exists())
+        with sqlite3.connect(self.db_path) as conn:
+            self.assertEqual(
+                conn.execute(
+                    "SELECT * FROM prices WHERE date = ?", ("2026-09-17",)
+                ).fetchall(),
+                [prior_row],
+            )
 
-    def test_failed_group_request_stops_before_database_write(self):
-        def response(url):
-            if url.endswith("/groups"):
-                return GROUPS
-            if url.endswith("/products"):
-                return PRODUCTS
-            raise RuntimeError("HTTP 503")
+    def test_metadata_failure_does_not_discard_archive(self):
+        def extract(_archive_path, extract_dir):
+            self.write_archive_tree(extract_dir)
 
-        with patch.object(fetch_prices, "DB_PATH", self.db_path), \
-                patch.object(fetch_prices, "current_utc_date", return_value="2026-09-17"), \
-                patch.object(fetch_prices, "fetch_json", side_effect=response), \
-                patch.object(fetch_prices.sys, "argv", ["fetch_prices"]):
-            self.assertEqual(fetch_prices.main(), 1)
-
-        self.assertFalse(Path(self.db_path).exists())
-
-    def test_exhausted_live_retries_do_not_write_database(self):
-        groups_response = Mock(status_code=200, json=lambda: {"results": GROUPS})
-        products_response = Mock(status_code=200, json=lambda: {"results": PRODUCTS})
-        failed_price_response = Mock(status_code=503)
-        responses = [groups_response, products_response] + [failed_price_response] * fetch_prices.MAX_RETRIES
+        with fetch_prices.init_db(self.db_path) as conn:
+            conn.execute(
+                "INSERT INTO prices VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (100, "Test Card", "Known Set", 1.0, 2.0, 3.0, 2.5, None,
+                 "2026-09-16"),
+            )
 
         with patch.object(fetch_prices, "DB_PATH", self.db_path), \
                 patch.object(fetch_prices, "MIN_EXPECTED_DAILY_ROWS", 1), \
-                patch.object(fetch_prices, "current_utc_date", return_value="2026-09-17"), \
-                patch.object(fetch_prices.time, "sleep"), \
-                patch.object(fetch_prices.requests, "get", side_effect=responses), \
-                patch.object(fetch_prices.sys, "argv", ["fetch_prices"]):
-            self.assertEqual(fetch_prices.main(), 1)
+                patch.object(fetch_prices, "check_7z_available"), \
+                patch.object(fetch_prices, "download_archive"), \
+                patch.object(fetch_prices, "extract_archive", side_effect=extract), \
+                patch.object(fetch_prices, "fetch_json", side_effect=RuntimeError("HTTP 401")), \
+                patch.object(fetch_prices.sys, "argv", ["fetch_prices", "2026-09-17"]):
+            self.assertEqual(fetch_prices.main(), 0)
 
-        self.assertFalse(Path(self.db_path).exists())
+        with sqlite3.connect(self.db_path) as conn:
+            archived = conn.execute(
+                "SELECT card_name, set_name FROM prices WHERE date = '2026-09-17'"
+            ).fetchone()
+            self.assertEqual(archived, ("Test Card", "Known Set"))
+            self.assertEqual(
+                conn.execute(
+                    "SELECT COUNT(*) FROM printing_prices WHERE date = '2026-09-17'"
+                ).fetchone()[0],
+                2,
+            )
+
+    def test_malformed_group_file_rejects_archive(self):
+        group_dir = Path(self.tmp.name) / "category" / "10"
+        group_dir.mkdir(parents=True)
+        (group_dir / "prices").write_text("not json")
+
+        with self.assertRaisesRegex(RuntimeError, "group 10"):
+            fetch_prices.parse_archive_prices(str(group_dir.parent))
 
     def test_transaction_failure_rolls_back_prices_and_subtypes(self):
         records = [(100, "Card", "Set", 1.0, 2.0, 3.0, 2.5, None, "2026-09-17")]
@@ -217,18 +254,6 @@ class LiveFetchTests(unittest.TestCase):
                 "SELECT * FROM prices WHERE date = ?", ("2026-09-17",)
             ).fetchall()
         self.assertEqual(rows, [prior_row])
-
-    def test_fetch_crossing_utc_date_boundary_is_rejected(self):
-        with patch.object(fetch_prices, "DB_PATH", self.db_path), \
-                patch.object(fetch_prices, "fetch_json", side_effect=self.api_response), \
-                patch.object(
-                    fetch_prices, "current_utc_date",
-                    side_effect=["2026-09-17", "2026-09-18"]), \
-                patch.object(fetch_prices.sys, "argv", ["fetch_prices"]):
-            self.assertEqual(fetch_prices.main(), 1)
-
-        self.assertFalse(Path(self.db_path).exists())
-
 
 if __name__ == "__main__":
     unittest.main()
