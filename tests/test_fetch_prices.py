@@ -1,6 +1,8 @@
 import sqlite3
 import tempfile
 import unittest
+import json
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -28,27 +30,29 @@ PRICES = [{
 }]
 
 
-class LiveFetchTests(unittest.TestCase):
+class ArchiveFetchTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.db_path = str(Path(self.tmp.name) / "prices.db")
 
-    @staticmethod
-    def api_response(url):
-        if url.endswith("/groups"):
-            return GROUPS
-        if url.endswith("/products"):
-            return PRODUCTS
-        if url.endswith("/prices"):
-            return PRICES
-        raise AssertionError(url)
+    def test_default_target_date_is_yesterday_utc(self):
+        with patch.object(fetch_prices, "datetime") as date_mock:
+            date_mock.now.return_value = datetime(2026, 9, 24, tzinfo=timezone.utc)
+            self.assertEqual(fetch_prices.parse_target_date(), "2026-09-23")
 
-    def test_successful_live_responses_are_written(self):
+    def test_explicit_target_date_remains_exact(self):
+        self.assertEqual(fetch_prices.parse_target_date("2026-01-02"), "2026-01-02")
+
+    def test_archive_prices_are_written_to_both_tables(self):
         with patch.object(fetch_prices, "DB_PATH", self.db_path), \
                 patch.object(fetch_prices, "MIN_EXPECTED_DAILY_ROWS", 1), \
-                patch.object(fetch_prices, "current_utc_date", return_value="2026-09-17"), \
-                patch.object(fetch_prices, "fetch_json", side_effect=self.api_response), \
+                patch.object(fetch_prices, "check_7z_available"), \
+                patch.object(fetch_prices, "fetch_set_names", return_value={"10": "Test Set"}), \
+                patch.object(fetch_prices, "download_archive"), \
+                patch.object(fetch_prices, "extract_archive"), \
+                patch.object(fetch_prices, "find_category_dir", return_value="archive/2"), \
+                patch.object(fetch_prices, "parse_archive_group_prices", return_value={"10": PRICES}), \
                 patch.object(fetch_prices.sys, "argv", ["fetch_prices"]):
             self.assertEqual(fetch_prices.main(), 0)
 
@@ -59,8 +63,12 @@ class LiveFetchTests(unittest.TestCase):
             printings = conn.execute(
                 "SELECT product_id, printing, market_price FROM printing_prices"
             ).fetchall()
-        self.assertEqual(row, (100, "Test Card", "Test Set", "2026-09-17"))
+            subtypes = conn.execute(
+                "SELECT product_id, subtype FROM product_subtypes"
+            ).fetchall()
+        self.assertEqual(row, (100, None, "Test Set", "2026-09-23"))
         self.assertEqual(printings, [(100, "1st Edition", 2.5), (100, "Unlimited", 2.3)])
+        self.assertEqual(subtypes, [(100, "1st Edition")])
 
     def test_http_error_is_not_retried_for_non_transient_status(self):
         response = Mock(status_code=403)
@@ -82,22 +90,14 @@ class LiveFetchTests(unittest.TestCase):
         sleep.assert_called_once()
         self.assertAlmostEqual(sleep.call_args.args[0], 0.4)
 
-    def test_tcgcsv_401_is_retried_after_cooldown(self):
-        responses = [
-            Mock(status_code=401),
-            Mock(status_code=200, json=lambda: GROUPS),
-        ]
-        with patch.object(fetch_prices, "_last_tcgcsv_request_at", None), \
-                patch.object(fetch_prices.time, "monotonic", side_effect=[100.0, 160.0]), \
-                patch.object(fetch_prices.time, "sleep") as sleep, \
-                patch.object(fetch_prices.requests, "get", side_effect=responses) as get:
-            self.assertEqual(
-                fetch_prices.fetch_json("https://tcgcsv.com/tcgplayer/2/groups"),
-                GROUPS,
-            )
-
-        self.assertEqual(get.call_count, 2)
-        sleep.assert_called_once_with(60)
+    def test_tcgcsv_401_is_terminal_without_cooldown(self):
+        response = Mock(status_code=401)
+        with patch.object(fetch_prices.requests, "get", return_value=response) as get, \
+                patch.object(fetch_prices.time, "sleep") as sleep:
+            with self.assertRaisesRegex(RuntimeError, "HTTP 401"):
+                fetch_prices.fetch_json("https://tcgcsv.com/tcgplayer/2/groups")
+        self.assertEqual(get.call_count, 1)
+        sleep.assert_not_called()
 
     def test_non_tcgcsv_401_is_terminal(self):
         response = Mock(status_code=401)
@@ -109,43 +109,25 @@ class LiveFetchTests(unittest.TestCase):
         self.assertEqual(get.call_count, 1)
         sleep.assert_not_called()
 
-    def test_partial_live_result_never_creates_database(self):
+    def test_partial_archive_result_never_creates_database(self):
         with patch.object(fetch_prices, "DB_PATH", self.db_path), \
                 patch.object(fetch_prices, "MIN_EXPECTED_DAILY_ROWS", 2), \
-                patch.object(fetch_prices, "current_utc_date", return_value="2026-09-17"), \
-                patch.object(fetch_prices, "fetch_json", side_effect=self.api_response), \
+                patch.object(fetch_prices, "check_7z_available"), \
+                patch.object(fetch_prices, "fetch_set_names", return_value={"10": "Test Set"}), \
+                patch.object(fetch_prices, "download_archive"), \
+                patch.object(fetch_prices, "extract_archive"), \
+                patch.object(fetch_prices, "find_category_dir", return_value="archive/2"), \
+                patch.object(fetch_prices, "parse_archive_group_prices", return_value={"10": PRICES}), \
                 patch.object(fetch_prices.sys, "argv", ["fetch_prices"]):
             self.assertEqual(fetch_prices.main(), 1)
 
         self.assertFalse(Path(self.db_path).exists())
 
-    def test_failed_group_request_stops_before_database_write(self):
-        def response(url):
-            if url.endswith("/groups"):
-                return GROUPS
-            if url.endswith("/products"):
-                return PRODUCTS
-            raise RuntimeError("HTTP 503")
-
+    def test_archive_download_failure_stops_before_database_write(self):
         with patch.object(fetch_prices, "DB_PATH", self.db_path), \
-                patch.object(fetch_prices, "current_utc_date", return_value="2026-09-17"), \
-                patch.object(fetch_prices, "fetch_json", side_effect=response), \
-                patch.object(fetch_prices.sys, "argv", ["fetch_prices"]):
-            self.assertEqual(fetch_prices.main(), 1)
-
-        self.assertFalse(Path(self.db_path).exists())
-
-    def test_exhausted_live_retries_do_not_write_database(self):
-        groups_response = Mock(status_code=200, json=lambda: {"results": GROUPS})
-        products_response = Mock(status_code=200, json=lambda: {"results": PRODUCTS})
-        failed_price_response = Mock(status_code=503)
-        responses = [groups_response, products_response] + [failed_price_response] * fetch_prices.MAX_RETRIES
-
-        with patch.object(fetch_prices, "DB_PATH", self.db_path), \
-                patch.object(fetch_prices, "MIN_EXPECTED_DAILY_ROWS", 1), \
-                patch.object(fetch_prices, "current_utc_date", return_value="2026-09-17"), \
-                patch.object(fetch_prices.time, "sleep"), \
-                patch.object(fetch_prices.requests, "get", side_effect=responses), \
+                patch.object(fetch_prices, "check_7z_available"), \
+                patch.object(fetch_prices, "fetch_set_names", return_value={}), \
+                patch.object(fetch_prices, "download_archive", side_effect=RuntimeError("HTTP 503")), \
                 patch.object(fetch_prices.sys, "argv", ["fetch_prices"]):
             self.assertEqual(fetch_prices.main(), 1)
 
@@ -218,16 +200,20 @@ class LiveFetchTests(unittest.TestCase):
             ).fetchall()
         self.assertEqual(rows, [prior_row])
 
-    def test_fetch_crossing_utc_date_boundary_is_rejected(self):
-        with patch.object(fetch_prices, "DB_PATH", self.db_path), \
-                patch.object(fetch_prices, "fetch_json", side_effect=self.api_response), \
-                patch.object(
-                    fetch_prices, "current_utc_date",
-                    side_effect=["2026-09-17", "2026-09-18"]), \
-                patch.object(fetch_prices.sys, "argv", ["fetch_prices"]):
-            self.assertEqual(fetch_prices.main(), 1)
+    def test_archive_parser_loads_group_prices_and_only_resolves_unknown_group(self):
+        category_dir = Path(self.tmp.name) / "2"
+        (category_dir / "10").mkdir(parents=True)
+        (category_dir / "11").mkdir()
+        with (category_dir / "10" / "prices").open("w") as price_file:
+            json.dump({"results": PRICES}, price_file)
 
-        self.assertFalse(Path(self.db_path).exists())
+        known_cards = {}
+        with patch.object(fetch_prices, "fetch_json", return_value=PRODUCTS) as fetch:
+            parsed = fetch_prices.parse_archive_group_prices(str(category_dir), known_cards)
+
+        self.assertEqual(parsed, {"10": PRICES})
+        fetch.assert_called_once_with("https://tcgcsv.com/tcgplayer/2/10/products")
+        self.assertEqual(known_cards[100], "Test Card")
 
 
 if __name__ == "__main__":

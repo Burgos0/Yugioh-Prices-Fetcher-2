@@ -1,17 +1,13 @@
-"""
-Yu-Gi-Oh daily price fetcher using the live TCGCSV per-set API.
-
-TCGCSV's live responses do not expose a price-effective date. Each complete
-fetch is therefore stored under the UTC date on which it was observed. The
-fetch is rejected if it crosses a UTC date boundary, so one database date
-never contains observations from two retrieval dates.
-"""
+"""Yu-Gi-Oh daily price fetcher using the TCGCSV daily archive."""
 import sys
 import os
+import shutil
 import json
 import sqlite3
+import subprocess
+import tempfile
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import requests
 
 # Allow `python scripts/fetch_prices.py` (direct script, no repo root on
@@ -23,13 +19,13 @@ from app.subtype_policy import select_subtype
 # Constants
 CATEGORY_ID = 2  # Yu-Gi-Oh on TCGplayer/TCGCSV
 BASE_API = "https://tcgcsv.com/tcgplayer"
+ARCHIVE_URL_TEMPLATE = "https://tcgcsv.com/archive/tcgplayer/prices-{date}.ppmd.7z"
 DB_PATH = "data/prices.db"
 MIN_EXPECTED_DAILY_ROWS = 40000  # Normal daily count is ~47,000+
 REQUEST_TIMEOUT = 30
 MAX_RETRIES = 5
 RETRY_DELAY = 1  # seconds, doubled each retry (exponential backoff)
 TCGCSV_REQUEST_INTERVAL = 0.5
-TCGCSV_401_COOLDOWN = 60
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 yugioh-price-fetcher/2.0"
 _last_tcgcsv_request_at = None
 
@@ -39,20 +35,15 @@ def current_utc_date():
 
 
 def parse_target_date(date_arg=None):
-    """Return today's UTC observation date, optionally validating a supplied date."""
-    observation_date = current_utc_date()
+    """Return an explicit date or yesterday's UTC date for archive fetching."""
     if date_arg:
         try:
             parsed = datetime.strptime(date_arg, "%Y-%m-%d").date()
         except ValueError:
             print(f"ERROR: Invalid date format '{date_arg}'. Expected YYYY-MM-DD.")
             sys.exit(1)
-        parsed_date = parsed.strftime("%Y-%m-%d")
-        if parsed_date != observation_date:
-            print(f"ERROR: Live observations must use today's UTC date ({observation_date}), "
-                  f"not {parsed_date}.")
-            sys.exit(1)
-    return observation_date
+        return parsed.strftime("%Y-%m-%d")
+    return (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%d")
 
 
 def _pace_tcgcsv_request(url):
@@ -90,9 +81,9 @@ def fetch_json(url):
                     return data
                 except ValueError as e:
                     last_error = e
-            elif r.status_code == 401 and url.startswith(f"{BASE_API}/"):
-                last_error = requests.HTTPError("HTTP 401 (retryable for TCGCSV)")
-                retry_delay = TCGCSV_401_COOLDOWN
+            elif r.status_code == 401:
+                last_error = requests.HTTPError("HTTP 401 (authentication required)")
+                break
             elif r.status_code == 429 or r.status_code >= 500:
                 last_error = requests.HTTPError(f"HTTP {r.status_code} (retryable)")
             else:
@@ -107,6 +98,58 @@ def fetch_json(url):
             time.sleep(sleep_time)
 
     raise RuntimeError(f"Failed to fetch {url}: {last_error}")
+
+
+def check_7z_available():
+    if shutil.which("7z") is None:
+        raise RuntimeError("The `7z` command is not available in this environment")
+
+
+def download_archive(target_date_str, dest_path):
+    """Download exactly one fixed-date archive, without retrying HTTP 401."""
+    url = ARCHIVE_URL_TEMPLATE.format(date=target_date_str)
+    print(f"Downloading daily archive from: {url}")
+    last_error = None
+    for attempt in range(MAX_RETRIES):
+        try:
+            response = requests.get(
+                url, headers={"User-Agent": USER_AGENT},
+                timeout=REQUEST_TIMEOUT, stream=True)
+            if response.status_code == 200:
+                with open(dest_path, "wb") as archive_file:
+                    for chunk in response.iter_content(chunk_size=1024 * 1024):
+                        archive_file.write(chunk)
+                print(f"Archive downloaded successfully ({os.path.getsize(dest_path):,} bytes).")
+                return
+            last_error = f"HTTP {response.status_code}"
+            if response.status_code == 401 or response.status_code == 404:
+                break
+            if response.status_code != 429 and response.status_code < 500:
+                break
+        except requests.exceptions.RequestException as error:
+            last_error = str(error)
+        if attempt < MAX_RETRIES - 1:
+            delay = RETRY_DELAY * (2 ** attempt)
+            print(f"  Archive download failed ({last_error}). Retrying in {delay}s...")
+            time.sleep(delay)
+    raise RuntimeError(f"Failed to download archive for {target_date_str}: {last_error}")
+
+
+def extract_archive(archive_path, extract_dir):
+    result = subprocess.run(
+        ["7z", "x", archive_path, f"-o{extract_dir}", "-y"],
+        capture_output=True, text=True)
+    if result.returncode != 0:
+        raise RuntimeError(f"7-Zip extraction failed: {result.stderr or result.stdout}")
+
+
+def find_category_dir(extract_dir, category_id=CATEGORY_ID):
+    category = str(category_id)
+    for root, dirs, files in os.walk(extract_dir):
+        parts = os.path.relpath(root, extract_dir).split(os.sep)
+        if parts == [category] or (len(parts) == 2 and parts[1] == category):
+            return root
+    raise RuntimeError(f"Category {category_id} directory not found in extracted archive")
 
 
 def init_db(db_path=DB_PATH):
@@ -217,36 +260,6 @@ def fetch_set_names():
         return {}
 
 
-def fetch_live_dataset(known_cards):
-    """Fetch every Yu-Gi-Oh group's products and prices; fail on any missing group."""
-    groups = fetch_json(f"{BASE_API}/{CATEGORY_ID}/groups")
-    if not isinstance(groups, list) or not groups:
-        raise RuntimeError("Live groups response was empty or invalid")
-
-    parsed_group_prices = {}
-    set_names = {}
-    for index, group in enumerate(groups, 1):
-        gid = group.get("groupId")
-        if gid is None:
-            raise RuntimeError("Live groups response contained a group without groupId")
-        gid = str(gid)
-        set_names[gid] = group.get("name")
-        products = fetch_json(f"{BASE_API}/{CATEGORY_ID}/{gid}/products")
-        prices = fetch_json(f"{BASE_API}/{CATEGORY_ID}/{gid}/prices")
-        if not isinstance(products, list) or not isinstance(prices, list):
-            raise RuntimeError(f"Group {gid} returned an invalid products or prices response")
-        for product in products:
-            pid = product.get("productId")
-            name = product.get("name")
-            if pid is not None and name:
-                known_cards[pid] = name
-        parsed_group_prices[gid] = prices
-        if index % 100 == 0:
-            print(f"Fetched {index:,}/{len(groups):,} sets...")
-
-    return parsed_group_prices, set_names
-
-
 def build_records(parsed_group_prices, target_date_str, known_cards, set_names,
                   tracked_subtypes=None):
     """Build one validated price record per product using the subtype policy."""
@@ -320,17 +333,14 @@ def build_printing_records(parsed_group_prices, target_date_str, known_cards, se
     return records
 
 
-def parse_and_build_records(cat_dir, target_date_str, known_cards, set_names, tracked_subtypes=None):
+def parse_archive_group_prices(cat_dir, known_cards):
     """
     Parse price files for all groups under the category directory.
     Fetches missing product metadata for new cards when needed.
 
-    When a productId has multiple same-day printing rows (subtypes), the
-    explicit policy in app.subtype_policy.select_subtype decides which one
-    to keep -- never "whichever came last in the file". `tracked_subtypes`
-    (product_id -> subtype) records subtypes already established for a
-    product on a prior run; newly established choices are returned so the
-    caller can persist them.
+    Product names are resolved only for groups containing IDs absent from the
+    existing metadata cache. Name lookup is best-effort because prices remain
+    valid without a newly resolved display name.
     """
 
     group_dirs = [d for d in os.listdir(cat_dir) if os.path.isdir(os.path.join(cat_dir, d))]
@@ -378,8 +388,16 @@ def parse_and_build_records(cat_dir, target_date_str, known_cards, set_names, tr
             except Exception as e:
                 print(f"  Warning: Could not fetch product names for group {gid}: {e}")
 
+    return parsed_group_prices
+
+
+def parse_and_build_records(cat_dir, target_date_str, known_cards, set_names,
+                            tracked_subtypes=None):
+    """Compatibility wrapper for callers that parse an extracted archive."""
+    parsed_group_prices = parse_archive_group_prices(cat_dir, known_cards)
     return build_records(
-        parsed_group_prices, target_date_str, known_cards, set_names, tracked_subtypes)
+        parsed_group_prices, target_date_str, known_cards, set_names,
+        tracked_subtypes)
 
 
 def write_records_atomically(db_path, target_date_str, records, newly_established_subtypes,
@@ -443,8 +461,8 @@ def main():
     start_time = time.time()
     target_date_str = parse_target_date(sys.argv[1] if len(sys.argv) > 1 else None)
     print("=" * 60)
-    print(f"Yu-Gi-Oh Price Fetcher (Live API Mode)")
-    print(f"UTC observation date: {target_date_str}")
+    print(f"Yu-Gi-Oh Price Fetcher (Archive Mode)")
+    print(f"Target Date: {target_date_str}")
     print("=" * 60)
 
     # Preload metadata from existing DB
@@ -455,11 +473,21 @@ def main():
     tracked_subtypes = load_tracked_subtypes(DB_PATH)
     print(f"Loaded {len(tracked_subtypes):,} tracked product subtypes from existing database.")
 
+    tmp_dir = None
     try:
-        parsed_group_prices, set_names = fetch_live_dataset(known_cards)
-        if current_utc_date() != target_date_str:
-            raise RuntimeError(
-                "Fetch crossed a UTC date boundary; refusing mixed-date observations")
+        check_7z_available()
+        set_names = fetch_set_names()
+        print(f"Loaded {len(set_names):,} set names from API.")
+
+        tmp_dir = tempfile.mkdtemp(prefix="yugioh_fetch_")
+        archive_path = os.path.join(tmp_dir, f"prices-{target_date_str}.ppmd.7z")
+        download_archive(target_date_str, archive_path)
+        extract_dir = os.path.join(tmp_dir, "extracted")
+        os.makedirs(extract_dir, exist_ok=True)
+        extract_archive(archive_path, extract_dir)
+        cat_dir = find_category_dir(extract_dir, CATEGORY_ID)
+        parsed_group_prices = parse_archive_group_prices(cat_dir, known_cards)
+
         records, sets_processed, newly_established_subtypes, _ = build_records(
             parsed_group_prices, target_date_str, known_cards, set_names, tracked_subtypes)
         printing_records = build_printing_records(
@@ -494,9 +522,12 @@ def main():
         print("=" * 60)
         return 0
     except Exception as e:
-        print(f"\nERROR: Live price fetch failed: {e}")
+        print(f"\nERROR: Archive price fetch failed: {e}")
         print("No price observations were written.")
         return 1
+    finally:
+        if tmp_dir:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
 if __name__ == "__main__":
