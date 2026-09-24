@@ -1,6 +1,6 @@
 {
   "scope": "all_years",
   "subtype_mode": "verified",
-  "candidates_available": false,
+  "candidates_available": true,
   "movers": []
 }
