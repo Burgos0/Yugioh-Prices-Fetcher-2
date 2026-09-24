@@ -1,4 +1,4 @@
-"""Yu-Gi-Oh daily price fetcher using the TCGCSV daily archive."""
+"""Yu-Gi-Oh daily price fetcher using the TCGCSV live API."""
 import sys
 import os
 import shutil
@@ -23,11 +23,12 @@ ARCHIVE_URL_TEMPLATE = "https://tcgcsv.com/archive/tcgplayer/prices-{date}.ppmd.
 DB_PATH = "data/prices.db"
 MIN_EXPECTED_DAILY_ROWS = 40000  # Normal daily count is ~47,000+
 REQUEST_TIMEOUT = 30
-MAX_RETRIES = 5
-RETRY_DELAY = 1  # seconds, doubled each retry (exponential backoff)
-TCGCSV_REQUEST_INTERVAL = 0.5
-USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 yugioh-price-fetcher/2.0"
-_last_tcgcsv_request_at = None
+MAX_RETRIES = 3
+RETRY_DELAY = 1
+RATE_LIMIT_RETRY_DELAY = 5
+TCGCSV_REQUEST_INTERVAL = 0.75
+MAX_REQUEST_DELAY = 8.0
+USER_AGENT = "YugiohPriceTracker/2.0"
 
 
 def current_utc_date():
@@ -46,58 +47,95 @@ def parse_target_date(date_arg=None):
     return (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%d")
 
 
-def _pace_tcgcsv_request(url):
-    global _last_tcgcsv_request_at
-    if not url.startswith(f"{BASE_API}/"):
-        return
-
-    now = time.monotonic()
-    if _last_tcgcsv_request_at is not None:
-        wait_time = TCGCSV_REQUEST_INTERVAL - (now - _last_tcgcsv_request_at)
-        if wait_time > 0:
-            time.sleep(wait_time)
-            now += wait_time
-    _last_tcgcsv_request_at = now
-
-
-def fetch_json(url):
-    """Fetch JSON with retry logic and exponential backoff."""
-    headers = {"User-Agent": USER_AGENT}
-    last_error = None
-
-    for attempt in range(MAX_RETRIES):
-        retry_delay = None
+def parse_observation_date(date_arg=None):
+    """Capture the live observation date once, at the beginning of a run."""
+    if date_arg:
         try:
-            _pace_tcgcsv_request(url)
-            r = requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT)
-        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError, requests.exceptions.RequestException) as e:
-            last_error = e
-        else:
-            if r.status_code == 200:
-                try:
-                    data = r.json()
-                    if "results" in data:
-                        return data["results"]
-                    return data
-                except ValueError as e:
-                    last_error = e
-            elif r.status_code == 401:
-                last_error = requests.HTTPError("HTTP 401 (authentication required)")
-                break
-            elif r.status_code == 429 or r.status_code >= 500:
-                last_error = requests.HTTPError(f"HTTP {r.status_code} (retryable)")
+            return datetime.strptime(date_arg, "%Y-%m-%d").date().strftime("%Y-%m-%d")
+        except ValueError:
+            print(f"ERROR: Invalid date format '{date_arg}'. Expected YYYY-MM-DD.")
+            sys.exit(1)
+    return current_utc_date()
+
+
+class TCGCSVClient:
+    """Per-run client with pacing, bounded retries, and group-price caching."""
+
+    def __init__(self, session=None):
+        self.session = session or requests.Session()
+        self.session.headers.update({"User-Agent": USER_AGENT, "Accept": "*/*"})
+        self.request_delay = TCGCSV_REQUEST_INTERVAL
+        self._last_request_at = None
+        self._group_price_cache = {}
+
+    def _pace(self):
+        now = time.monotonic()
+        if self._last_request_at is not None:
+            wait_time = self.request_delay - (now - self._last_request_at)
+            if wait_time > 0:
+                time.sleep(wait_time)
+                now += wait_time
+        self._last_request_at = now
+
+    def _increase_delay(self):
+        self.request_delay = min(MAX_REQUEST_DELAY, max(
+            self.request_delay * 2, TCGCSV_REQUEST_INTERVAL))
+
+    def fetch_json(self, url):
+        """Fetch JSON with bounded rate-limit and transient-error retries."""
+        last_error = None
+        rate_limit_retry_used = False
+
+        for attempt in range(MAX_RETRIES):
+            self._pace()
+            try:
+                response = self.session.get(url, timeout=REQUEST_TIMEOUT)
+            except requests.exceptions.RequestException as error:
+                last_error = error
+                retry_delay = RETRY_DELAY * (2 ** attempt)
             else:
-                last_error = requests.HTTPError(f"HTTP {r.status_code}")
-                # For 404 or other 4xx, stop retrying unless 429
-                if r.status_code != 429:
+                if response.status_code == 200:
+                    try:
+                        data = response.json()
+                        return data["results"] if isinstance(data, dict) and "results" in data else data
+                    except ValueError as error:
+                        last_error = error
+                        retry_delay = RETRY_DELAY * (2 ** attempt)
+                elif response.status_code in (401, 429):
+                    last_error = requests.HTTPError(f"HTTP {response.status_code} (rate limited)")
+                    self._increase_delay()
+                    if rate_limit_retry_used:
+                        break
+                    rate_limit_retry_used = True
+                    retry_delay = RATE_LIMIT_RETRY_DELAY
+                elif response.status_code >= 500:
+                    last_error = requests.HTTPError(f"HTTP {response.status_code} (retryable)")
+                    retry_delay = RETRY_DELAY * (2 ** attempt)
+                else:
+                    last_error = requests.HTTPError(f"HTTP {response.status_code}")
                     break
 
-        if attempt < MAX_RETRIES - 1:
-            sleep_time = retry_delay if retry_delay is not None else RETRY_DELAY * (2 ** attempt)
-            print(f"  Request failed ({last_error}). Retrying in {sleep_time}s...")
-            time.sleep(sleep_time)
+            if attempt >= MAX_RETRIES - 1:
+                break
+            print(f"  Request failed ({last_error}). Retrying in {retry_delay}s...")
+            time.sleep(retry_delay)
 
-    raise RuntimeError(f"Failed to fetch {url}: {last_error}")
+        raise RuntimeError(f"Failed to fetch {url}: {last_error}")
+
+    def fetch_group_prices(self, group_id):
+        """Fetch one group's prices at most once during this run."""
+        group_id = str(group_id)
+        if group_id not in self._group_price_cache:
+            data = self.fetch_json(f"{BASE_API}/{CATEGORY_ID}/{group_id}/prices")
+            if not isinstance(data, list):
+                raise RuntimeError(f"Unexpected prices response for group {group_id}")
+            self._group_price_cache[group_id] = data
+        return self._group_price_cache[group_id]
+
+
+def fetch_json(url, client=None):
+    """Compatibility wrapper for callers that fetch one TCGCSV JSON endpoint."""
+    return (client or TCGCSVClient()).fetch_json(url)
 
 
 def check_7z_available():
@@ -250,14 +288,49 @@ def load_known_metadata(db_path=DB_PATH):
     return card_names, set_names_by_card
 
 
-def fetch_set_names():
+def fetch_set_names(client=None):
     """Fetch current set/group mappings from TCGCSV API."""
-    try:
-        groups = fetch_json(f"{BASE_API}/{CATEGORY_ID}/groups")
-        return {str(g["groupId"]): g.get("name") for g in groups if "groupId" in g}
-    except Exception as e:
-        print(f"Warning: Failed to fetch live groups list: {e}")
-        return {}
+    groups = fetch_json(f"{BASE_API}/{CATEGORY_ID}/groups", client)
+    return {str(g["groupId"]): g.get("name") for g in groups if "groupId" in g}
+
+
+def fetch_live_group_prices(set_names, known_cards, client=None):
+    """Fetch each group once and resolve metadata only for unknown products."""
+    client = client or TCGCSVClient()
+    parsed_group_prices = {}
+    successful_groups = []
+    failed_groups = []
+    groups_with_unknown_products = {}
+
+    for group_id in set_names:
+        group_id = str(group_id)
+        try:
+            items = client.fetch_group_prices(group_id)
+            parsed_group_prices[group_id] = items
+            successful_groups.append(group_id)
+            unknown_product_ids = {
+                item.get("productId") for item in items
+                if item.get("productId") is not None and item.get("productId") not in known_cards
+            }
+            if unknown_product_ids:
+                groups_with_unknown_products[group_id] = unknown_product_ids
+        except Exception as error:
+            failed_groups.append(group_id)
+            print(f"Warning: Failed to fetch prices for group {group_id}: {error}")
+
+    for group_id in groups_with_unknown_products:
+        try:
+            products = fetch_json(
+                f"{BASE_API}/{CATEGORY_ID}/{group_id}/products", client)
+            for product in products:
+                product_id = product.get("productId")
+                product_name = product.get("name")
+                if product_id is not None and product_name:
+                    known_cards[product_id] = product_name
+        except Exception as error:
+            print(f"Warning: Could not fetch product names for group {group_id}: {error}")
+
+    return parsed_group_prices, successful_groups, failed_groups
 
 
 def build_records(parsed_group_prices, target_date_str, known_cards, set_names,
@@ -459,10 +532,10 @@ def write_records_atomically(db_path, target_date_str, records, newly_establishe
 
 def main():
     start_time = time.time()
-    target_date_str = parse_target_date(sys.argv[1] if len(sys.argv) > 1 else None)
+    target_date_str = parse_observation_date(sys.argv[1] if len(sys.argv) > 1 else None)
     print("=" * 60)
-    print(f"Yu-Gi-Oh Price Fetcher (Archive Mode)")
-    print(f"Target Date: {target_date_str}")
+    print("Yu-Gi-Oh Price Fetcher (Live API Mode)")
+    print(f"Observation Date: {target_date_str}")
     print("=" * 60)
 
     # Preload metadata from existing DB
@@ -473,35 +546,30 @@ def main():
     tracked_subtypes = load_tracked_subtypes(DB_PATH)
     print(f"Loaded {len(tracked_subtypes):,} tracked product subtypes from existing database.")
 
-    tmp_dir = None
     try:
-        check_7z_available()
-        set_names = fetch_set_names()
+        client = TCGCSVClient()
+        print(f"Request delay: {client.request_delay:.2f} seconds")
+        set_names = fetch_set_names(client)
         print(f"Loaded {len(set_names):,} set names from API.")
 
-        tmp_dir = tempfile.mkdtemp(prefix="yugioh_fetch_")
-        archive_path = os.path.join(tmp_dir, f"prices-{target_date_str}.ppmd.7z")
-        download_archive(target_date_str, archive_path)
-        extract_dir = os.path.join(tmp_dir, "extracted")
-        os.makedirs(extract_dir, exist_ok=True)
-        extract_archive(archive_path, extract_dir)
-        cat_dir = find_category_dir(extract_dir, CATEGORY_ID)
-        parsed_group_prices = parse_archive_group_prices(cat_dir, known_cards)
+        parsed_group_prices, successful_groups, failed_groups = fetch_live_group_prices(
+            set_names, known_cards, client)
 
-        records, sets_processed, newly_established_subtypes, _ = build_records(
+        records, _, newly_established_subtypes, _ = build_records(
             parsed_group_prices, target_date_str, known_cards, set_names, tracked_subtypes)
         printing_records = build_printing_records(
             parsed_group_prices, target_date_str, known_cards, set_names)
 
-        print(f"Parsed {len(records):,} legacy and {len(printing_records):,} printing "
-              f"price records across {sets_processed} sets.")
+        print(f"Groups processed: {len(successful_groups):,}")
+        print(f"Groups failed: {len(failed_groups):,}")
+        print(f"Legacy rows parsed: {len(records):,}")
+        print(f"Printing rows parsed: {len(printing_records):,}")
 
         # Validation: Check minimum expected rows before touching DB
         if (len(records) < MIN_EXPECTED_DAILY_ROWS or
                 len(printing_records) < MIN_EXPECTED_DAILY_ROWS):
-            print(f"\nERROR: Daily dataset is INCOMPLETE. Parsed {len(records):,} legacy and "
-                  f"{len(printing_records):,} printing rows "
-                  f"(each expected at least {MIN_EXPECTED_DAILY_ROWS:,}).")
+            print(f"Final validation: FAILED (each table requires at least "
+                f"{MIN_EXPECTED_DAILY_ROWS:,} rows).")
             print("Refusing to commit incomplete dataset to database.")
             return 1
 
@@ -513,21 +581,22 @@ def main():
         print("DAILY FETCH SUMMARY")
         print("=" * 60)
         print(f"Date:                {target_date_str}")
-        print(f"Sets processed:      {sets_processed}")
-        print(f"Records parsed:      {len(records):,}")
+        print(f"Groups processed:     {len(successful_groups):,}")
+        print(f"Groups failed:        {len(failed_groups):,}")
+        print(f"Legacy rows parsed:   {len(records):,}")
+        print(f"Printing rows parsed:  {len(printing_records):,}")
         print(f"Rows before update:  {rows_before:,}")
         print(f"Rows for date in DB: {daily_rows:,}")
+        print(f"Request delay:        {client.request_delay:.2f} seconds")
         print(f"Runtime:             {elapsed:.2f} seconds")
-        print(f"Status:              SUCCESS (>= {MIN_EXPECTED_DAILY_ROWS:,} rows)")
+        print(f"Final validation:     PASSED (>= {MIN_EXPECTED_DAILY_ROWS:,} rows)")
+        print("Status:               SUCCESS")
         print("=" * 60)
         return 0
     except Exception as e:
-        print(f"\nERROR: Archive price fetch failed: {e}")
+        print(f"\nERROR: Live API price fetch failed: {e}")
         print("No price observations were written.")
         return 1
-    finally:
-        if tmp_dir:
-            shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
 if __name__ == "__main__":
