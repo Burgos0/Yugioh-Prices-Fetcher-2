@@ -394,21 +394,32 @@ def _calculate_printing_movers(db_path, limit, mover_type):
     latest_date = df["date"].max()
     results = []
 
+    # First row per pair in df order, matching the previous pair_rows[...].iloc[0].
+    first_rows = df.drop_duplicates(subset=identity, keep="first")
+    pair_metadata = dict(zip(
+        zip(first_rows["product_id"], first_rows["printing"]),
+        zip(first_rows["card_name"], first_rows["set_name"]),
+    ))
+    # .values keeps numpy scalars so arithmetic (e.g. division by zero) is unchanged.
+    baseline_lookup = dict(zip(baseline_medians.index, baseline_medians.values))
+    current_lookup = dict(zip(current_medians.index, current_medians.values))
+    grouped_pairs = df.groupby(identity, sort=False)
+
     for product_id, printing in complete_pairs:
         pair = (product_id, printing)
-        pair_rows = df[(df["product_id"] == product_id) & (df["printing"] == printing)]
-        set_name = pair_rows["set_name"].iloc[0]
+        card_name, set_name = pair_metadata[pair]
         if relevant_sets is not None and set_name not in relevant_sets:
             continue
-        baseline_value = baseline_medians[pair]
-        current_value = current_medians[pair]
+        baseline_value = baseline_lookup[pair]
+        current_value = current_lookup[pair]
 
         if mover_type == "gainer":
             if current_value < 3.0 or current_value <= baseline_value:
                 continue
             dollar_change = current_value - baseline_value
             percent_change = dollar_change / baseline_value * 100
-            status = detect_spike(product_id, baseline_value, current_value, df,
+            pair_rows = grouped_pairs.get_group(pair)
+            status = detect_spike(product_id, baseline_value, current_value, pair_rows,
                                   latest_date, recent_dates, printing)
             result = {"dollar_gain": dollar_change, "percent_gain": percent_change}
         elif mover_type == "loser":
@@ -416,7 +427,8 @@ def _calculate_printing_movers(db_path, limit, mover_type):
                 continue
             dollar_change = current_value - baseline_value
             percent_change = dollar_change / baseline_value * 100
-            status = detect_drop(product_id, baseline_value, current_value, df,
+            pair_rows = grouped_pairs.get_group(pair)
+            status = detect_drop(product_id, baseline_value, current_value, pair_rows,
                                  latest_date, recent_dates, printing)
             result = {"dollar_change": dollar_change, "percent_change": percent_change}
         else:
@@ -426,14 +438,15 @@ def _calculate_printing_movers(db_path, limit, mover_type):
             percent_change = dollar_change / baseline_value * 100
             if dollar_change < 0.25 or percent_change < 20:
                 continue
-            status = detect_spike(product_id, baseline_value, current_value, df,
+            pair_rows = grouped_pairs.get_group(pair)
+            status = detect_spike(product_id, baseline_value, current_value, pair_rows,
                                   latest_date, recent_dates, printing)
             result = {"dollar_gain": dollar_change, "percent_gain": percent_change}
 
         result.update({
             "product_id": product_id,
             "printing": printing,
-            "card_name": pair_rows["card_name"].iloc[0],
+            "card_name": card_name,
             "set_name": set_name,
             "baseline_value": baseline_value,
             "current_value": current_value,
