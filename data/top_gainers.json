@@ -97,18 +97,6 @@
   },
   {
     "rank": 9,
-    "dollar_gain": 3.19,
-    "percent_gain": 146.33027522935777,
-    "product_id": 692273,
-    "printing": "1st Edition",
-    "card_name": "Clown Crew Flair",
-    "set_name": "Blazing Dominion",
-    "baseline_value": 2.18,
-    "current_value": 5.37,
-    "status": "CONFIRMED"
-  },
-  {
-    "rank": 10,
     "dollar_gain": 6.62,
     "percent_gain": 133.73737373737373,
     "product_id": 77736,
@@ -120,7 +108,7 @@
     "status": "CONFIRMED"
   },
   {
-    "rank": 11,
+    "rank": 10,
     "dollar_gain": 4.5,
     "percent_gain": 131.96480938416423,
     "product_id": 683028,
@@ -132,7 +120,7 @@
     "status": "CONFIRMED"
   },
   {
-    "rank": 12,
+    "rank": 11,
     "dollar_gain": 9.66,
     "percent_gain": 131.60762942779292,
     "product_id": 26660,
@@ -144,7 +132,7 @@
     "status": "CONFIRMED"
   },
   {
-    "rank": 13,
+    "rank": 12,
     "dollar_gain": 2.49,
     "percent_gain": 99.60000000000001,
     "product_id": 476319,
@@ -156,7 +144,7 @@
     "status": "CONFIRMED"
   },
   {
-    "rank": 14,
+    "rank": 13,
     "dollar_gain": 110.89999999999999,
     "percent_gain": 91.7135296063513,
     "product_id": 58821,
@@ -168,19 +156,19 @@
     "status": "CONFIRMED"
   },
   {
-    "rank": 15,
-    "dollar_gain": 1.46,
-    "percent_gain": 91.25,
+    "rank": 14,
+    "dollar_gain": 1.4499999999999997,
+    "percent_gain": 90.62499999999997,
     "product_id": 282359,
     "printing": "1st Edition",
     "card_name": "Droll & Lock Bird",
     "set_name": "Tactical Masters",
     "baseline_value": 1.6,
-    "current_value": 3.06,
+    "current_value": 3.05,
     "status": "CONFIRMED"
   },
   {
-    "rank": 16,
+    "rank": 15,
     "dollar_gain": 427.0,
     "percent_gain": 90.27675003699866,
     "product_id": 22960,
@@ -189,6 +177,18 @@
     "set_name": "Tournament Pack 1",
     "baseline_value": 472.99,
     "current_value": 899.99,
+    "status": "CONFIRMED"
+  },
+  {
+    "rank": 16,
+    "dollar_gain": 1.81,
+    "percent_gain": 83.02752293577981,
+    "product_id": 692273,
+    "printing": "1st Edition",
+    "card_name": "Clown Crew Flair",
+    "set_name": "Blazing Dominion",
+    "baseline_value": 2.18,
+    "current_value": 3.99,
     "status": "CONFIRMED"
   },
   {
@@ -397,18 +397,6 @@
   },
   {
     "rank": 34,
-    "dollar_gain": 0.94,
-    "percent_gain": 45.192307692307686,
-    "product_id": 678938,
-    "printing": "1st Edition",
-    "card_name": "Elemental HERO Thunder Giant - Voltic Thunder",
-    "set_name": "Maze of Muertos",
-    "baseline_value": 2.08,
-    "current_value": 3.02,
-    "status": "CONFIRMED"
-  },
-  {
-    "rank": 35,
     "dollar_gain": 1.0999999999999996,
     "percent_gain": 44.89795918367345,
     "product_id": 79827,
@@ -417,6 +405,18 @@
     "set_name": "Star Pack 2014",
     "baseline_value": 2.45,
     "current_value": 3.55,
+    "status": "CONFIRMED"
+  },
+  {
+    "rank": 35,
+    "dollar_gain": 0.9199999999999999,
+    "percent_gain": 44.230769230769226,
+    "product_id": 678938,
+    "printing": "1st Edition",
+    "card_name": "Elemental HERO Thunder Giant - Voltic Thunder",
+    "set_name": "Maze of Muertos",
+    "baseline_value": 2.08,
+    "current_value": 3.0,
     "status": "CONFIRMED"
   },
   {
@@ -457,18 +457,6 @@
   },
   {
     "rank": 39,
-    "dollar_gain": 0.9199999999999999,
-    "percent_gain": 41.81818181818181,
-    "product_id": 616588,
-    "printing": "1st Edition",
-    "card_name": "Infinite Impermanence",
-    "set_name": "Structure Deck: Blue-Eyes White Destiny",
-    "baseline_value": 2.2,
-    "current_value": 3.12,
-    "status": "CONFIRMED"
-  },
-  {
-    "rank": 40,
     "dollar_gain": 2.38,
     "percent_gain": 41.68126094570928,
     "product_id": 616044,
@@ -477,6 +465,18 @@
     "set_name": "King of Games: Yugi's Legendary Decks (2020 Date Reprint)",
     "baseline_value": 5.71,
     "current_value": 8.09,
+    "status": "CONFIRMED"
+  },
+  {
+    "rank": 40,
+    "dollar_gain": 0.8899999999999997,
+    "percent_gain": 40.45454545454544,
+    "product_id": 616588,
+    "printing": "1st Edition",
+    "card_name": "Infinite Impermanence",
+    "set_name": "Structure Deck: Blue-Eyes White Destiny",
+    "baseline_value": 2.2,
+    "current_value": 3.09,
     "status": "CONFIRMED"
   },
   {
@@ -493,18 +493,6 @@
   },
   {
     "rank": 42,
-    "dollar_gain": 1.2699999999999996,
-    "percent_gain": 40.18987341772151,
-    "product_id": 487173,
-    "printing": "Unlimited",
-    "card_name": "Reload",
-    "set_name": "Invasion of Chaos (25th Anniversary Edition)",
-    "baseline_value": 3.16,
-    "current_value": 4.43,
-    "status": "CONFIRMED"
-  },
-  {
-    "rank": 43,
     "dollar_gain": 17.42,
     "percent_gain": 40.06439742410304,
     "product_id": 215639,
@@ -513,6 +501,18 @@
     "set_name": "Toon Chaos",
     "baseline_value": 43.48,
     "current_value": 60.9,
+    "status": "CONFIRMED"
+  },
+  {
+    "rank": 43,
+    "dollar_gain": 1.2400000000000002,
+    "percent_gain": 39.24050632911393,
+    "product_id": 487173,
+    "printing": "Unlimited",
+    "card_name": "Reload",
+    "set_name": "Invasion of Chaos (25th Anniversary Edition)",
+    "baseline_value": 3.16,
+    "current_value": 4.4,
     "status": "CONFIRMED"
   },
   {
@@ -577,6 +577,18 @@
   },
   {
     "rank": 49,
+    "dollar_gain": 0.8199999999999998,
+    "percent_gain": 34.02489626556016,
+    "product_id": 645250,
+    "printing": "1st Edition",
+    "card_name": "K9-00 Lupis",
+    "set_name": "Justice Hunters",
+    "baseline_value": 2.41,
+    "current_value": 3.23,
+    "status": "CONFIRMED"
+  },
+  {
+    "rank": 50,
     "dollar_gain": 10.000000000000004,
     "percent_gain": 33.34444814938314,
     "product_id": 246239,
@@ -585,18 +597,6 @@
     "set_name": "Redemption Replacement",
     "baseline_value": 29.99,
     "current_value": 39.99,
-    "status": "CONFIRMED"
-  },
-  {
-    "rank": 50,
-    "dollar_gain": 0.8900000000000001,
-    "percent_gain": 32.36363636363637,
-    "product_id": 579503,
-    "printing": "1st Edition",
-    "card_name": "Ultimaya Tzolkin (Quarter Century Secret Rare)",
-    "set_name": "25th Anniversary Tin: Dueling Mirrors",
-    "baseline_value": 2.75,
-    "current_value": 3.64,
     "status": "CONFIRMED"
   }
 ]
