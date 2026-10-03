@@ -1,18 +1,6 @@
 [
   {
     "rank": 1,
-    "dollar_gain": 55.620000000000005,
-    "percent_gain": 713.0769230769231,
-    "product_id": 80159,
-    "printing": "Unlimited",
-    "card_name": "Hamon, Lord of Striking Thunder",
-    "set_name": "Dark Revelation Volume 4",
-    "baseline_value": 7.8,
-    "current_value": 63.42,
-    "status": "CONFIRMED"
-  },
-  {
-    "rank": 2,
     "dollar_gain": 129.99,
     "percent_gain": 649.95,
     "product_id": 452540,
@@ -21,6 +9,18 @@
     "set_name": "Magnificent Mavens",
     "baseline_value": 20.0,
     "current_value": 149.99,
+    "status": "CONFIRMED"
+  },
+  {
+    "rank": 2,
+    "dollar_gain": 30.45,
+    "percent_gain": 318.84816753926697,
+    "product_id": 80559,
+    "printing": "Unlimited",
+    "card_name": "Blackwing - Sirocco the Dawn (Purple)",
+    "set_name": "Duelist League Promo",
+    "baseline_value": 9.55,
+    "current_value": 40.0,
     "status": "CONFIRMED"
   },
   {
@@ -61,18 +61,6 @@
   },
   {
     "rank": 6,
-    "dollar_gain": 6.05,
-    "percent_gain": 238.18897637795274,
-    "product_id": 579623,
-    "printing": "1st Edition",
-    "card_name": "Mind Castlin",
-    "set_name": "25th Anniversary Tin: Dueling Mirrors",
-    "baseline_value": 2.54,
-    "current_value": 8.59,
-    "status": "CONFIRMED"
-  },
-  {
-    "rank": 7,
     "dollar_gain": 9.42,
     "percent_gain": 235.5,
     "product_id": 78086,
@@ -84,7 +72,7 @@
     "status": "CONFIRMED"
   },
   {
-    "rank": 8,
+    "rank": 7,
     "dollar_gain": 3.63,
     "percent_gain": 202.79329608938545,
     "product_id": 476595,
@@ -96,7 +84,7 @@
     "status": "CONFIRMED"
   },
   {
-    "rank": 9,
+    "rank": 8,
     "dollar_gain": 14.829999999999998,
     "percent_gain": 161.89956331877727,
     "product_id": 77370,
@@ -108,19 +96,19 @@
     "status": "CONFIRMED"
   },
   {
-    "rank": 10,
-    "dollar_gain": 174.92000000000002,
-    "percent_gain": 154.70062792960115,
-    "product_id": 27471,
+    "rank": 9,
+    "dollar_gain": 3.19,
+    "percent_gain": 146.33027522935777,
+    "product_id": 692273,
     "printing": "1st Edition",
-    "card_name": "Allure of Darkness (UTR)",
-    "set_name": "Phantom Darkness",
-    "baseline_value": 113.07,
-    "current_value": 287.99,
+    "card_name": "Clown Crew Flair",
+    "set_name": "Blazing Dominion",
+    "baseline_value": 2.18,
+    "current_value": 5.37,
     "status": "CONFIRMED"
   },
   {
-    "rank": 11,
+    "rank": 10,
     "dollar_gain": 6.62,
     "percent_gain": 133.73737373737373,
     "product_id": 77736,
@@ -129,6 +117,18 @@
     "set_name": "Duelist League Promo",
     "baseline_value": 4.95,
     "current_value": 11.57,
+    "status": "CONFIRMED"
+  },
+  {
+    "rank": 11,
+    "dollar_gain": 4.5,
+    "percent_gain": 131.96480938416423,
+    "product_id": 683028,
+    "printing": "1st Edition",
+    "card_name": "Mitsurugi no Mikoto, Saji (Secret Rare)",
+    "set_name": "Legendary Modern Decks 2026",
+    "baseline_value": 3.41,
+    "current_value": 7.91,
     "status": "CONFIRMED"
   },
   {
@@ -145,18 +145,6 @@
   },
   {
     "rank": 13,
-    "dollar_gain": 3.63,
-    "percent_gain": 106.4516129032258,
-    "product_id": 683028,
-    "printing": "1st Edition",
-    "card_name": "Mitsurugi no Mikoto, Saji (Secret Rare)",
-    "set_name": "Legendary Modern Decks 2026",
-    "baseline_value": 3.41,
-    "current_value": 7.04,
-    "status": "CONFIRMED"
-  },
-  {
-    "rank": 14,
     "dollar_gain": 2.49,
     "percent_gain": 99.60000000000001,
     "product_id": 476319,
@@ -168,31 +156,31 @@
     "status": "CONFIRMED"
   },
   {
-    "rank": 15,
-    "dollar_gain": 111.44,
-    "percent_gain": 92.57351719554744,
+    "rank": 14,
+    "dollar_gain": 110.89999999999999,
+    "percent_gain": 91.7135296063513,
     "product_id": 58821,
     "printing": "1st Edition",
     "card_name": "Armed Dragon LV7 (UTR)",
     "set_name": "Soul of the Duelist",
-    "baseline_value": 120.38,
+    "baseline_value": 120.92,
     "current_value": 231.82,
     "status": "CONFIRMED"
   },
   {
-    "rank": 16,
-    "dollar_gain": 1.4599999999999997,
-    "percent_gain": 91.82389937106916,
-    "product_id": 91593,
-    "printing": "Normal",
-    "card_name": "Battle Pack 3: Monster League Booster Pack",
-    "set_name": "Battle Pack 3: Monster League",
-    "baseline_value": 1.59,
-    "current_value": 3.05,
+    "rank": 15,
+    "dollar_gain": 1.46,
+    "percent_gain": 91.25,
+    "product_id": 282359,
+    "printing": "1st Edition",
+    "card_name": "Droll & Lock Bird",
+    "set_name": "Tactical Masters",
+    "baseline_value": 1.6,
+    "current_value": 3.06,
     "status": "CONFIRMED"
   },
   {
-    "rank": 17,
+    "rank": 16,
     "dollar_gain": 427.0,
     "percent_gain": 90.27675003699866,
     "product_id": 22960,
@@ -204,55 +192,31 @@
     "status": "CONFIRMED"
   },
   {
-    "rank": 18,
-    "dollar_gain": 2.39,
-    "percent_gain": 86.28158844765343,
-    "product_id": 107652,
-    "printing": "1st Edition",
-    "card_name": "Beginning Knight",
-    "set_name": "Dimension of Chaos",
-    "baseline_value": 2.77,
-    "current_value": 5.16,
-    "status": "CONFIRMED"
-  },
-  {
-    "rank": 19,
-    "dollar_gain": 8.06,
-    "percent_gain": 81.08651911468814,
+    "rank": 17,
+    "dollar_gain": 7.85,
+    "percent_gain": 77.33990147783251,
     "product_id": 58597,
     "printing": "Unlimited",
     "card_name": "Volcanic Slicer (UTR)",
     "set_name": "Force of the Breaker",
-    "baseline_value": 9.94,
+    "baseline_value": 10.15,
     "current_value": 18.0,
     "status": "CONFIRMED"
   },
   {
-    "rank": 20,
-    "dollar_gain": 3.8099999999999996,
-    "percent_gain": 76.96969696969695,
+    "rank": 18,
+    "dollar_gain": 3.71,
+    "percent_gain": 73.46534653465346,
     "product_id": 692249,
     "printing": "1st Edition",
     "card_name": "Nervedo the Shadebeast Power Patron",
     "set_name": "Blazing Dominion",
-    "baseline_value": 4.95,
+    "baseline_value": 5.05,
     "current_value": 8.76,
     "status": "CONFIRMED"
   },
   {
-    "rank": 21,
-    "dollar_gain": 1.48,
-    "percent_gain": 73.26732673267327,
-    "product_id": 692273,
-    "printing": "1st Edition",
-    "card_name": "Clown Crew Flair",
-    "set_name": "Blazing Dominion",
-    "baseline_value": 2.02,
-    "current_value": 3.5,
-    "status": "UNCONFIRMED"
-  },
-  {
-    "rank": 22,
+    "rank": 19,
     "dollar_gain": 5.48,
     "percent_gain": 73.16421895861149,
     "product_id": 476445,
@@ -264,7 +228,19 @@
     "status": "CONFIRMED"
   },
   {
-    "rank": 23,
+    "rank": 20,
+    "dollar_gain": 6.450000000000001,
+    "percent_gain": 70.18498367791078,
+    "product_id": 593061,
+    "printing": "1st Edition",
+    "card_name": "XX-Saber Gottoms (Quarter Century Secret Rare)",
+    "set_name": "Quarter Century Bonanza",
+    "baseline_value": 9.19,
+    "current_value": 15.64,
+    "status": "CONFIRMED"
+  },
+  {
+    "rank": 21,
     "dollar_gain": 1.37,
     "percent_gain": 68.5,
     "product_id": 58545,
@@ -276,31 +252,31 @@
     "status": "CONFIRMED"
   },
   {
-    "rank": 24,
-    "dollar_gain": 1.7800000000000002,
-    "percent_gain": 67.93893129770993,
-    "product_id": 487173,
+    "rank": 22,
+    "dollar_gain": 6.0,
+    "percent_gain": 67.72009029345372,
+    "product_id": 476449,
     "printing": "Unlimited",
-    "card_name": "Reload",
-    "set_name": "Invasion of Chaos (25th Anniversary Edition)",
-    "baseline_value": 2.62,
-    "current_value": 4.4,
+    "card_name": "Left Arm of the Forbidden One",
+    "set_name": "Legend of Blue Eyes White Dragon (Worldwide English)",
+    "baseline_value": 8.86,
+    "current_value": 14.86,
     "status": "CONFIRMED"
   },
   {
-    "rank": 25,
-    "dollar_gain": 5.770000000000001,
-    "percent_gain": 65.64277588168376,
-    "product_id": 593061,
-    "printing": "1st Edition",
-    "card_name": "XX-Saber Gottoms (Quarter Century Secret Rare)",
-    "set_name": "Quarter Century Bonanza",
-    "baseline_value": 8.79,
-    "current_value": 14.56,
+    "rank": 23,
+    "dollar_gain": 1.73,
+    "percent_gain": 67.578125,
+    "product_id": 78156,
+    "printing": "Unlimited",
+    "card_name": "Lord of D.",
+    "set_name": "Retro Pack",
+    "baseline_value": 2.56,
+    "current_value": 4.29,
     "status": "CONFIRMED"
   },
   {
-    "rank": 26,
+    "rank": 24,
     "dollar_gain": 14.54,
     "percent_gain": 64.50754214729369,
     "product_id": 80730,
@@ -312,7 +288,19 @@
     "status": "CONFIRMED"
   },
   {
-    "rank": 27,
+    "rank": 25,
+    "dollar_gain": 21.349999999999994,
+    "percent_gain": 59.38803894297634,
+    "product_id": 25923,
+    "printing": "Unlimited",
+    "card_name": "Silent Swordsman LV5",
+    "set_name": "Dark Revelation Volume 3",
+    "baseline_value": 35.95,
+    "current_value": 57.3,
+    "status": "CONFIRMED"
+  },
+  {
+    "rank": 26,
     "dollar_gain": 1.1900000000000004,
     "percent_gain": 59.203980099502516,
     "product_id": 25966,
@@ -324,7 +312,7 @@
     "status": "CONFIRMED"
   },
   {
-    "rank": 28,
+    "rank": 27,
     "dollar_gain": 1.9099999999999997,
     "percent_gain": 54.88505747126437,
     "product_id": 217517,
@@ -336,7 +324,7 @@
     "status": "CONFIRMED"
   },
   {
-    "rank": 29,
+    "rank": 28,
     "dollar_gain": 59.69,
     "percent_gain": 54.26363636363636,
     "product_id": 58773,
@@ -348,67 +336,31 @@
     "status": "CONFIRMED"
   },
   {
-    "rank": 30,
-    "dollar_gain": 1.0399999999999998,
-    "percent_gain": 52.791878172588824,
-    "product_id": 678938,
-    "printing": "1st Edition",
-    "card_name": "Elemental HERO Thunder Giant - Voltic Thunder",
-    "set_name": "Maze of Muertos",
-    "baseline_value": 1.97,
-    "current_value": 3.01,
-    "status": "CONFIRMED"
-  },
-  {
-    "rank": 31,
-    "dollar_gain": 2.04,
-    "percent_gain": 51.127819548872175,
-    "product_id": 77700,
-    "printing": "Unlimited",
-    "card_name": "Legendary Jujitsu Master (Silver)",
-    "set_name": "Duelist League Promo",
-    "baseline_value": 3.99,
-    "current_value": 6.03,
-    "status": "CONFIRMED"
-  },
-  {
-    "rank": 32,
-    "dollar_gain": 1.5299999999999998,
-    "percent_gain": 50.662251655629134,
-    "product_id": 645212,
-    "printing": "1st Edition",
-    "card_name": "Dracotail Mululu",
-    "set_name": "Justice Hunters",
-    "baseline_value": 3.02,
-    "current_value": 4.55,
-    "status": "CONFIRMED"
-  },
-  {
-    "rank": 33,
-    "dollar_gain": 1.62,
-    "percent_gain": 49.69325153374234,
-    "product_id": 692306,
-    "printing": "1st Edition",
-    "card_name": "Exceptional Schedule",
-    "set_name": "Blazing Dominion",
-    "baseline_value": 3.26,
-    "current_value": 4.88,
-    "status": "CONFIRMED"
-  },
-  {
-    "rank": 34,
-    "dollar_gain": 1.06,
-    "percent_gain": 48.401826484018265,
+    "rank": 29,
+    "dollar_gain": 1.12,
+    "percent_gain": 51.14155251141553,
     "product_id": 504799,
     "printing": "1st Edition",
     "card_name": "Sleipnir the Runick Mane",
     "set_name": "Duelist Nexus",
     "baseline_value": 2.19,
-    "current_value": 3.25,
+    "current_value": 3.31,
     "status": "CONFIRMED"
   },
   {
-    "rank": 35,
+    "rank": 30,
+    "dollar_gain": 1.6099999999999999,
+    "percent_gain": 49.235474006116206,
+    "product_id": 692306,
+    "printing": "1st Edition",
+    "card_name": "Exceptional Schedule",
+    "set_name": "Blazing Dominion",
+    "baseline_value": 3.27,
+    "current_value": 4.88,
+    "status": "CONFIRMED"
+  },
+  {
+    "rank": 31,
     "dollar_gain": 1.1600000000000001,
     "percent_gain": 47.93388429752067,
     "product_id": 69615,
@@ -420,31 +372,19 @@
     "status": "CONFIRMED"
   },
   {
-    "rank": 36,
-    "dollar_gain": 1.3599999999999999,
-    "percent_gain": 47.71929824561403,
-    "product_id": 695588,
+    "rank": 32,
+    "dollar_gain": 1.46,
+    "percent_gain": 46.64536741214057,
+    "product_id": 188673,
     "printing": "1st Edition",
-    "card_name": "Junk Armor",
-    "set_name": "Battles of Legend: Glorious Gallery",
-    "baseline_value": 2.85,
-    "current_value": 4.21,
+    "card_name": "Spell Power Mastery",
+    "set_name": "Structure Deck: Order of the Spellcasters",
+    "baseline_value": 3.13,
+    "current_value": 4.59,
     "status": "CONFIRMED"
   },
   {
-    "rank": 37,
-    "dollar_gain": 1.1400000000000001,
-    "percent_gain": 45.60000000000001,
-    "product_id": 579503,
-    "printing": "1st Edition",
-    "card_name": "Ultimaya Tzolkin (Quarter Century Secret Rare)",
-    "set_name": "25th Anniversary Tin: Dueling Mirrors",
-    "baseline_value": 2.5,
-    "current_value": 3.64,
-    "status": "CONFIRMED"
-  },
-  {
-    "rank": 38,
+    "rank": 33,
     "dollar_gain": 8.23,
     "percent_gain": 45.51991150442479,
     "product_id": 25352,
@@ -456,7 +396,19 @@
     "status": "CONFIRMED"
   },
   {
-    "rank": 39,
+    "rank": 34,
+    "dollar_gain": 0.94,
+    "percent_gain": 45.192307692307686,
+    "product_id": 678938,
+    "printing": "1st Edition",
+    "card_name": "Elemental HERO Thunder Giant - Voltic Thunder",
+    "set_name": "Maze of Muertos",
+    "baseline_value": 2.08,
+    "current_value": 3.02,
+    "status": "CONFIRMED"
+  },
+  {
+    "rank": 35,
     "dollar_gain": 1.0999999999999996,
     "percent_gain": 44.89795918367345,
     "product_id": 79827,
@@ -468,7 +420,19 @@
     "status": "CONFIRMED"
   },
   {
-    "rank": 40,
+    "rank": 36,
+    "dollar_gain": 1.88,
+    "percent_gain": 43.72093023255814,
+    "product_id": 122944,
+    "printing": "1st Edition",
+    "card_name": "Silent Burning",
+    "set_name": "Duelist Pack: Rivals of the Pharaoh",
+    "baseline_value": 4.3,
+    "current_value": 6.18,
+    "status": "CONFIRMED"
+  },
+  {
+    "rank": 37,
     "dollar_gain": 1.1400000000000001,
     "percent_gain": 43.34600760456274,
     "product_id": 77495,
@@ -480,19 +444,7 @@
     "status": "CONFIRMED"
   },
   {
-    "rank": 41,
-    "dollar_gain": 2.26,
-    "percent_gain": 43.047619047619044,
-    "product_id": 25952,
-    "printing": "Unlimited",
-    "card_name": "A Feather of the Phoenix",
-    "set_name": "Dark Revelation Volume 3",
-    "baseline_value": 5.25,
-    "current_value": 7.51,
-    "status": "CONFIRMED"
-  },
-  {
-    "rank": 42,
+    "rank": 38,
     "dollar_gain": 2.99,
     "percent_gain": 42.714285714285715,
     "product_id": 216849,
@@ -501,6 +453,54 @@
     "set_name": "Rise of the Duelist",
     "baseline_value": 7.0,
     "current_value": 9.99,
+    "status": "CONFIRMED"
+  },
+  {
+    "rank": 39,
+    "dollar_gain": 0.9199999999999999,
+    "percent_gain": 41.81818181818181,
+    "product_id": 616588,
+    "printing": "1st Edition",
+    "card_name": "Infinite Impermanence",
+    "set_name": "Structure Deck: Blue-Eyes White Destiny",
+    "baseline_value": 2.2,
+    "current_value": 3.12,
+    "status": "CONFIRMED"
+  },
+  {
+    "rank": 40,
+    "dollar_gain": 2.38,
+    "percent_gain": 41.68126094570928,
+    "product_id": 616044,
+    "printing": "Unlimited",
+    "card_name": "The Winged Dragon of Ra",
+    "set_name": "King of Games: Yugi's Legendary Decks (2020 Date Reprint)",
+    "baseline_value": 5.71,
+    "current_value": 8.09,
+    "status": "CONFIRMED"
+  },
+  {
+    "rank": 41,
+    "dollar_gain": 1.1799999999999997,
+    "percent_gain": 40.41095890410958,
+    "product_id": 695588,
+    "printing": "1st Edition",
+    "card_name": "Junk Armor",
+    "set_name": "Battles of Legend: Glorious Gallery",
+    "baseline_value": 2.92,
+    "current_value": 4.1,
+    "status": "CONFIRMED"
+  },
+  {
+    "rank": 42,
+    "dollar_gain": 1.2699999999999996,
+    "percent_gain": 40.18987341772151,
+    "product_id": 487173,
+    "printing": "Unlimited",
+    "card_name": "Reload",
+    "set_name": "Invasion of Chaos (25th Anniversary Edition)",
+    "baseline_value": 3.16,
+    "current_value": 4.43,
     "status": "CONFIRMED"
   },
   {
@@ -517,26 +517,26 @@
   },
   {
     "rank": 44,
-    "dollar_gain": 0.8599999999999999,
-    "percent_gain": 39.09090909090908,
-    "product_id": 616588,
+    "dollar_gain": 187.5,
+    "percent_gain": 38.46153846153847,
+    "product_id": 21954,
     "printing": "1st Edition",
-    "card_name": "Infinite Impermanence",
-    "set_name": "Structure Deck: Blue-Eyes White Destiny",
-    "baseline_value": 2.2,
-    "current_value": 3.06,
+    "card_name": "Exodia the Forbidden One",
+    "set_name": "The Legend of Blue Eyes White Dragon",
+    "baseline_value": 487.5,
+    "current_value": 675.0,
     "status": "CONFIRMED"
   },
   {
     "rank": 45,
-    "dollar_gain": 3.34,
-    "percent_gain": 38.171428571428564,
+    "dollar_gain": 3.2699999999999996,
+    "percent_gain": 37.37142857142857,
     "product_id": 69230,
     "printing": "1st Edition",
     "card_name": "Graceful Charity",
     "set_name": "Battle Pack 2: War of the Giants",
     "baseline_value": 8.75,
-    "current_value": 12.09,
+    "current_value": 12.02,
     "status": "CONFIRMED"
   },
   {
@@ -553,42 +553,30 @@
   },
   {
     "rank": 47,
-    "dollar_gain": 8.219999999999999,
-    "percent_gain": 36.63101604278074,
-    "product_id": 27592,
-    "printing": "1st Edition",
-    "card_name": "Splendid Venus",
-    "set_name": "The Duelist Genesis",
-    "baseline_value": 22.44,
-    "current_value": 30.66,
-    "status": "CONFIRMED"
-  },
-  {
-    "rank": 48,
-    "dollar_gain": 0.8900000000000001,
-    "percent_gain": 35.88709677419356,
-    "product_id": 554859,
-    "printing": "1st Edition",
-    "card_name": "Arms of Genex Return Zero",
-    "set_name": "Battles of Legend: Terminal Revenge",
-    "baseline_value": 2.48,
-    "current_value": 3.37,
-    "status": "CONFIRMED"
-  },
-  {
-    "rank": 49,
-    "dollar_gain": 2.410000000000001,
-    "percent_gain": 34.97822931785198,
+    "dollar_gain": 2.55,
+    "percent_gain": 34.50608930987821,
     "product_id": 683278,
     "printing": "1st Edition",
     "card_name": "Mitsurugi Prayers (Secret Rare)",
     "set_name": "Legendary Modern Decks 2026",
-    "baseline_value": 6.89,
-    "current_value": 9.3,
+    "baseline_value": 7.39,
+    "current_value": 9.94,
     "status": "CONFIRMED"
   },
   {
-    "rank": 50,
+    "rank": 48,
+    "dollar_gain": 0.81,
+    "percent_gain": 34.03361344537815,
+    "product_id": 651413,
+    "printing": "1st Edition",
+    "card_name": "Heart of the Blue-Eyes",
+    "set_name": "2025 Mega-Pack",
+    "baseline_value": 2.38,
+    "current_value": 3.19,
+    "status": "CONFIRMED"
+  },
+  {
+    "rank": 49,
     "dollar_gain": 10.000000000000004,
     "percent_gain": 33.34444814938314,
     "product_id": 246239,
@@ -597,6 +585,18 @@
     "set_name": "Redemption Replacement",
     "baseline_value": 29.99,
     "current_value": 39.99,
+    "status": "CONFIRMED"
+  },
+  {
+    "rank": 50,
+    "dollar_gain": 0.8900000000000001,
+    "percent_gain": 32.36363636363637,
+    "product_id": 579503,
+    "printing": "1st Edition",
+    "card_name": "Ultimaya Tzolkin (Quarter Century Secret Rare)",
+    "set_name": "25th Anniversary Tin: Dueling Mirrors",
+    "baseline_value": 2.75,
+    "current_value": 3.64,
     "status": "CONFIRMED"
   }
 ]
