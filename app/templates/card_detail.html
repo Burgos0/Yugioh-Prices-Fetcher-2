@@ -9,6 +9,9 @@
     <p>Printing: {{ printing }}</p>
     {% endif %}
 
+    <a class="buy-button" href="{{ product_id|tcgplayer_url }}"
+       target="_blank" rel="sponsored nofollow noopener">Buy on TCGplayer ↗</a>
+
     {% if first_seen_date %}
     <p class="card-history-meta">
         First Seen: {{ first_seen_date }}<br>

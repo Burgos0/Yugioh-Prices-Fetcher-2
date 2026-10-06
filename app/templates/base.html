@@ -6,6 +6,9 @@
     <title>{% block title %}{{ site_name }} | Yu-Gi-Oh! Card Price Movers{% endblock %}</title>
     <meta name="description" content="Daily Yu-Gi-Oh! card price movers from TCGplayer market data, filtered to confirmed moves only.">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    {% if impact_verification_tag %}
+    {{ impact_verification_tag|safe }}
+    {% endif %}
     {% if goatcounter_code %}
     <script data-goatcounter="https://{{ goatcounter_code }}.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
     {% endif %}

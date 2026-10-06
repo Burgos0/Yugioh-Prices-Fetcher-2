@@ -44,6 +44,8 @@
                         <a href="{{ url_for('main.card_page', product_id=loser.product_id, printing_slug=loser.printing|printing_slug) }}">
                             {{ loser.card_name }}
                         </a>
+                        <a class="buy-link" href="{{ loser.product_id|tcgplayer_url }}"
+                           target="_blank" rel="sponsored nofollow noopener">Buy on TCGplayer ↗</a>
                     </td>
 
                     <td class="set-name">

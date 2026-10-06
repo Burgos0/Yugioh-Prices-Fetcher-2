@@ -90,6 +90,8 @@ jobs:
         if: success() && steps.top_gainers.outcome == 'success'
         env:
           GOATCOUNTER_CODE: ${{ vars.GOATCOUNTER_CODE }}
+          AFFILIATE_BASE_URL: ${{ vars.AFFILIATE_BASE_URL }}
+          IMPACT_VERIFICATION_TAG: ${{ vars.IMPACT_VERIFICATION_TAG }}
         run: |
           python -m scripts.build_static --out site --domain tcgtrending.com
 
