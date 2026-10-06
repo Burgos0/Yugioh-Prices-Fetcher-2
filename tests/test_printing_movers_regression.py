@@ -68,7 +68,7 @@ def reference_printing_movers(db_path, limit, mover_type):
             dollar_change = current_value - baseline_value
             percent_change = dollar_change / baseline_value * 100
             status = detect_spike(product_id, baseline_value, current_value, df,
-                                  latest_date, recent_dates, printing)
+                                  latest_date, recent_dates, printing, baseline_dates)
             result = {"dollar_gain": dollar_change, "percent_gain": percent_change}
         elif mover_type == "loser":
             if baseline_value < 3.0 or current_value >= baseline_value:
@@ -104,7 +104,12 @@ def reference_printing_movers(db_path, limit, mover_type):
     if results_df.empty:
         return results_df
     sort_column = "percent_change" if mover_type == "loser" else "percent_gain"
-    results_df = results_df.sort_values(sort_column, ascending=mover_type == "loser").head(limit)
+    if mover_type == "gainer":
+        results_df["_confirmed"] = results_df["status"] == "CONFIRMED"
+        results_df = results_df.sort_values(["_confirmed", sort_column], ascending=[False, False])
+        results_df = results_df.drop(columns="_confirmed").head(limit)
+    else:
+        results_df = results_df.sort_values(sort_column, ascending=mover_type == "loser").head(limit)
     results_df.insert(0, "rank", range(1, len(results_df) + 1))
     return results_df
 
