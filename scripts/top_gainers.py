@@ -1,12 +1,20 @@
 import json
 import os
-from app.analysis import calculate_top_gainers
+from app.analysis import calculate_top_gainers, calculate_sealed_gainers
 
 # Connect to database and calculate top gainers
 gainers = calculate_top_gainers("data/prices.db", limit=50)
 
 # Save results to JSON (always, even if empty)
 os.makedirs("data", exist_ok=True)
+
+# Sealed product: own category, saved but not displayed on the site yet.
+# Written before the singles early-exit so it's always refreshed.
+sealed = calculate_sealed_gainers("data/prices.db")
+with open("data/sealed_gainers.json", "w") as f:
+    json.dump([] if sealed.empty else sealed.to_dict("records"), f, indent=2)
+print(f"Saved {len(sealed)} sealed product movers to data/sealed_gainers.json")
+
 json_path = "data/top_gainers.json"
 
 if gainers.empty:

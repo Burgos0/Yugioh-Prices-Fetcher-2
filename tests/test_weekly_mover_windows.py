@@ -110,6 +110,19 @@ class WeeklyMoverWindowTests(unittest.TestCase):
         finally:
             analysis.EXCLUDED_SETS = original
 
+    def test_sealed_product_has_its_own_category(self):
+        from app.analysis import calculate_sealed_gainers
+        self.add_relevant_set_support()
+        series = [10.0, 10.0, 10.0, 99.0, 99.0, 99.0, 20.0, 20.0, 20.0]
+        self.insert_series(1, "Single Card", series)
+        self.insert_series(2, "Booster Box", series, "Normal")
+
+        singles = calculate_top_gainers(self.db_path)["product_id"].tolist()
+        sealed = calculate_sealed_gainers(self.db_path)["product_id"].tolist()
+        self.assertIn(1, singles)
+        self.assertNotIn(2, singles)
+        self.assertEqual(sealed, [2])
+
 
 if __name__ == "__main__":
     unittest.main()

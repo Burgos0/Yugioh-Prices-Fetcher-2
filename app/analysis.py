@@ -250,6 +250,11 @@ EXCLUDED_SETS = {
     "Tournament Pack 1",
 }
 
+# TCGplayer lists sealed product (boxes, packs, tins, decks) with the "Normal"
+# printing; singles are 1st Edition / Unlimited / Limited. Sealed is tracked
+# in its own category (data/sealed_gainers.json) and kept off the public lists.
+SEALED_PRINTING = "Normal"
+
 GAINER_PRICE_FLOOR = 2.00       # top gainers: current price >= $2; cheaper cards go to penny movers
 
 # Tuning knobs for the stricter gainer confirmation rules (see detect_spike).
@@ -422,7 +427,7 @@ def _load_printing_prices(db_path):
         return pd.DataFrame()
 
 
-def _calculate_printing_movers(db_path, limit, mover_type):
+def _calculate_printing_movers(db_path, limit, mover_type, product_scope="singles"):
     df = _load_printing_prices(db_path)
     if df.empty:
         return pd.DataFrame()
@@ -467,6 +472,8 @@ def _calculate_printing_movers(db_path, limit, mover_type):
         if relevant_sets is not None and set_name not in relevant_sets:
             continue
         if set_name in EXCLUDED_SETS:
+            continue
+        if (printing == SEALED_PRINTING) != (product_scope == "sealed"):
             continue
         baseline_value = baseline_lookup[pair]
         current_value = current_lookup[pair]
@@ -880,6 +887,11 @@ def calculate_penny_movers(db_path, limit=50):
 def calculate_top_gainers(db_path, limit=50):
     """Calculate printing-aware weekly gainers from ``printing_prices``."""
     return _calculate_printing_movers(db_path, limit, "gainer")
+
+
+def calculate_sealed_gainers(db_path, limit=100):
+    """Weekly gainers for sealed product only (not displayed on the site yet)."""
+    return _calculate_printing_movers(db_path, limit, "gainer", product_scope="sealed")
 
 
 def calculate_top_losers(db_path, limit=50):
