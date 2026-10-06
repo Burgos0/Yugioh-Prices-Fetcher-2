@@ -7,3 +7,6 @@ __pycache__/
 # just stop tracking them.
 data/prices.db
 data/signals.db
+
+# Built static site (generated in CI)
+site/

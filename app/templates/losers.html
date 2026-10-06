@@ -44,7 +44,7 @@
                     </td>
 
                     <td class="card-name">
-                        <a href="{{ url_for('main.card_detail', product_id=loser.product_id, printing=loser.printing) }}">
+                        <a href="{{ url_for('main.card_page', product_id=loser.product_id, printing_slug=loser.printing|printing_slug) }}">
                             {{ loser.card_name }}
                         </a>
                     </td>

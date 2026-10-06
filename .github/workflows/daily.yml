@@ -10,6 +10,8 @@ on:
 
 permissions:
   contents: write
+  pages: write      # publish the static site to GitHub Pages
+  id-token: write   # required by actions/deploy-pages
 
 # Serialize runs so two overlapping schedule/dispatch triggers can never
 # race to restore/persist the DB snapshot at the same time. Queue rather
@@ -21,6 +23,9 @@ concurrency:
 jobs:
   run:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
 
     steps:
 
@@ -78,6 +83,26 @@ jobs:
           git config user.email "github-actions@github.com"
           git add data/top_gainers.json data/sealed_gainers.json data/early_movers_all_years.json data/early_movers_2007_onward.json
           git diff --cached --quiet || (git commit -m "Update top_gainers.json and early_movers caches" && git push)
+
+      # Publish the public site (tcgtrending.com) only when fresh gainers exist,
+      # so a failed analysis never overwrites the live site with stale data.
+      - name: Build static site
+        if: success() && steps.top_gainers.outcome == 'success'
+        env:
+          GOATCOUNTER_CODE: ${{ vars.GOATCOUNTER_CODE }}
+        run: |
+          python -m scripts.build_static --out site --domain tcgtrending.com
+
+      - name: Upload site artifact
+        if: success() && steps.top_gainers.outcome == 'success'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        id: deploy
+        if: success() && steps.top_gainers.outcome == 'success'
+        uses: actions/deploy-pages@v4
 
       # Fetch succeeding is enough to publish a database snapshot (data is
       # valuable even if analysis fails), but an analysis failure must still

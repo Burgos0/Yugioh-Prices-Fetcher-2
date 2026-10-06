@@ -41,13 +41,14 @@
                     </td>
 
                     <td class="card-name">
-                        <a href="{{ url_for('main.card_detail', product_id=gainer.product_id, printing=gainer.printing) }}">
+                        <a href="{{ url_for('main.card_page', product_id=gainer.product_id, printing_slug=gainer.printing|printing_slug) }}">
                             {{ gainer.card_name }}
                         </a>
                     </td>
 
                     <td class="set-name">
                         {{ gainer.set_name }}
+                        <span class="mobile-printing">{{ gainer.printing }}</span>
                     </td>
 
                     <td class="printing">

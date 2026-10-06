@@ -126,10 +126,28 @@ def meta_watch():
         error_msg = f"Error loading Meta Watch: {str(e)}"
         return render_template('meta_watch.html', report=None, error=error_msg)
 
+@bp.route('/card/<int:product_id>/<printing_slug>/')
+def card_page(product_id, printing_slug):
+    """Static-friendly card URL, e.g. /card/610840/1st-edition/."""
+    from flask import abort
+    from app import printing_slug as to_slug
+    conn = sqlite3.connect('data/prices.db')
+    printings = [row[0] for row in conn.execute(
+        'SELECT DISTINCT printing FROM printing_prices WHERE product_id = ?', (product_id,))]
+    conn.close()
+    match = next((p for p in printings if to_slug(p) == printing_slug), None)
+    if match is None:
+        abort(404)
+    return _render_card_detail(product_id, match)
+
+
 @bp.route('/card/<int:product_id>')
 def card_detail(product_id):
+    return _render_card_detail(product_id, request.args.get('printing'))
+
+
+def _render_card_detail(product_id, printing):
     conn = sqlite3.connect('data/prices.db')
-    printing = request.args.get('printing')
     price_table = 'printing_prices' if printing is not None else 'prices'
 
     history = conn.execute(

@@ -3,13 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Yu-Gi-Oh Price Tracker{% endblock %}</title>
+    <title>{% block title %}{{ site_name }} | Yu-Gi-Oh! Card Price Movers{% endblock %}</title>
+    <meta name="description" content="Daily Yu-Gi-Oh! card price movers from TCGplayer market data, filtered to confirmed moves only.">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    {% if goatcounter_code %}
+    <script data-goatcounter="https://{{ goatcounter_code }}.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+    {% endif %}
 </head>
 <body>
     <header>
-        <h1>Yu-Gi-Oh Card Price Tracker</h1>
-        <p class="subtitle">Top Weekly Gainers</p>
+        <h1><a href="{{ url_for('main.index') }}" class="site-title">{{ site_name }}</a></h1>
+        <p class="subtitle">Confirmed Yu-Gi-Oh! price movers, updated daily</p>
 
         <nav class="main-nav">
             <a href="{{ url_for('main.index') }}"
@@ -32,7 +36,16 @@
     </main>
     
     <footer>
-        <p>Data updated daily. Prices from TCGPlayer market data.</p>
+        <p>
+            {% if last_updated %}Last updated: {{ last_updated }}.{% else %}Data updated daily.{% endif %}
+            Prices from TCGplayer market data.
+        </p>
+        <p class="legal">
+            Some links on this site may be affiliate links; we may earn a commission at no extra cost to you.
+            Not financial advice: card prices are volatile, so do your own research.
+            {{ site_name }} is not affiliated with or endorsed by Konami or TCGplayer.
+            Yu-Gi-Oh! is a trademark of Konami.
+        </p>
     </footer>
 </body>
 </html>
