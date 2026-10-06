@@ -470,9 +470,10 @@ class PageRenderingTests(unittest.TestCase):
         self.assertNotIn(b"No tournament decklist observations imported yet", response.data)
         self.assertIn(b"UNKNOWN-2026-08", response.data)
 
-    def test_nav_link_present_on_other_pages(self):
+    def test_nav_link_hidden_from_public_pages(self):
+        # Meta Watch is still reachable at /meta-watch but hidden from the public nav.
         response = self.client.get("/")
-        self.assertIn(b"Meta Watch", response.data)
+        self.assertNotIn(b"Meta Watch", response.data)
 
 
 if __name__ == "__main__":

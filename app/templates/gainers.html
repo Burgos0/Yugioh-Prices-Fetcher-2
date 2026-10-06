@@ -8,26 +8,6 @@
     </div>
     {% endif %}
     
-    <div class="filters">
-        <p class="filter-label">Filter by status:</p>
-        <div class="filter-buttons">
-            <a href="{{ url_for('main.index', status='all') }}" 
-               class="filter-btn {% if current_filter == 'all' %}active{% endif %}">
-                All
-            </a>
-
-            <a href="{{ url_for('main.index', status='confirmed') }}" 
-               class="filter-btn {% if current_filter == 'confirmed' %}active{% endif %}">
-                ✓ Confirmed Only
-            </a>
-
-            <a href="{{ url_for('main.index', status='unconfirmed') }}" 
-               class="filter-btn {% if current_filter == 'unconfirmed' %}active{% endif %}">
-                ⚠ Unconfirmed Only
-            </a>
-        </div>
-    </div>
-    
     {% if gainers %}
     <div class="table-wrapper">
         <table class="gainers-table">
@@ -38,11 +18,8 @@
                     <th>Card Name</th>
                     <th>Set</th>
                     <th>Printing</th>
-                    <th>Baseline</th>
-                    <th>Current</th>
-                    <th>Gain ($)</th>
+                    <th>Current Price</th>
                     <th>Gain (%)</th>
-                    <th>Status</th>
                 </tr>
             </thead>
 
@@ -78,31 +55,11 @@
                     </td>
 
                     <td class="price">
-                        ${{ "%.2f"|format(gainer.baseline_value) }}
-                    </td>
-
-                    <td class="price">
                         ${{ "%.2f"|format(gainer.current_value) }}
-                    </td>
-
-                    <td class="price">
-                        ${{ "%.2f"|format(gainer.dollar_gain) }}
                     </td>
 
                     <td class="percent">
                         {{ "%.2f"|format(gainer.percent_gain) }}%
-                    </td>
-
-                    <td class="status">
-                        {% if gainer.status == 'CONFIRMED' %}
-                        <span class="badge confirmed">
-                            ✓ CONFIRMED
-                        </span>
-                        {% else %}
-                        <span class="badge unconfirmed">
-                            ⚠ UNCONFIRMED
-                        </span>
-                        {% endif %}
                     </td>
 
                 </tr>
@@ -113,7 +70,7 @@
     
     <div class="summary">
         <p>
-            <strong>{{ gainers|length }} top gainers displayed</strong>
+            <strong>{{ gainers|length }} confirmed gainers</strong>
             | Analysis period: ~7 days ago vs recent 3-day average
         </p>
     </div>

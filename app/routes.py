@@ -25,24 +25,20 @@ def index():
     try:
         # Check if cached JSON exists
         if not os.path.exists(GAINERS_JSON_PATH):
-            return render_template('gainers.html', gainers=[], current_filter='all')
+            return render_template('gainers.html', gainers=[])
         
         # Load from cached JSON
         with open(GAINERS_JSON_PATH, 'r') as f:
             gainers_list = json.load(f)
         
-        # Apply status filter
-        status_filter = request.args.get('status', 'all')
-        if status_filter == 'confirmed':
-            gainers_list = [g for g in gainers_list if g['status'] == 'CONFIRMED']
-        elif status_filter == 'unconfirmed':
-            gainers_list = [g for g in gainers_list if g['status'] == 'UNCONFIRMED']
+        # Public list shows confirmed moves only (unconfirmed spikes are hidden)
+        gainers_list = [g for g in gainers_list if g['status'] == 'CONFIRMED']
         
-        return render_template('gainers.html', gainers=gainers_list, current_filter=status_filter)
+        return render_template('gainers.html', gainers=gainers_list)
     
     except Exception as e:
         error_msg = f"Error loading gainers: {str(e)}"
-        return render_template('gainers.html', gainers=[], error=error_msg, current_filter='all')
+        return render_template('gainers.html', gainers=[], error=error_msg)
 
 @bp.route('/losers')
 def losers():

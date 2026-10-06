@@ -244,6 +244,14 @@ def _select_weekly_mover_windows(df):
     return snapshot_dates[-3:], snapshot_dates[-9:-6]
 
 
+# Collector sets with too few sales for reliable price moves. Exact set names;
+# add more here as you find them (e.g. "Tournament Pack 2").
+EXCLUDED_SETS = {
+    "Tournament Pack 1",
+}
+
+GAINER_PRICE_FLOOR = 2.00       # top gainers: current price >= $2; cheaper cards go to penny movers
+
 # Tuning knobs for the stricter gainer confirmation rules (see detect_spike).
 REVERSION_TOLERANCE = 1.10      # latest price within +10% of baseline = move already reverted
 FLOOR_RISE_MIN = 1.15           # cheapest listing must rise >=15%...
@@ -449,11 +457,13 @@ def _calculate_printing_movers(db_path, limit, mover_type):
         card_name, set_name = pair_metadata[pair]
         if relevant_sets is not None and set_name not in relevant_sets:
             continue
+        if set_name in EXCLUDED_SETS:
+            continue
         baseline_value = baseline_lookup[pair]
         current_value = current_lookup[pair]
 
         if mover_type == "gainer":
-            if current_value < 3.0 or current_value <= baseline_value:
+            if current_value < GAINER_PRICE_FLOOR or current_value <= baseline_value:
                 continue
             dollar_change = current_value - baseline_value
             percent_change = dollar_change / baseline_value * 100
@@ -471,7 +481,8 @@ def _calculate_printing_movers(db_path, limit, mover_type):
                                  latest_date, recent_dates, printing)
             result = {"dollar_change": dollar_change, "percent_change": percent_change}
         else:
-            if not (0.25 <= baseline_value <= 5.00) or current_value <= baseline_value:
+            if (baseline_value < 0.25 or current_value >= GAINER_PRICE_FLOOR
+                    or current_value <= baseline_value):
                 continue
             dollar_change = current_value - baseline_value
             percent_change = dollar_change / baseline_value * 100

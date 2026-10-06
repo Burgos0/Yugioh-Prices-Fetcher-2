@@ -58,7 +58,7 @@ class WeeklyMoverWindowTests(unittest.TestCase):
         self.insert_series(1, "Gain Card", [10.0, 10.0, 10.0, 99.0, 99.0, 99.0, 20.0, 20.0, 20.0])
         self.insert_series(1, "Gain Card", [10.0, 10.0, 10.0, 99.0, 99.0, 99.0, 30.0, 30.0, 30.0], "1st Edition")
         self.insert_series(2, "Loss Card", [20.0, 20.0, 20.0, 99.0, 99.0, 99.0, 10.0, 10.0, 10.0])
-        self.insert_series(3, "Penny Card", [1.0, 1.0, 1.0, 99.0, 99.0, 99.0, 2.0, 2.0, 2.0])
+        self.insert_series(3, "Penny Card", [1.0, 1.0, 1.0, 99.0, 99.0, 99.0, 1.5, 1.5, 1.5])
 
         gainers = calculate_top_gainers(self.db_path)
         losers = calculate_top_losers(self.db_path)
@@ -75,7 +75,7 @@ class WeeklyMoverWindowTests(unittest.TestCase):
         ].iloc[0]
         self.assertEqual((first_edition["baseline_value"], first_edition["current_value"]), (10.0, 30.0))
         self.assertEqual((loss["baseline_value"], loss["current_value"]), (20.0, 10.0))
-        self.assertEqual((penny["baseline_value"], penny["current_value"]), (1.0, 2.0))
+        self.assertEqual((penny["baseline_value"], penny["current_value"]), (1.0, 1.5))
 
     def test_card_missing_required_snapshot_is_excluded(self):
         self.add_relevant_set_support()
@@ -89,8 +89,8 @@ class WeeklyMoverWindowTests(unittest.TestCase):
         # The same completeness rule applies to loser and penny calculations.
         self.insert_series(3, "Complete Loss", [20.0, 20.0, 20.0, 99.0, 99.0, 99.0, 10.0, 10.0, 10.0])
         self.insert_series(4, "Incomplete Loss", [20.0, 20.0, None, 99.0, 99.0, 99.0, 10.0, 10.0, 10.0])
-        self.insert_series(5, "Complete Penny", [1.0, 1.0, 1.0, 99.0, 99.0, 99.0, 2.0, 2.0, 2.0])
-        self.insert_series(6, "Incomplete Penny", [1.0, 1.0, 1.0, 99.0, 99.0, 99.0, 2.0, None, 2.0])
+        self.insert_series(5, "Complete Penny", [1.0, 1.0, 1.0, 99.0, 99.0, 99.0, 1.5, 1.5, 1.5])
+        self.insert_series(6, "Incomplete Penny", [1.0, 1.0, 1.0, 99.0, 99.0, 99.0, 1.5, None, 1.5])
 
         losers = calculate_top_losers(self.db_path)
         penny_movers = calculate_penny_movers(self.db_path)
@@ -98,6 +98,17 @@ class WeeklyMoverWindowTests(unittest.TestCase):
         self.assertNotIn(4, losers["product_id"].tolist())
         self.assertIn(5, penny_movers["product_id"].tolist())
         self.assertNotIn(6, penny_movers["product_id"].tolist())
+
+    def test_excluded_collector_sets_are_skipped(self):
+        from app import analysis
+        self.add_relevant_set_support()
+        self.insert_series(1, "Gain Card", [10.0, 10.0, 10.0, 99.0, 99.0, 99.0, 20.0, 20.0, 20.0])
+        original = analysis.EXCLUDED_SETS
+        analysis.EXCLUDED_SETS = {"Test Set"}
+        try:
+            self.assertTrue(calculate_top_gainers(self.db_path).empty)
+        finally:
+            analysis.EXCLUDED_SETS = original
 
 
 if __name__ == "__main__":

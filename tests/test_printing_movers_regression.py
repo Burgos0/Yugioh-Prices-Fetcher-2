@@ -63,7 +63,7 @@ def reference_printing_movers(db_path, limit, mover_type):
         current_value = current_medians[pair]
 
         if mover_type == "gainer":
-            if current_value < 3.0 or current_value <= baseline_value:
+            if current_value < 2.0 or current_value <= baseline_value:
                 continue
             dollar_change = current_value - baseline_value
             percent_change = dollar_change / baseline_value * 100
@@ -79,7 +79,7 @@ def reference_printing_movers(db_path, limit, mover_type):
                                  latest_date, recent_dates, printing)
             result = {"dollar_change": dollar_change, "percent_change": percent_change}
         else:
-            if not (0.25 <= baseline_value <= 5.00) or current_value <= baseline_value:
+            if baseline_value < 0.25 or current_value >= 2.0 or current_value <= baseline_value:
                 continue
             dollar_change = current_value - baseline_value
             percent_change = dollar_change / baseline_value * 100
@@ -196,7 +196,7 @@ class PrintingMoverRegressionTests(unittest.TestCase):
         self.insert_series(2, "Loss Card", drop_base + [10.0, 10.0, 10.0])
         self.insert_series(2, "Loss Card", drop_base + [15.0, 15.0, 5.0], "1st Edition")
         penny_base = [1.0, 1.0, 1.0, 99.0, 99.0, 99.0]
-        self.insert_series(3, "Penny Card", penny_base + [2.0, 2.0, 2.0])
+        self.insert_series(3, "Penny Card", penny_base + [1.5, 1.5, 1.5])
         self.insert_series(3, "Penny Card", penny_base + [1.5, 1.5, 4.0], "1st Edition")
 
         def status_by_printing(frame, product_id):
