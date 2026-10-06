@@ -257,6 +257,7 @@ REVERSION_TOLERANCE = 1.10      # latest price within +10% of baseline = move al
 FLOOR_RISE_MIN = 1.15           # cheapest listing must rise >=15%...
 FLOOR_SUPPORT_RATIO = 0.80      # ...or already sit within 20% of the new market price
 MIN_PRICE_CHANGES = 2           # market price must move on 2+ separate days (not one sale)
+MAX_LISTING_TO_MARKET = 2.0     # cheapest listing > 2x market = thin market, price is stale/erratic
 
 
 def detect_spike(product_id, baseline_value, current_value, df, latest_date, recent_dates=None,
@@ -341,6 +342,14 @@ def detect_spike(product_id, baseline_value, current_value, df, latest_date, rec
             floor_rose = cur_low >= base_low * FLOOR_RISE_MIN
             floor_supports = cur_low >= current_value * FLOOR_SUPPORT_RATIO
             if not (floor_rose or floor_supports):
+                return "UNCONFIRMED"
+
+            # RULE 6: Liquidity - when the cheapest listing sits far above the
+            # market price (a week ago or now), sales are too rare for the
+            # market price to mean anything. Catches thin collector cards.
+            if base_low > baseline_value * MAX_LISTING_TO_MARKET:
+                return "UNCONFIRMED"
+            if cur_low > current_value * MAX_LISTING_TO_MARKET:
                 return "UNCONFIRMED"
 
     return "CONFIRMED"

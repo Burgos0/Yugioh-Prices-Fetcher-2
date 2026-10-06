@@ -40,6 +40,17 @@ class GainerConfirmationRules(unittest.TestCase):
         lows = [9] * 10  # cheapest copy still ~old price
         self.assertEqual(status(markets, lows), "UNCONFIRMED")
 
+    def test_thin_market_baseline_is_unconfirmed(self):
+        # Cheapest listing was ~4x the market price a week ago: stale market price.
+        markets = [10, 10, 10, 10, 15, 20, 25, 30, 31, 32]
+        lows = [40] * 10
+        self.assertEqual(status(markets, lows), "UNCONFIRMED")
+
+    def test_thin_market_now_is_unconfirmed(self):
+        markets = [10, 10, 10, 10, 11, 13, 15, 17, 18, 18.5]
+        lows = [9, 9, 9, 9, 10, 20, 40, 45, 45, 45]  # listings jump way past sales
+        self.assertEqual(status(markets, lows), "UNCONFIRMED")
+
     def test_missing_low_prices_skip_floor_rule(self):
         markets = [10, 10, 10, 10, 15, 20, 25, 30, 31, 32]
         self.assertEqual(status(markets, [None] * 10), "CONFIRMED")

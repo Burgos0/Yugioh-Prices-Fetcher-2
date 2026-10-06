@@ -2,7 +2,10 @@ name: yugioh price fetcher
 
 on:
   schedule:
-    - cron: "0 21 * * *"
+    # 14:00 UTC (7am Pacific). GitHub often starts scheduled runs hours late;
+    # running early in the UTC day keeps delays from crossing midnight,
+    # which used to skip a date in the price history.
+    - cron: "0 14 * * *"
   workflow_dispatch:
 
 permissions:
