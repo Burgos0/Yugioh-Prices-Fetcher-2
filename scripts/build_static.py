@@ -4,9 +4,9 @@ Usage:  python -m scripts.build_static [--out site] [--domain tcgtrending.com]
 
 Renders the Flask pages through the test client (no server needed), so the
 templates stay the single source of truth. Only public pages are built:
-gainers, penny movers, losers, and a detail page for every card they link to.
-Hidden pages (early movers, backtest, meta watch) and sealed data are not
-published.
+gainers, losers, and a detail page for every card they link to.
+Hidden pages (penny movers, early movers, backtest, meta watch) and sealed
+data are not published.
 """
 import argparse
 import json
@@ -19,7 +19,6 @@ from app.analysis import calculate_top_losers
 
 PAGES = {
     "/": "index.html",
-    "/penny-movers": "penny-movers/index.html",
     "/losers": "losers/index.html",
 }
 CARD_LINK = re.compile(r'href="(/card/\d+/[^"/]+/)"')

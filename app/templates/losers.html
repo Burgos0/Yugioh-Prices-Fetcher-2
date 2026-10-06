@@ -18,11 +18,8 @@
                     <th>Card Name</th>
                     <th>Set</th>
                     <th>Printing</th>
-                    <th>Baseline</th>
-                    <th>Current</th>
-                    <th>Loss ($)</th>
-                    <th>Loss (%)</th>
-                    <th>Status</th>
+                    <th class="num"><span class="label-full">Current Price</span><span class="label-short">Price</span></th>
+                    <th class="num"><span class="label-full">Loss (%)</span><span class="label-short">%</span></th>
                 </tr>
             </thead>
 
@@ -51,6 +48,7 @@
 
                     <td class="set-name">
                         {{ loser.set_name }}
+                        <span class="mobile-printing">{{ loser.printing }}</span>
                     </td>
 
                     <td class="printing">
@@ -58,31 +56,11 @@
                     </td>
 
                     <td class="price">
-                        ${{ "%.2f"|format(loser.baseline_value) }}
-                    </td>
-
-                    <td class="price">
                         ${{ "%.2f"|format(loser.current_value) }}
                     </td>
 
-                    <td class="price">
-                        ${{ "%.2f"|format(loser.dollar_change) }}
-                    </td>
-
-                    <td class="percent">
+                    <td class="percent loss">
                         {{ "%.2f"|format(loser.percent_change) }}%
-                    </td>
-
-                    <td class="status">
-                        {% if loser.status == 'CONFIRMED' %}
-                        <span class="badge confirmed">
-                            ✓ CONFIRMED
-                        </span>
-                        {% else %}
-                        <span class="badge unconfirmed">
-                            ⚠ UNCONFIRMED
-                        </span>
-                        {% endif %}
                     </td>
 
                 </tr>
@@ -93,7 +71,7 @@
 
     <div class="summary">
         <p>
-            <strong>{{ losers|length }} top losers displayed</strong>
+            <strong>{{ losers|length }} confirmed losers</strong>
             | Analysis period: ~7 days ago vs recent 3-day average
         </p>
     </div>

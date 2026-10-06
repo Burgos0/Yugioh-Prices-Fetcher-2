@@ -361,7 +361,7 @@ def detect_spike(product_id, baseline_value, current_value, df, latest_date, rec
 
 
 def detect_drop(product_id, baseline_value, current_value, df, latest_date, recent_dates=None,
-                printing=None):
+                printing=None, baseline_dates=None):
     """
     Detect if a price decrease is CONFIRMED or a suspicious UNCONFIRMED dip.
     
@@ -411,6 +411,46 @@ def detect_drop(product_id, baseline_value, current_value, df, latest_date, rece
         depressed_count = sum(1 for p in recent_prices if p <= baseline_value * 0.9)
         if depressed_count < 2:
             return "UNCONFIRMED"
+
+    # Stricter rules below mirror detect_spike; older callers skip them.
+    if baseline_dates is None:
+        return "CONFIRMED"
+
+    # RULE 3: Reversion - latest price has already recovered to baseline.
+    if not latest_price_row.empty and latest_raw_price >= baseline_value / REVERSION_TOLERANCE:
+        return "UNCONFIRMED"
+
+    # RULE 4: Single-sale step - one sale stepping the market price down
+    # is not a trend.
+    window = df[
+        identity &
+        (df["date"] >= min(baseline_dates)) &
+        (df["date"] <= latest_date) &
+        (df["market_price"].notna())
+    ].sort_values("date")["market_price"]
+    price_changes = int((window.diff().fillna(0).abs() > 0.005).sum())
+    if price_changes < MIN_PRICE_CHANGES:
+        return "UNCONFIRMED"
+
+    # RULE 5: Listing floor - the cheapest listings must fall with the market
+    # price (or already sit near the new price); otherwise sellers aren't
+    # actually pricing the card lower.
+    # RULE 6: Liquidity - cheapest listing far above market price (a week ago
+    # or now) means sales are too rare for the market price to mean anything.
+    if "low_price" in df.columns:
+        base_low = df[identity & df["date"].isin(baseline_dates)]["low_price"].dropna()
+        cur_low = df[identity & df["date"].isin(recent_dates)]["low_price"].dropna()
+        if not base_low.empty and not cur_low.empty:
+            base_low, cur_low = base_low.median(), cur_low.median()
+            floor_fell = cur_low <= base_low / FLOOR_RISE_MIN
+            floor_matches = cur_low <= current_value / FLOOR_SUPPORT_RATIO
+            if not (floor_fell or floor_matches):
+                return "UNCONFIRMED"
+            if base_low > baseline_value * MAX_LISTING_TO_MARKET:
+                return "UNCONFIRMED"
+            if cur_low > current_value * MAX_LISTING_TO_MARKET:
+                return "UNCONFIRMED"
+
     
     return "CONFIRMED"
 
@@ -488,13 +528,13 @@ def _calculate_printing_movers(db_path, limit, mover_type, product_scope="single
                                   latest_date, recent_dates, printing, baseline_dates)
             result = {"dollar_gain": dollar_change, "percent_gain": percent_change}
         elif mover_type == "loser":
-            if baseline_value < 3.0 or current_value >= baseline_value:
+            if baseline_value < GAINER_PRICE_FLOOR or current_value >= baseline_value:
                 continue
             dollar_change = current_value - baseline_value
             percent_change = dollar_change / baseline_value * 100
             pair_rows = grouped_pairs.get_group(pair)
             status = detect_drop(product_id, baseline_value, current_value, pair_rows,
-                                 latest_date, recent_dates, printing)
+                                 latest_date, recent_dates, printing, baseline_dates)
             result = {"dollar_change": dollar_change, "percent_change": percent_change}
         else:
             if (baseline_value < 0.25 or current_value >= GAINER_PRICE_FLOOR
@@ -524,10 +564,12 @@ def _calculate_printing_movers(db_path, limit, mover_type, product_scope="single
     if results_df.empty:
         return results_df
     sort_column = "percent_change" if mover_type == "loser" else "percent_gain"
-    if mover_type == "gainer":
-        # Confirmed moves rank above unconfirmed ones; within each, biggest % first.
+    if mover_type in ("gainer", "loser"):
+        # Confirmed moves rank above unconfirmed ones; within each, biggest move first
+        # (largest % gain for gainers, most negative % for losers).
         results_df["_confirmed"] = results_df["status"] == "CONFIRMED"
-        results_df = results_df.sort_values(["_confirmed", sort_column], ascending=[False, False])
+        results_df = results_df.sort_values(["_confirmed", sort_column],
+                                            ascending=[False, mover_type == "loser"])
         results_df = results_df.drop(columns="_confirmed").head(limit)
     else:
         results_df = results_df.sort_values(sort_column, ascending=mover_type == "loser").head(limit)

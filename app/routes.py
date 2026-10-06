@@ -33,6 +33,8 @@ def index():
         
         # Public list shows confirmed moves only (unconfirmed spikes are hidden)
         gainers_list = [g for g in gainers_list if g['status'] == 'CONFIRMED']
+        for rank, row in enumerate(gainers_list, 1):
+            row['rank'] = rank  # no gaps after hiding unconfirmed rows
         
         return render_template('gainers.html', gainers=gainers_list)
     
@@ -50,6 +52,11 @@ def losers():
         # Load from cached JSON
         with open(LOSERS_JSON_PATH, 'r') as f:
             losers_list = json.load(f)
+
+        # Public list shows confirmed moves only, matching the gainers page
+        losers_list = [l for l in losers_list if l.get('status') == 'CONFIRMED']
+        for rank, row in enumerate(losers_list, 1):
+            row['rank'] = rank  # no gaps after hiding unconfirmed rows
         
         return render_template('losers.html', losers=losers_list)
     

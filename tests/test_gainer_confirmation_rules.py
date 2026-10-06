@@ -2,7 +2,7 @@
 import unittest
 import pandas as pd
 
-from app.analysis import detect_spike
+from app.analysis import detect_drop, detect_spike
 
 DATES = pd.to_datetime([f"2026-09-{d:02d}" for d in range(20, 30)])
 BASELINE, RECENT = list(DATES[1:4]), list(DATES[-3:])
@@ -59,6 +59,34 @@ class GainerConfirmationRules(unittest.TestCase):
         df = history([10] * 7 + [30, 30, 30], [9] * 10)
         self.assertEqual(detect_spike(1, 10.0, 30.0, df, DATES[-1], RECENT, "Unlimited"),
                          "CONFIRMED")
+
+
+def drop_status(markets, lows, baseline=20.0, current=None):
+    df = history(markets, lows)
+    current = current if current is not None else pd.Series(markets[-3:]).median()
+    return detect_drop(1, baseline, current, df, DATES[-1], RECENT, "Unlimited", BASELINE)
+
+
+class LoserConfirmationRules(unittest.TestCase):
+    def test_real_decline_is_confirmed(self):
+        markets = [20, 20, 20, 20, 18, 16, 14, 12, 11, 10.5]
+        lows = [19, 19, 19, 19, 17, 15, 13, 11, 10, 10]
+        self.assertEqual(drop_status(markets, lows), "CONFIRMED")
+
+    def test_single_sale_drop_is_unconfirmed(self):
+        markets = [20] * 7 + [8, 8, 8]
+        lows = [19] * 4 + [15, 12, 9, 8, 8, 8]
+        self.assertEqual(drop_status(markets, lows), "UNCONFIRMED")
+
+    def test_listings_still_high_is_unconfirmed(self):
+        markets = [20, 20, 20, 20, 18, 16, 14, 12, 11, 10.5]
+        lows = [19] * 10  # sellers haven't lowered prices
+        self.assertEqual(drop_status(markets, lows), "UNCONFIRMED")
+
+    def test_recovered_price_is_unconfirmed(self):
+        markets = [20, 20, 20, 20, 18, 12, 11, 10, 10, 19.5]
+        lows = [19, 19, 19, 19, 15, 11, 10, 9, 9, 9]
+        self.assertEqual(drop_status(markets, lows, current=10.0), "UNCONFIRMED")
 
 
 if __name__ == "__main__":
