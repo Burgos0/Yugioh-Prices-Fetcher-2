@@ -34,7 +34,7 @@ class StaticSiteTests(unittest.TestCase):
 
     def test_impact_meta_tag_present(self):
         html = create_app().test_client().get("/").data.decode()
-        self.assertIn('name="impact-site-verification" value="6d495a66-ade6-4dff-af43-7c33c7488a5e"', html)
+        self.assertIn('name="impact-site-verification" value="0793ee41-38a9-47e6-a71c-892b6e43c65f"', html)
 
 if __name__ == "__main__":
     unittest.main()
