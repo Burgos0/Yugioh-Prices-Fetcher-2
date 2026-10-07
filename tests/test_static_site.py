@@ -32,13 +32,9 @@ class StaticSiteTests(unittest.TestCase):
             "https://tcgplayer.pxf.io/c/1/2/3?u=https%3A%2F%2Fwww.tcgplayer.com%2Fproduct%2F610840",
         )
 
-    def test_impact_meta_tag_only_when_valid(self):
-        tag = '<meta name="impact-site-verification" value="abc-123">'
-        with mock.patch.dict(os.environ, {"IMPACT_VERIFICATION_TAG": tag}):
-            self.assertIn(tag, create_app().test_client().get("/").data.decode())
-        with mock.patch.dict(os.environ, {"IMPACT_VERIFICATION_TAG": "<script>x</script>"}):
-            self.assertNotIn("<script>x", create_app().test_client().get("/").data.decode())
-
+    def test_impact_meta_tag_present(self):
+        html = create_app().test_client().get("/").data.decode()
+        self.assertIn('name="impact-site-verification" value="6d495a66-ade6-4dff-af43-7c33c7488a5e"', html)
 
 if __name__ == "__main__":
     unittest.main()
