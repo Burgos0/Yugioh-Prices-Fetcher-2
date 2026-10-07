@@ -37,8 +37,6 @@ def _last_updated(db_path="data/prices.db"):
 def create_app():
     app = Flask(__name__)
     app.config['DEBUG'] = False
-    # GoatCounter site code (free, cookie-free analytics). Empty = no tracking script.
-    app.config['GOATCOUNTER_CODE'] = os.environ.get('GOATCOUNTER_CODE', '').strip()
     # Impact affiliate tracking link for TCGplayer. Empty = plain TCGplayer links.
     app.config['AFFILIATE_BASE_URL'] = os.environ.get('AFFILIATE_BASE_URL', '').strip().rstrip('/')
     # Impact site-ownership meta tag, pasted whole. Only a <meta> tag is accepted.
@@ -56,7 +54,6 @@ def create_app():
         return {
             'site_name': SITE_NAME,
             'last_updated': _last_updated(),
-            'goatcounter_code': app.config['GOATCOUNTER_CODE'],
             'impact_verification_tag': app.config['IMPACT_VERIFICATION_TAG'],
         }
 

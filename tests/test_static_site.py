@@ -18,12 +18,9 @@ class StaticSiteTests(unittest.TestCase):
         self.assertIn("Not financial advice", html)
         self.assertIn("affiliate links", html)
 
-    def test_analytics_only_when_configured(self):
-        with mock.patch.dict(os.environ, {"GOATCOUNTER_CODE": ""}):
-            self.assertNotIn("goatcounter", create_app().test_client().get("/").data.decode())
-        with mock.patch.dict(os.environ, {"GOATCOUNTER_CODE": "tcgtrending"}):
-            html = create_app().test_client().get("/").data.decode()
-        self.assertIn("https://tcgtrending.goatcounter.com/count", html)
+    def test_goatcounter_on_every_page(self):
+        html = create_app().test_client().get("/").data.decode()
+        self.assertIn('data-goatcounter="https://tcgtrending.goatcounter.com/count"', html)
 
     def test_tcgplayer_links(self):
         self.assertEqual(tcgplayer_url(610840), "https://www.tcgplayer.com/product/610840")
