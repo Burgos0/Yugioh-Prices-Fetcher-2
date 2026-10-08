@@ -10,3 +10,6 @@ data/signals.db
 
 # Built static site (generated in CI)
 site/
+
+# Generated social media posts
+social/out/

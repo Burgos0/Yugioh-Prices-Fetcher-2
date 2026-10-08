@@ -1,0 +1,29 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>{{ css|safe }}</style></head>
+<body><div class="slide" style="background-image:url('{{ bg }}')">
+  <div class="title outline">{{ title }}</div>
+  <div class="date outline">{{ date_str }}</div>
+  <div class="divider"><div class="gem"></div><div class="line"></div><div class="gem"></div></div>
+
+  <div class="row">
+    <div class="card-col"><img src="{{ c.img }}" alt=""></div>
+    <div class="side">
+      <div class="box">
+        <div class="label outline">Price gain</div>
+        <div class="pct {{ c.pct_class }}">+{{ c.pct }}%</div>
+        <div class="when outline">{{ window }}</div>
+      </div>
+      <div class="box">
+        <div class="price-old outline">${{ c.old }}</div>
+        <div class="arrow">&#9660;</div>
+        <div class="price-new outline">${{ c.new }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="name-wrap">
+    <div class="name outline {{ c.name_class }}">{{ c.name }}</div>
+    <div class="set outline">{{ c.set_name }}{% if c.printing %} &middot; {{ c.printing }}{% endif %}</div>
+  </div>
+  <div class="foot outline">{{ site }}</div>
+</div></body></html>
