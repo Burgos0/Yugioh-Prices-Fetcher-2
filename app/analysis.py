@@ -946,6 +946,209 @@ def calculate_penny_movers(db_path, limit=50):
     return _calculate_printing_movers(db_path, limit, "penny")
 
 
+# ===== PROVISIONAL: opt-in candidate gainers (research only) =====
+# Not used by the website, caches, or daily pipeline. Every threshold below
+# is a provisional guess pending forward-return evaluation
+# (scripts/compare_candidate_gainers.py); none is a validated constant.
+# Boundaries are inclusive (>=) with a 1e-9 float tolerance.
+CANDIDATE_GAINERS_CONFIG = {
+    # Eligibility floors, applied to market price (C = current, B = baseline).
+    "min_current_price": 5.00,      # C >= $5 (floor is on C, not B)
+    "min_dollar_gain": 3.00,        # C - B >= $3
+    "min_percent_gain": 25.0,       # 100 * (C - B) / B >= 25%
+    # Price bands from C: [5, 20), [20, 100), [100, inf).
+    "price_band_edges": (5.0, 20.0, 100.0),
+    "top_n_per_band": 20,
+    # Fresh-jump supporting field: last-3 snapshots >= baseline * this ratio.
+    "fresh_elevated_ratio": 1.10,
+    # Strong/weak badges (labels only; never filter or reorder).
+    "badge_low_rise_min": 0.15,         # STRONG: low rose >= 15% vs its baseline...
+    "badge_low_support_ratio": 0.80,    # ...or low >= 80% of the new market price
+    "badge_low_flat_max": 0.05,         # WEAK: low changed < 5% (flat or down)
+    "badge_max_low_to_market": 2.0,     # WEAK: low > 2x market (thin market)
+}
+
+
+def calculate_candidate_gainers(db_path, as_of=None, config=None, df=None):
+    """
+    PROVISIONAL, opt-in candidate gainers. Read-only; writes nothing.
+
+    Reuses the production gainer windows (_select_weekly_mover_windows),
+    printing identity (product_id, printing), relevance filter
+    (_calculate_printing_relevant_sets + EXCLUDED_SETS), singles scope, and
+    detect_spike status. Differences from calculate_top_gainers: floors from
+    CANDIDATE_GAINERS_CONFIG, invalid (non-finite/non-positive) prices are
+    rejected, gains are never capped, ties are broken deterministically, and
+    two lists are produced:
+
+    - weekly: C = median of the latest 3 snapshots; ranked CONFIRMED first,
+      then percent gain, dollar gain, (product_id, printing).
+    - fresh: C = latest single market price (no smoothing), same B and
+      floors; ranked by percent gain, dollar gain, (product_id, printing).
+
+    Badges (STRONG / WEAK / NEUTRAL / UNKNOWN) use low and mid prices as
+    context only. High price is never used.
+
+    `df` may be a preloaded printing_prices frame (skips the DB read);
+    `as_of` (YYYY-MM-DD) truncates history so only data on or before that
+    date is used, including for the relevance filter.
+
+    Returns a dict: dates, config, weekly, weekly_by_band, fresh,
+    relevance_excluded, exclusions, evaluated.
+    """
+    cfg = {**CANDIDATE_GAINERS_CONFIG, **(config or {})}
+    eps = 1e-9
+    identity = ["product_id", "printing"]
+    if df is None:
+        df = _load_printing_prices(db_path)
+    result = {"dates": None, "config": cfg, "weekly": pd.DataFrame(), "weekly_by_band": {},
+              "fresh": pd.DataFrame(), "relevance_excluded": pd.DataFrame(),
+              "exclusions": {"weekly": {}, "fresh": {}}, "evaluated": pd.DataFrame()}
+    if df.empty:
+        return result
+    df = df.assign(date=pd.to_datetime(df["date"]))
+    if as_of is not None:
+        df = df[df["date"] <= pd.Timestamp(as_of)]
+    weekly_windows = _select_weekly_mover_windows(df)
+    if weekly_windows is None:
+        return result
+    recent_dates, baseline_dates = weekly_windows
+    latest_date = recent_dates[-1]
+    result["dates"] = {
+        "as_of": str(pd.Timestamp(latest_date).date()),
+        "recent": [str(pd.Timestamp(d).date()) for d in recent_dates],
+        "baseline": [str(pd.Timestamp(d).date()) for d in baseline_dates],
+    }
+
+    # Relevance on the full frame (as production does), then singles only.
+    relevant_sets = _calculate_printing_relevant_sets(df)
+    df = df[df["printing"] != SEALED_PRINTING]
+    meta = df.drop_duplicates(subset=identity, keep="first").set_index(identity)[["card_name", "set_name"]]
+
+    # One pass: pivot the six window snapshots into per-pair columns.
+    window_dates = list(baseline_dates) + list(recent_dates)
+    cols = [c for c in ("market_price", "low_price", "mid_price") if c in df.columns]
+    wide = (df[df["date"].isin(window_dates)]
+            .groupby(identity + ["date"])[cols].first()
+            .unstack("date")
+            .reindex(meta.index))
+
+    def window(col, dates):
+        if col not in cols:
+            return pd.DataFrame(index=meta.index, columns=list(dates), dtype=float)
+        return wide[col].reindex(columns=list(dates)).astype(float)
+
+    def valid(frame):
+        return frame.where(frame.map(math.isfinite) & (frame > 0))
+
+    base_mkt, cur_mkt = window("market_price", baseline_dates), window("market_price", recent_dates)
+    raw = pd.concat([base_mkt, cur_mkt], axis=1)
+    invalid_price = (raw.notna() & valid(raw).isna()).any(axis=1)
+    complete = valid(raw).notna().all(axis=1)
+
+    ev = meta.copy()
+    ev["baseline_value"] = base_mkt.median(axis=1)
+    ev["current_value"] = cur_mkt.median(axis=1)
+    ev["fresh_value"] = cur_mkt[latest_date]
+    ev["relevant"] = ev["set_name"].isin(relevant_sets) & ~ev["set_name"].isin(EXCLUDED_SETS)
+    ev["recent_above_baseline_count"] = cur_mkt.ge(
+        ev["baseline_value"] * cfg["fresh_elevated_ratio"] - eps, axis=0).sum(axis=1)
+    base_low = valid(window("low_price", baseline_dates)).median(axis=1)
+    cur_low = valid(window("low_price", recent_dates))
+    cur_mid = valid(window("mid_price", recent_dates))
+
+    edges = list(cfg["price_band_edges"])
+    labels = [f"${lo:g}-{hi:g}" for lo, hi in zip(edges, edges[1:])] + [f"${edges[-1]:g}+"]
+
+    for kind, value_col, low_now, mid_now in (
+            ("weekly", "current_value", cur_low.median(axis=1), cur_mid.median(axis=1)),
+            ("fresh", "fresh_value", cur_low[latest_date], cur_mid[latest_date])):
+        c, b = ev[value_col], ev["baseline_value"]
+        gain = c - b
+        pct = 100 * gain / b
+        reason = pd.Series(None, index=ev.index, dtype=object)
+        for name, failed in (
+                ("invalid_price", invalid_price),
+                ("incomplete_window", ~complete),
+                ("price_floor", c < cfg["min_current_price"] - eps),
+                ("dollar_floor", gain < cfg["min_dollar_gain"] - eps),
+                ("pct_floor", pct < cfg["min_percent_gain"] - eps),
+                ("relevance_filter", ~ev["relevant"])):
+            reason = reason.mask(reason.isna() & failed, name)
+        ev[f"{kind}_dollar_gain"], ev[f"{kind}_percent_gain"] = gain, pct
+        ev[f"{kind}_reason"] = reason
+        result["exclusions"][kind] = {k: int(v) for k, v in reason.value_counts().items()}
+
+        # Badges: labels only, computed for every row and never used to filter.
+        low_change = low_now / base_low - 1
+        badge = pd.Series("NEUTRAL", index=ev.index, dtype=object)
+        badge = badge.mask(low_change < cfg["badge_low_flat_max"], "WEAK")
+        badge = badge.mask((low_change >= cfg["badge_low_rise_min"] - eps)
+                           | (low_now >= c * cfg["badge_low_support_ratio"] - eps), "STRONG")
+        badge = badge.mask(low_now > c * cfg["badge_max_low_to_market"] + eps, "WEAK")
+        badge = badge.mask(low_now.isna() | base_low.isna() | mid_now.isna(), "UNKNOWN")
+        ev[f"{kind}_badge"] = badge
+        ev[f"{kind}_low_change_pct"] = 100 * low_change
+        ev[f"{kind}_low_to_market"] = low_now / c
+        ev[f"{kind}_mid_to_market"] = mid_now / c
+        ev[f"{kind}_band"] = pd.cut(c, edges + [math.inf], right=False, labels=labels).astype(object)
+
+    ev = ev.reset_index()
+    result["evaluated"] = ev
+    passes_floors = (ev["weekly_reason"].isna() | (ev["weekly_reason"] == "relevance_filter")
+                     | ev["fresh_reason"].isna() | (ev["fresh_reason"] == "relevance_filter"))
+    excluded = ev[passes_floors & ~ev["relevant"]].copy()
+    excluded["relevance_reason"] = excluded["set_name"].map(
+        lambda s: "excluded_set" if s in EXCLUDED_SETS else "not_relevant_set")
+    result["relevance_excluded"] = excluded.sort_values(identity).reset_index(drop=True)
+
+    def ranked(kind, value_col, extra):
+        rows = ev[ev[f"{kind}_reason"].isna()]
+        out = pd.DataFrame({
+            **{k: rows[k] for k in ["product_id", "printing", "card_name", "set_name", "baseline_value"]},
+            "current_value": rows[value_col],
+            "dollar_gain": rows[f"{kind}_dollar_gain"],
+            "percent_gain": rows[f"{kind}_percent_gain"],
+            "band": rows[f"{kind}_band"],
+            "badge": rows[f"{kind}_badge"],
+            "low_change_pct": rows[f"{kind}_low_change_pct"],
+            "low_to_market": rows[f"{kind}_low_to_market"],
+            "mid_to_market": rows[f"{kind}_mid_to_market"],
+            **{k: rows[k] for k in extra},
+        })
+        return out
+
+    weekly = ranked("weekly", "current_value", [])
+    if not weekly.empty:
+        # Status uses production detect_spike on only the rows it reads.
+        keys = pd.MultiIndex.from_frame(weekly[identity])
+        history = df[df["date"] >= baseline_dates[0]]
+        history = history[pd.MultiIndex.from_frame(history[identity]).isin(keys)]
+        groups = history.groupby(identity, sort=False)
+        weekly["status"] = [
+            detect_spike(pid, b, c, groups.get_group((pid, pr)), latest_date,
+                         recent_dates, pr, baseline_dates)
+            for pid, pr, b, c in zip(weekly["product_id"], weekly["printing"],
+                                     weekly["baseline_value"], weekly["current_value"])]
+        weekly["_confirmed"] = weekly["status"] == "CONFIRMED"
+        weekly = weekly.sort_values(
+            ["_confirmed", "percent_gain", "dollar_gain", "product_id", "printing"],
+            ascending=[False, False, False, True, True], kind="mergesort").drop(columns="_confirmed")
+    weekly = weekly.reset_index(drop=True)
+    weekly.insert(0, "rank", range(1, len(weekly) + 1))
+    result["weekly"] = weekly
+    result["weekly_by_band"] = {
+        label: weekly[weekly["band"] == label].head(cfg["top_n_per_band"]).reset_index(drop=True)
+        for label in labels}
+
+    fresh = ranked("fresh", "fresh_value", ["recent_above_baseline_count"]).sort_values(
+        ["percent_gain", "dollar_gain", "product_id", "printing"],
+        ascending=[False, False, True, True], kind="mergesort").reset_index(drop=True)
+    fresh.insert(0, "rank", range(1, len(fresh) + 1))
+    result["fresh"] = fresh
+    return result
+
+
 def _load_subtype_established_dates(db_path):
     """
     Load each product's tracked-subtype establishment date from
