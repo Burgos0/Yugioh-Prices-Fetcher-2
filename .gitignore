@@ -13,3 +13,5 @@ site/
 
 # Generated social media posts
 social/out/
+
+.DS_Store
