@@ -1,8 +1,12 @@
 """Stricter CONFIRMED rules for weekly gainers (reversion, single sale, listing floor)."""
+import sqlite3
+import tempfile
 import unittest
+from pathlib import Path
+
 import pandas as pd
 
-from app.analysis import detect_drop, detect_spike
+from app.analysis import calculate_penny_movers, detect_drop, detect_spike
 
 DATES = pd.to_datetime([f"2026-09-{d:02d}" for d in range(20, 30)])
 BASELINE, RECENT = list(DATES[1:4]), list(DATES[-3:])
@@ -87,6 +91,56 @@ class LoserConfirmationRules(unittest.TestCase):
         markets = [20, 20, 20, 20, 18, 12, 11, 10, 10, 19.5]
         lows = [19, 19, 19, 19, 15, 11, 10, 9, 9, 9]
         self.assertEqual(drop_status(markets, lows, current=10.0), "UNCONFIRMED")
+
+
+PENNY_DATES = [f"2026-09-{d:02d}" for d in range(1, 10)]
+PENNY_TREND = [1.0, 1.0, 1.0, 1.1, 1.2, 1.3, 1.5, 1.6, 1.7]
+
+
+class PennyMoverConfirmationRules(unittest.TestCase):
+    """Penny movers go through the same stricter rules as the main gainers list."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.db_path = str(Path(self.tmp.name) / "prices.db")
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute(
+                "CREATE TABLE printing_prices (product_id INTEGER, printing TEXT, "
+                "card_name TEXT, set_name TEXT, date TEXT, market_price REAL, low_price REAL)"
+            )
+
+    def insert(self, product_id, markets, lows):
+        with sqlite3.connect(self.db_path) as conn:
+            conn.executemany(
+                "INSERT INTO printing_prices VALUES (?, 'Unlimited', ?, 'Test Set', ?, ?, ?)",
+                [(product_id, f"Card {product_id}", date, market, low)
+                 for date, market, low in zip(PENNY_DATES, markets, lows)],
+            )
+
+    def test_penny_movers_failing_strict_rules_are_unconfirmed(self):
+        self.insert(1, PENNY_TREND, [0.9, 0.9, 0.9, 1.0, 1.1, 1.2, 1.4, 1.5, 1.6])  # real trend
+        self.insert(2, [1.0] * 6 + [1.6] * 3, [0.9, 0.9, 0.9, 1.0, 1.1, 1.2, 1.4, 1.5, 1.5])  # one sale
+        self.insert(3, PENNY_TREND, [0.9] * 9)  # cheapest listing never moved
+        self.insert(4, PENNY_TREND, [3.0] * 9)  # listings ~3x market: thin market
+
+        movers = calculate_penny_movers(self.db_path)
+        statuses = dict(zip(movers["product_id"], movers["status"]))
+        self.assertEqual(statuses, {1: "CONFIRMED", 2: "UNCONFIRMED",
+                                    3: "UNCONFIRMED", 4: "UNCONFIRMED"})
+
+        # Without baseline_dates (the old penny call) rules 3-6 were skipped,
+        # so every one of these passed.
+        df = pd.read_sql("SELECT * FROM printing_prices", sqlite3.connect(self.db_path))
+        df["date"] = pd.to_datetime(df["date"])
+        dates = sorted(df["date"].unique())
+        for _, row in movers.iterrows():
+            pair_rows = df[df["product_id"] == row["product_id"]]
+            self.assertEqual(
+                detect_spike(row["product_id"], row["baseline_value"], row["current_value"],
+                             pair_rows, dates[-1], dates[-3:], "Unlimited"),
+                "CONFIRMED",
+            )
 
 
 if __name__ == "__main__":

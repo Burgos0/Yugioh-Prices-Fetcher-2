@@ -86,7 +86,7 @@ def reference_printing_movers(db_path, limit, mover_type):
             if dollar_change < 0.25 or percent_change < 20:
                 continue
             status = detect_spike(product_id, baseline_value, current_value, df,
-                                  latest_date, recent_dates, printing)
+                                  latest_date, recent_dates, printing, baseline_dates)
             result = {"dollar_gain": dollar_change, "percent_gain": percent_change}
 
         result.update({
