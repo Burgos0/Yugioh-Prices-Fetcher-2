@@ -110,7 +110,10 @@ def reference_printing_movers(db_path, limit, mover_type):
                                             ascending=[False, mover_type == "loser"])
         results_df = results_df.drop(columns="_confirmed").head(limit)
     else:
-        results_df = results_df.sort_values(sort_column, ascending=mover_type == "loser").head(limit)
+        results_df["_confirmed"] = results_df["status"] == "CONFIRMED"
+        results_df = results_df.sort_values(["_confirmed", sort_column, "product_id", "printing"],
+                                            ascending=[False, False, True, True])
+        results_df = results_df.drop(columns="_confirmed").head(limit)
     results_df.insert(0, "rank", range(1, len(results_df) + 1))
     return results_df
 

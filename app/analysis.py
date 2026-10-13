@@ -572,7 +572,12 @@ def _calculate_printing_movers(db_path, limit, mover_type, product_scope="single
                                             ascending=[False, mover_type == "loser"])
         results_df = results_df.drop(columns="_confirmed").head(limit)
     else:
-        results_df = results_df.sort_values(sort_column, ascending=mover_type == "loser").head(limit)
+        # Penny movers rank like gainers: confirmed first, then largest % gain.
+        # product_id/printing break exact ties so the order never depends on input order.
+        results_df["_confirmed"] = results_df["status"] == "CONFIRMED"
+        results_df = results_df.sort_values(["_confirmed", sort_column, "product_id", "printing"],
+                                            ascending=[False, False, True, True])
+        results_df = results_df.drop(columns="_confirmed").head(limit)
     results_df.insert(0, "rank", range(1, len(results_df) + 1))
     return results_df
 

@@ -142,6 +142,25 @@ class PennyMoverConfirmationRules(unittest.TestCase):
                 "CONFIRMED",
             )
 
+    def test_penny_movers_rank_confirmed_first_with_deterministic_ties(self):
+        real_lows = [0.9, 0.9, 0.9, 1.0, 1.1, 1.2, 1.4, 1.5, 1.6]
+        bigger_trend = [1.0, 1.0, 1.0, 1.1, 1.3, 1.5, 1.7, 1.8, 1.9]
+        # Inserted out of id order: equal-gain ties must still come out by product_id.
+        self.insert(7, PENNY_TREND, real_lows)        # CONFIRMED, +60%
+        self.insert(9, bigger_trend, [5.0] * 9)       # UNCONFIRMED (thin market), +80%
+        self.insert(1, PENNY_TREND, real_lows)        # CONFIRMED, +60%
+        self.insert(8, PENNY_TREND, [5.0] * 9)        # UNCONFIRMED (thin market), +60%
+        self.insert(5, PENNY_TREND, real_lows)        # CONFIRMED, +60%
+
+        movers = calculate_penny_movers(self.db_path)
+        self.assertEqual(movers["product_id"].tolist(), [1, 5, 7, 9, 8])
+        self.assertEqual(movers["status"].tolist(), ["CONFIRMED"] * 3 + ["UNCONFIRMED"] * 2)
+        self.assertEqual(movers["rank"].tolist(), [1, 2, 3, 4, 5])
+
+        # The limit applies after ranking, so a bigger unconfirmed gain can't crowd
+        # confirmed movers out of the list.
+        self.assertEqual(calculate_penny_movers(self.db_path, limit=2)["product_id"].tolist(), [1, 5])
+
 
 if __name__ == "__main__":
     unittest.main()
