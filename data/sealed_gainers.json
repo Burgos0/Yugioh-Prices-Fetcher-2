@@ -1,14 +1,14 @@
 [
   {
     "rank": 1,
-    "dollar_gain": 2.0000000000000018,
-    "percent_gain": 13.166556945358801,
-    "product_id": 518666,
+    "dollar_gain": 3.75,
+    "percent_gain": 13.641324117861043,
+    "product_id": 725351,
     "printing": "Normal",
-    "card_name": "Tournament Pack 6 Booster Pack",
-    "set_name": "Tournament Pack 6",
-    "baseline_value": 15.19,
-    "current_value": 17.19,
+    "card_name": "Beyond the Brave Tuck Box (Retail Exclusive)",
+    "set_name": "Beyond the Brave",
+    "baseline_value": 27.49,
+    "current_value": 31.24,
     "status": "CONFIRMED"
   },
   {
@@ -25,18 +25,30 @@
   },
   {
     "rank": 3,
-    "dollar_gain": 2.5,
-    "percent_gain": 9.094216078574027,
-    "product_id": 725351,
+    "dollar_gain": 0.7400000000000002,
+    "percent_gain": 10.571428571428575,
+    "product_id": 191588,
     "printing": "Normal",
-    "card_name": "Beyond the Brave Tuck Box (Retail Exclusive)",
-    "set_name": "Beyond the Brave",
-    "baseline_value": 27.49,
-    "current_value": 29.99,
+    "card_name": "Rising Rampage Booster Pack [1st Edition]",
+    "set_name": "Rising Rampage",
+    "baseline_value": 7.0,
+    "current_value": 7.74,
     "status": "UNCONFIRMED"
   },
   {
     "rank": 4,
+    "dollar_gain": 4.880000000000003,
+    "percent_gain": 9.723052400876673,
+    "product_id": 628482,
+    "printing": "Normal",
+    "card_name": "Battles of Legend: Monster Mayhem Booster Box [1st Edition]",
+    "set_name": "Battles of Legend: Monster Mayhem",
+    "baseline_value": 50.19,
+    "current_value": 55.07,
+    "status": "UNCONFIRMED"
+  },
+  {
+    "rank": 5,
     "dollar_gain": 3.980000000000004,
     "percent_gain": 9.072258946888544,
     "product_id": 181266,
@@ -48,7 +60,7 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 5,
+    "rank": 6,
     "dollar_gain": 0.2799999999999998,
     "percent_gain": 8.562691131498465,
     "product_id": 457030,
@@ -60,7 +72,7 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 6,
+    "rank": 7,
     "dollar_gain": 1.0,
     "percent_gain": 8.025682182985554,
     "product_id": 282045,
@@ -72,7 +84,7 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 7,
+    "rank": 8,
     "dollar_gain": 3.3299999999999983,
     "percent_gain": 7.401644809957764,
     "product_id": 103906,
@@ -84,19 +96,19 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 8,
-    "dollar_gain": 0.4900000000000002,
-    "percent_gain": 7.0000000000000036,
-    "product_id": 191588,
+    "rank": 9,
+    "dollar_gain": 1.0,
+    "percent_gain": 7.147962830593281,
+    "product_id": 33738,
     "printing": "Normal",
-    "card_name": "Rising Rampage Booster Pack [1st Edition]",
-    "set_name": "Rising Rampage",
-    "baseline_value": 7.0,
-    "current_value": 7.49,
+    "card_name": "Stardust Overdrive - Booster Pack",
+    "set_name": "Stardust Overdrive",
+    "baseline_value": 13.99,
+    "current_value": 14.99,
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 9,
+    "rank": 10,
     "dollar_gain": 32.809999999999945,
     "percent_gain": 5.98613391716839,
     "product_id": 554800,
@@ -108,39 +120,27 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 10,
-    "dollar_gain": 2.759999999999998,
-    "percent_gain": 5.481628599801386,
-    "product_id": 628482,
-    "printing": "Normal",
-    "card_name": "Battles of Legend: Monster Mayhem Booster Box [1st Edition]",
-    "set_name": "Battles of Legend: Monster Mayhem",
-    "baseline_value": 50.35,
-    "current_value": 53.11,
-    "status": "UNCONFIRMED"
-  },
-  {
     "rank": 11,
-    "dollar_gain": 0.5099999999999998,
-    "percent_gain": 4.442508710801392,
-    "product_id": 131083,
-    "printing": "Normal",
-    "card_name": "Rise of Destiny Booster Pack [1st Edition]",
-    "set_name": "Rise of Destiny",
-    "baseline_value": 11.48,
-    "current_value": 11.99,
-    "status": "UNCONFIRMED"
-  },
-  {
-    "rank": 12,
-    "dollar_gain": 0.990000000000002,
-    "percent_gain": 4.106180008295322,
+    "dollar_gain": 1.3100000000000023,
+    "percent_gain": 5.433430111986737,
     "product_id": 653375,
     "printing": "Normal",
     "card_name": "THE CHRONICLES DECK: The Fallen & the Virtuous (All-Foil Edition) Deck",
     "set_name": "THE CHRONICLES DECK: The Fallen & The Virtuous (All-Foil Edition)",
     "baseline_value": 24.11,
-    "current_value": 25.1,
+    "current_value": 25.42,
+    "status": "UNCONFIRMED"
+  },
+  {
+    "rank": 12,
+    "dollar_gain": 0.7000000000000028,
+    "percent_gain": 4.2449969678593265,
+    "product_id": 518666,
+    "printing": "Normal",
+    "card_name": "Tournament Pack 6 Booster Pack",
+    "set_name": "Tournament Pack 6",
+    "baseline_value": 16.49,
+    "current_value": 17.19,
     "status": "UNCONFIRMED"
   },
   {
@@ -157,18 +157,6 @@
   },
   {
     "rank": 14,
-    "dollar_gain": 0.13000000000000034,
-    "percent_gain": 3.9393939393939497,
-    "product_id": 485800,
-    "printing": "Normal",
-    "card_name": "Battles of Legend: Monstrous Revenge Booster Pack",
-    "set_name": "Battles of Legend: Monstrous Revenge",
-    "baseline_value": 3.3,
-    "current_value": 3.43,
-    "status": "UNCONFIRMED"
-  },
-  {
-    "rank": 15,
     "dollar_gain": 1.1900000000000013,
     "percent_gain": 3.7586860391661445,
     "product_id": 27411,
@@ -180,19 +168,7 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 16,
-    "dollar_gain": 2.519999999999996,
-    "percent_gain": 3.6041189931350055,
-    "product_id": 162112,
-    "printing": "Normal",
-    "card_name": "Lair of Darkness Structure Deck [1st Edition]",
-    "set_name": "Structure Deck: Lair of Darkness",
-    "baseline_value": 69.92,
-    "current_value": 72.44,
-    "status": "UNCONFIRMED"
-  },
-  {
-    "rank": 17,
+    "rank": 15,
     "dollar_gain": 96.65999999999985,
     "percent_gain": 3.4604107671543747,
     "product_id": 247327,
@@ -204,19 +180,19 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 18,
-    "dollar_gain": 0.08000000000000007,
-    "percent_gain": 3.0075187969924837,
-    "product_id": 243715,
+    "rank": 16,
+    "dollar_gain": 0.1299999999999999,
+    "percent_gain": 3.2911392405063267,
+    "product_id": 60113,
     "printing": "Normal",
-    "card_name": "Burst of Destiny Booster Pack [1st Edition]",
-    "set_name": "Burst of Destiny",
-    "baseline_value": 2.66,
-    "current_value": 2.74,
+    "card_name": "Hidden Arsenal 6: Omega Xyz - Booster Pack [1st Edition]",
+    "set_name": "Hidden Arsenal 6: Omega Xyz",
+    "baseline_value": 3.95,
+    "current_value": 4.08,
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 19,
+    "rank": 17,
     "dollar_gain": 2.5,
     "percent_gain": 2.9415225320625957,
     "product_id": 57214,
@@ -228,31 +204,7 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 20,
-    "dollar_gain": 0.370000000000001,
-    "percent_gain": 2.9318541996830505,
-    "product_id": 670282,
-    "printing": "Normal",
-    "card_name": "Order of Chaos Special Edition Box",
-    "set_name": "Order of Chaos",
-    "baseline_value": 12.62,
-    "current_value": 12.99,
-    "status": "UNCONFIRMED"
-  },
-  {
-    "rank": 21,
-    "dollar_gain": 0.620000000000001,
-    "percent_gain": 2.8597785977859824,
-    "product_id": 693164,
-    "printing": "Normal",
-    "card_name": "Legendary Arc-V Decks: Box Set",
-    "set_name": "Legendary Arc-V Decks",
-    "baseline_value": 21.68,
-    "current_value": 22.3,
-    "status": "UNCONFIRMED"
-  },
-  {
-    "rank": 22,
+    "rank": 18,
     "dollar_gain": 0.0900000000000003,
     "percent_gain": 2.857142857142867,
     "product_id": 678151,
@@ -264,19 +216,7 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 23,
-    "dollar_gain": 2.210000000000008,
-    "percent_gain": 2.8077753779697727,
-    "product_id": 678649,
-    "printing": "Normal",
-    "card_name": "Battles of Legend: Glorious Gallery Booster Box [1st Edition]",
-    "set_name": "Battles of Legend: Glorious Gallery",
-    "baseline_value": 78.71,
-    "current_value": 80.92,
-    "status": "UNCONFIRMED"
-  },
-  {
-    "rank": 24,
+    "rank": 19,
     "dollar_gain": 0.7199999999999989,
     "percent_gain": 2.613430127041738,
     "product_id": 174709,
@@ -288,7 +228,7 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 25,
+    "rank": 20,
     "dollar_gain": 0.08000000000000007,
     "percent_gain": 2.5806451612903247,
     "product_id": 282083,
@@ -300,31 +240,55 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 26,
-    "dollar_gain": 0.779999999999994,
-    "percent_gain": 2.2807017543859476,
-    "product_id": 628480,
+    "rank": 21,
+    "dollar_gain": 0.2400000000000002,
+    "percent_gain": 2.4973985431841856,
+    "product_id": 575144,
     "printing": "Normal",
-    "card_name": "Duelist's Advance Booster Box [1st Edition]",
-    "set_name": "Duelist's Advance",
-    "baseline_value": 34.2,
-    "current_value": 34.98,
+    "card_name": "Quarter Century Bonanza Booster Pack",
+    "set_name": "Quarter Century Bonanza",
+    "baseline_value": 9.61,
+    "current_value": 9.85,
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 27,
-    "dollar_gain": 0.28000000000000114,
-    "percent_gain": 2.148887183422879,
+    "rank": 22,
+    "dollar_gain": 0.1999999999999993,
+    "percent_gain": 2.224694104560615,
+    "product_id": 713237,
+    "printing": "Normal",
+    "card_name": "Glorious Victors Booster Pack [1st Edition]",
+    "set_name": "Glorious Victors",
+    "baseline_value": 8.99,
+    "current_value": 9.19,
+    "status": "UNCONFIRMED"
+  },
+  {
+    "rank": 23,
+    "dollar_gain": 0.07000000000000028,
+    "percent_gain": 2.083333333333342,
+    "product_id": 485800,
+    "printing": "Normal",
+    "card_name": "Battles of Legend: Monstrous Revenge Booster Pack",
+    "set_name": "Battles of Legend: Monstrous Revenge",
+    "baseline_value": 3.36,
+    "current_value": 3.43,
+    "status": "UNCONFIRMED"
+  },
+  {
+    "rank": 24,
+    "dollar_gain": 0.25,
+    "percent_gain": 1.9025875190258752,
     "product_id": 272036,
     "printing": "Normal",
     "card_name": "Legendary Duelists: Season 3 Box [1st Edition]",
     "set_name": "Legendary Duelists: Season 3",
-    "baseline_value": 13.03,
-    "current_value": 13.31,
+    "baseline_value": 13.14,
+    "current_value": 13.39,
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 28,
+    "rank": 25,
     "dollar_gain": 0.16999999999999993,
     "percent_gain": 1.7311608961303455,
     "product_id": 116355,
@@ -336,7 +300,19 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 29,
+    "rank": 26,
+    "dollar_gain": 0.14000000000000057,
+    "percent_gain": 1.6110471806674405,
+    "product_id": 283525,
+    "printing": "Normal",
+    "card_name": "Dark World Structure Deck [1st Edition]",
+    "set_name": "Structure Deck: Dark World",
+    "baseline_value": 8.69,
+    "current_value": 8.83,
+    "status": "UNCONFIRMED"
+  },
+  {
+    "rank": 27,
     "dollar_gain": 2.1000000000000227,
     "percent_gain": 1.6044006417602743,
     "product_id": 71189,
@@ -348,67 +324,55 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 30,
-    "dollar_gain": 1.4199999999999875,
-    "percent_gain": 1.5664644236072671,
-    "product_id": 691167,
-    "printing": "Normal",
-    "card_name": "Chaos Origins Booster Box [1st Edition]",
-    "set_name": "Chaos Origins",
-    "baseline_value": 90.65,
-    "current_value": 92.07,
-    "status": "UNCONFIRMED"
-  },
-  {
-    "rank": 31,
-    "dollar_gain": 1.0300000000000011,
-    "percent_gain": 1.5065087026473614,
+    "rank": 28,
+    "dollar_gain": 1.0699999999999932,
+    "percent_gain": 1.5650138949831698,
     "product_id": 668601,
     "printing": "Normal",
     "card_name": "Burst Protocol Booster Box [1st Edition]",
     "set_name": "Burst Protocol",
     "baseline_value": 68.37,
-    "current_value": 69.4,
+    "current_value": 69.44,
+    "status": "UNCONFIRMED"
+  },
+  {
+    "rank": 29,
+    "dollar_gain": 0.10000000000000053,
+    "percent_gain": 1.4684287812041195,
+    "product_id": 668523,
+    "printing": "Normal",
+    "card_name": "Rarity Collection 5 Booster Pack",
+    "set_name": "Rarity Collection 5",
+    "baseline_value": 6.81,
+    "current_value": 6.91,
+    "status": "UNCONFIRMED"
+  },
+  {
+    "rank": 30,
+    "dollar_gain": 0.3100000000000023,
+    "percent_gain": 1.4039855072463872,
+    "product_id": 693164,
+    "printing": "Normal",
+    "card_name": "Legendary Arc-V Decks: Box Set",
+    "set_name": "Legendary Arc-V Decks",
+    "baseline_value": 22.08,
+    "current_value": 22.39,
+    "status": "UNCONFIRMED"
+  },
+  {
+    "rank": 31,
+    "dollar_gain": 2.2099999999999795,
+    "percent_gain": 1.3674896355423423,
+    "product_id": 229657,
+    "printing": "Normal",
+    "card_name": "Ghosts From the Past Box Display [1st Edition]",
+    "set_name": "Ghosts From the Past",
+    "baseline_value": 161.61,
+    "current_value": 163.82,
     "status": "UNCONFIRMED"
   },
   {
     "rank": 32,
-    "dollar_gain": 0.5500000000000043,
-    "percent_gain": 1.4565677966101809,
-    "product_id": 70968,
-    "printing": "Normal",
-    "card_name": "2013 Collector Tin: Wave 2 - Tempest, Dragon Ruler of Storms",
-    "set_name": "2013 Collectors Tins",
-    "baseline_value": 37.76,
-    "current_value": 38.31,
-    "status": "UNCONFIRMED"
-  },
-  {
-    "rank": 33,
-    "dollar_gain": 0.41999999999999815,
-    "percent_gain": 1.3806706114398362,
-    "product_id": 656958,
-    "printing": "Normal",
-    "card_name": "Phantom Revenge Booster Box [1st Edition]",
-    "set_name": "Phantom Revenge",
-    "baseline_value": 30.42,
-    "current_value": 30.84,
-    "status": "UNCONFIRMED"
-  },
-  {
-    "rank": 34,
-    "dollar_gain": 0.09999999999999964,
-    "percent_gain": 1.3586956521739082,
-    "product_id": 35090,
-    "printing": "Normal",
-    "card_name": "Duelist Pack: Kaiba - Booster Pack [Unlimited Edition]",
-    "set_name": "Duelist Pack: Kaiba",
-    "baseline_value": 7.36,
-    "current_value": 7.46,
-    "status": "UNCONFIRMED"
-  },
-  {
-    "rank": 35,
     "dollar_gain": 1.3199999999999932,
     "percent_gain": 1.3001083423618567,
     "product_id": 213399,
@@ -420,7 +384,7 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 36,
+    "rank": 33,
     "dollar_gain": 0.5499999999999972,
     "percent_gain": 1.293204796614148,
     "product_id": 251002,
@@ -432,7 +396,19 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 37,
+    "rank": 34,
+    "dollar_gain": 0.6400000000000006,
+    "percent_gain": 1.2851405622489973,
+    "product_id": 184343,
+    "printing": "Normal",
+    "card_name": "Duel Power Box Set",
+    "set_name": "Duel Power",
+    "baseline_value": 49.8,
+    "current_value": 50.44,
+    "status": "UNCONFIRMED"
+  },
+  {
+    "rank": 35,
     "dollar_gain": 2.319999999999993,
     "percent_gain": 1.2840380783705962,
     "product_id": 202295,
@@ -444,19 +420,7 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 38,
-    "dollar_gain": 0.040000000000000036,
-    "percent_gain": 1.2658227848101276,
-    "product_id": 542373,
-    "printing": "Normal",
-    "card_name": "The Infinite Forbidden Booster Pack [1st Edition]",
-    "set_name": "The Infinite Forbidden",
-    "baseline_value": 3.16,
-    "current_value": 3.2,
-    "status": "UNCONFIRMED"
-  },
-  {
-    "rank": 39,
+    "rank": 36,
     "dollar_gain": 0.040000000000000036,
     "percent_gain": 1.2578616352201268,
     "product_id": 241143,
@@ -468,67 +432,31 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 40,
-    "dollar_gain": 2.0200000000000102,
-    "percent_gain": 1.2533349879009805,
-    "product_id": 229657,
-    "printing": "Normal",
-    "card_name": "Ghosts From the Past Box Display [1st Edition]",
-    "set_name": "Ghosts From the Past",
-    "baseline_value": 161.17,
-    "current_value": 163.19,
-    "status": "UNCONFIRMED"
-  },
-  {
-    "rank": 41,
-    "dollar_gain": 0.04999999999999982,
-    "percent_gain": 1.2135922330097044,
-    "product_id": 220345,
-    "printing": "Normal",
-    "card_name": "Legendary Duelists: Rage of Ra Booster Pack [1st Edition]",
-    "set_name": "Legendary Duelists: Rage of Ra",
-    "baseline_value": 4.12,
-    "current_value": 4.17,
-    "status": "UNCONFIRMED"
-  },
-  {
-    "rank": 42,
+    "rank": 37,
     "dollar_gain": 0.17999999999999972,
-    "percent_gain": 1.1818778726198274,
+    "percent_gain": 1.1803278688524572,
     "product_id": 240558,
     "printing": "Normal",
     "card_name": "Cyber Strike Structure Deck [1st Edition]",
     "set_name": "Structure Deck: Cyber Strike",
-    "baseline_value": 15.23,
-    "current_value": 15.41,
+    "baseline_value": 15.25,
+    "current_value": 15.43,
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 43,
-    "dollar_gain": 0.11000000000000121,
-    "percent_gain": 1.1446409989594297,
-    "product_id": 575144,
+    "rank": 38,
+    "dollar_gain": 0.5300000000000011,
+    "percent_gain": 1.1723070117230725,
+    "product_id": 163861,
     "printing": "Normal",
-    "card_name": "Quarter Century Bonanza Booster Pack",
-    "set_name": "Quarter Century Bonanza",
-    "baseline_value": 9.61,
-    "current_value": 9.72,
+    "card_name": "Star Pack - Battle Royal Booster Box",
+    "set_name": "Star Pack - Battle Royal",
+    "baseline_value": 45.21,
+    "current_value": 45.74,
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 44,
-    "dollar_gain": 0.5600000000000023,
-    "percent_gain": 1.1244979919678761,
-    "product_id": 184343,
-    "printing": "Normal",
-    "card_name": "Duel Power Box Set",
-    "set_name": "Duel Power",
-    "baseline_value": 49.8,
-    "current_value": 50.36,
-    "status": "UNCONFIRMED"
-  },
-  {
-    "rank": 45,
+    "rank": 39,
     "dollar_gain": 0.03000000000000025,
     "percent_gain": 1.1070110701107103,
     "product_id": 257384,
@@ -540,7 +468,19 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 46,
+    "rank": 40,
+    "dollar_gain": 0.44000000000000483,
+    "percent_gain": 1.0967098703888456,
+    "product_id": 586046,
+    "printing": "Normal",
+    "card_name": "Supreme Darkness Booster Box [1st Edition]",
+    "set_name": "Supreme Darkness",
+    "baseline_value": 40.12,
+    "current_value": 40.56,
+    "status": "UNCONFIRMED"
+  },
+  {
+    "rank": 41,
     "dollar_gain": 0.029999999999999805,
     "percent_gain": 1.090909090909084,
     "product_id": 484141,
@@ -552,19 +492,19 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 47,
-    "dollar_gain": 0.07000000000000028,
-    "percent_gain": 1.0279001468428823,
-    "product_id": 668523,
+    "rank": 42,
+    "dollar_gain": 0.08000000000000007,
+    "percent_gain": 1.0666666666666678,
+    "product_id": 605104,
     "printing": "Normal",
-    "card_name": "Rarity Collection 5 Booster Pack",
-    "set_name": "Rarity Collection 5",
-    "baseline_value": 6.81,
-    "current_value": 6.88,
+    "card_name": "Quarter Century Stampede Booster Pack",
+    "set_name": "Quarter Century Stampede",
+    "baseline_value": 7.5,
+    "current_value": 7.58,
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 48,
+    "rank": 43,
     "dollar_gain": 0.2099999999999973,
     "percent_gain": 1.023890784982922,
     "product_id": 579056,
@@ -576,7 +516,19 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 49,
+    "rank": 44,
+    "dollar_gain": 0.3399999999999963,
+    "percent_gain": 0.9758897818599205,
+    "product_id": 282048,
+    "printing": "Normal",
+    "card_name": "Magnificent Mavens Box",
+    "set_name": "Magnificent Mavens",
+    "baseline_value": 34.84,
+    "current_value": 35.18,
+    "status": "UNCONFIRMED"
+  },
+  {
+    "rank": 45,
     "dollar_gain": 0.240000000000002,
     "percent_gain": 0.9654062751407965,
     "product_id": 194714,
@@ -588,31 +540,7 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 50,
-    "dollar_gain": 0.5700000000000003,
-    "percent_gain": 0.9381171823568142,
-    "product_id": 517371,
-    "printing": "Normal",
-    "card_name": "Maze of Millennia Booster Box [1st Edition]",
-    "set_name": "Maze of Millennia",
-    "baseline_value": 60.76,
-    "current_value": 61.33,
-    "status": "UNCONFIRMED"
-  },
-  {
-    "rank": 51,
-    "dollar_gain": 0.3199999999999932,
-    "percent_gain": 0.9184845005740331,
-    "product_id": 282048,
-    "printing": "Normal",
-    "card_name": "Magnificent Mavens Box",
-    "set_name": "Magnificent Mavens",
-    "baseline_value": 34.84,
-    "current_value": 35.16,
-    "status": "UNCONFIRMED"
-  },
-  {
-    "rank": 52,
+    "rank": 46,
     "dollar_gain": 0.040000000000000036,
     "percent_gain": 0.8849557522123902,
     "product_id": 451304,
@@ -624,19 +552,7 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 53,
-    "dollar_gain": 0.9099999999999966,
-    "percent_gain": 0.8815266879782976,
-    "product_id": 652754,
-    "printing": "Normal",
-    "card_name": "2025 Mega-Pack Bundle Display",
-    "set_name": "2025 Mega-Pack",
-    "baseline_value": 103.23,
-    "current_value": 104.14,
-    "status": "UNCONFIRMED"
-  },
-  {
-    "rank": 54,
+    "rank": 47,
     "dollar_gain": 0.040000000000000036,
     "percent_gain": 0.8510638297872347,
     "product_id": 236333,
@@ -648,7 +564,7 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 55,
+    "rank": 48,
     "dollar_gain": 0.5499999999999972,
     "percent_gain": 0.8313180169286536,
     "product_id": 250492,
@@ -660,31 +576,19 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 56,
-    "dollar_gain": 0.04999999999999982,
-    "percent_gain": 0.8025682182985525,
-    "product_id": 213409,
+    "rank": 49,
+    "dollar_gain": 0.6299999999999955,
+    "percent_gain": 0.784655623365295,
+    "product_id": 678649,
     "printing": "Normal",
-    "card_name": "Duelist Pack: Yugi Booster Pack [Unlimited]",
-    "set_name": "Duelist Pack: Yugi",
-    "baseline_value": 6.23,
-    "current_value": 6.28,
+    "card_name": "Battles of Legend: Glorious Gallery Booster Box [1st Edition]",
+    "set_name": "Battles of Legend: Glorious Gallery",
+    "baseline_value": 80.29,
+    "current_value": 80.92,
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 57,
-    "dollar_gain": 0.46999999999999886,
-    "percent_gain": 0.7735352205398269,
-    "product_id": 628125,
-    "printing": "Normal",
-    "card_name": "Legendary Dragon Decks Collector's Set (2020 Date Reprint)",
-    "set_name": "Legendary Dragon Decks (2020 Date Reprint)",
-    "baseline_value": 60.76,
-    "current_value": 61.23,
-    "status": "UNCONFIRMED"
-  },
-  {
-    "rank": 58,
+    "rank": 50,
     "dollar_gain": 0.19000000000000128,
     "percent_gain": 0.7600000000000051,
     "product_id": 164613,
@@ -696,7 +600,7 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 59,
+    "rank": 51,
     "dollar_gain": 0.040000000000000036,
     "percent_gain": 0.7561436672967871,
     "product_id": 501642,
@@ -708,19 +612,79 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 60,
-    "dollar_gain": 0.020000000000000018,
-    "percent_gain": 0.7326007326007333,
-    "product_id": 594711,
+    "rank": 52,
+    "dollar_gain": 0.03000000000000025,
+    "percent_gain": 0.7281553398058312,
+    "product_id": 220345,
     "printing": "Normal",
-    "card_name": "Maze of the Master Booster Pack [1st Edition]",
-    "set_name": "Maze of the Master",
-    "baseline_value": 2.73,
-    "current_value": 2.75,
+    "card_name": "Legendary Duelists: Rage of Ra Booster Pack [1st Edition]",
+    "set_name": "Legendary Duelists: Rage of Ra",
+    "baseline_value": 4.12,
+    "current_value": 4.15,
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 61,
+    "rank": 53,
+    "dollar_gain": 0.4399999999999977,
+    "percent_gain": 0.7139380171994122,
+    "product_id": 282081,
+    "printing": "Normal",
+    "card_name": "Battles of Legend: Crystal Revenge Booster Box",
+    "set_name": "Battles of Legend: Crystal Revenge",
+    "baseline_value": 61.63,
+    "current_value": 62.07,
+    "status": "UNCONFIRMED"
+  },
+  {
+    "rank": 54,
+    "dollar_gain": 0.2600000000000051,
+    "percent_gain": 0.6885593220339119,
+    "product_id": 70968,
+    "printing": "Normal",
+    "card_name": "2013 Collector Tin: Wave 2 - Tempest, Dragon Ruler of Storms",
+    "set_name": "2013 Collectors Tins",
+    "baseline_value": 37.76,
+    "current_value": 38.02,
+    "status": "UNCONFIRMED"
+  },
+  {
+    "rank": 55,
+    "dollar_gain": 0.8300000000000125,
+    "percent_gain": 0.6621459912245813,
+    "product_id": 668522,
+    "printing": "Normal",
+    "card_name": "Rarity Collection 5 Booster Box",
+    "set_name": "Rarity Collection 5",
+    "baseline_value": 125.35,
+    "current_value": 126.18,
+    "status": "UNCONFIRMED"
+  },
+  {
+    "rank": 56,
+    "dollar_gain": 0.22000000000000597,
+    "percent_gain": 0.6301919220853794,
+    "product_id": 628480,
+    "printing": "Normal",
+    "card_name": "Duelist's Advance Booster Box [1st Edition]",
+    "set_name": "Duelist's Advance",
+    "baseline_value": 34.91,
+    "current_value": 35.13,
+    "status": "UNCONFIRMED"
+  },
+  {
+    "rank": 57,
+    "dollar_gain": 0.4099999999999966,
+    "percent_gain": 0.627967529483836,
+    "product_id": 194394,
+    "printing": "Normal",
+    "card_name": "2019 Gold Sarcophagus Tin",
+    "set_name": "2019 Gold Sarcophagus Tin",
+    "baseline_value": 65.29,
+    "current_value": 65.7,
+    "status": "UNCONFIRMED"
+  },
+  {
+    "rank": 58,
     "dollar_gain": 0.46999999999999886,
     "percent_gain": 0.6155861165684334,
     "product_id": 239087,
@@ -732,19 +696,7 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 62,
-    "dollar_gain": 1.0,
-    "percent_gain": 0.6093845216331505,
-    "product_id": 282050,
-    "printing": "Normal",
-    "card_name": "Magnificent Mavens Box Display",
-    "set_name": "Magnificent Mavens",
-    "baseline_value": 164.1,
-    "current_value": 165.1,
-    "status": "UNCONFIRMED"
-  },
-  {
-    "rank": 63,
+    "rank": 59,
     "dollar_gain": 0.2700000000000031,
     "percent_gain": 0.6070143884892157,
     "product_id": 176846,
@@ -756,19 +708,31 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 64,
-    "dollar_gain": 0.5099999999999909,
-    "percent_gain": 0.5950991831971889,
-    "product_id": 248195,
+    "rank": 60,
+    "dollar_gain": 0.020000000000000018,
+    "percent_gain": 0.6060606060606066,
+    "product_id": 668602,
     "printing": "Normal",
-    "card_name": "2021 Tin of Ancient Battles Case",
-    "set_name": "2021 Tin of Ancient Battles",
-    "baseline_value": 85.7,
-    "current_value": 86.21,
+    "card_name": "Burst Protocol Booster Pack [1st Edition]",
+    "set_name": "Burst Protocol",
+    "baseline_value": 3.3,
+    "current_value": 3.32,
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 65,
+    "rank": 61,
+    "dollar_gain": 0.480000000000004,
+    "percent_gain": 0.5900430239705028,
+    "product_id": 562065,
+    "printing": "Normal",
+    "card_name": "Light of Destruction - Booster Box (2020 Date Reprint)",
+    "set_name": "Light of Destruction (2020 Date Reprint)",
+    "baseline_value": 81.35,
+    "current_value": 81.83,
+    "status": "UNCONFIRMED"
+  },
+  {
+    "rank": 62,
     "dollar_gain": 0.4200000000000017,
     "percent_gain": 0.5889777029869607,
     "product_id": 215261,
@@ -780,7 +744,19 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 66,
+    "rank": 63,
+    "dollar_gain": 0.23999999999999488,
+    "percent_gain": 0.5840837186663297,
+    "product_id": 228256,
+    "printing": "Normal",
+    "card_name": "Ghosts From the Past Box [1st Edition]",
+    "set_name": "Ghosts From the Past",
+    "baseline_value": 41.09,
+    "current_value": 41.33,
+    "status": "UNCONFIRMED"
+  },
+  {
+    "rank": 64,
     "dollar_gain": 0.3500000000000014,
     "percent_gain": 0.5768913795945301,
     "product_id": 477987,
@@ -792,19 +768,7 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 67,
-    "dollar_gain": 1.5,
-    "percent_gain": 0.5598477214197738,
-    "product_id": 565623,
-    "printing": "Normal",
-    "card_name": "Retro Pack (2020 Date Reprint) Booster Box (Retail Exclusive)",
-    "set_name": "Retro Pack (2020 Date Reprint)",
-    "baseline_value": 267.93,
-    "current_value": 269.43,
-    "status": "UNCONFIRMED"
-  },
-  {
-    "rank": 68,
+    "rank": 65,
     "dollar_gain": 0.05999999999999872,
     "percent_gain": 0.5474452554744409,
     "product_id": 497068,
@@ -816,31 +780,19 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 69,
-    "dollar_gain": 0.03000000000000025,
-    "percent_gain": 0.54545454545455,
-    "product_id": 534539,
+    "rank": 66,
+    "dollar_gain": 0.5,
+    "percent_gain": 0.5376344086021506,
+    "product_id": 197025,
     "printing": "Normal",
-    "card_name": "25th Anniversary Rarity Collection II Booster Pack",
-    "set_name": "25th Anniversary Rarity Collection II",
-    "baseline_value": 5.5,
-    "current_value": 5.53,
+    "card_name": "Advent Calendar 2019 Collector's Set",
+    "set_name": "Advent Calendar 2019",
+    "baseline_value": 93.0,
+    "current_value": 93.5,
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 70,
-    "dollar_gain": 0.07000000000000028,
-    "percent_gain": 0.5388760585065456,
-    "product_id": 27413,
-    "printing": "Normal",
-    "card_name": "Power of the Duelist - Booster Pack [1st Edition]",
-    "set_name": "Power of the Duelist",
-    "baseline_value": 12.99,
-    "current_value": 13.06,
-    "status": "UNCONFIRMED"
-  },
-  {
-    "rank": 71,
+    "rank": 67,
     "dollar_gain": 0.020000000000000018,
     "percent_gain": 0.5063291139240511,
     "product_id": 275784,
@@ -852,7 +804,7 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 72,
+    "rank": 68,
     "dollar_gain": 0.010000000000000231,
     "percent_gain": 0.48309178743962466,
     "product_id": 637642,
@@ -864,7 +816,7 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 73,
+    "rank": 69,
     "dollar_gain": 0.010000000000000231,
     "percent_gain": 0.4651162790697782,
     "product_id": 228243,
@@ -876,7 +828,7 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 74,
+    "rank": 70,
     "dollar_gain": 0.040000000000000924,
     "percent_gain": 0.4246284501061669,
     "product_id": 527222,
@@ -888,19 +840,7 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 75,
-    "dollar_gain": 0.03000000000000025,
-    "percent_gain": 0.4000000000000033,
-    "product_id": 605104,
-    "printing": "Normal",
-    "card_name": "Quarter Century Stampede Booster Pack",
-    "set_name": "Quarter Century Stampede",
-    "baseline_value": 7.5,
-    "current_value": 7.53,
-    "status": "UNCONFIRMED"
-  },
-  {
-    "rank": 76,
+    "rank": 71,
     "dollar_gain": 0.019999999999999574,
     "percent_gain": 0.3846153846153764,
     "product_id": 646455,
@@ -912,7 +852,7 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 77,
+    "rank": 72,
     "dollar_gain": 0.02999999999999936,
     "percent_gain": 0.37453183520598454,
     "product_id": 275360,
@@ -924,31 +864,19 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 78,
-    "dollar_gain": 0.46999999999999886,
-    "percent_gain": 0.3743230328129969,
-    "product_id": 668522,
+    "rank": 73,
+    "dollar_gain": 0.009999999999999787,
+    "percent_gain": 0.3649635036496272,
+    "product_id": 594711,
     "printing": "Normal",
-    "card_name": "Rarity Collection 5 Booster Box",
-    "set_name": "Rarity Collection 5",
-    "baseline_value": 125.56,
-    "current_value": 126.03,
+    "card_name": "Maze of the Master Booster Pack [1st Edition]",
+    "set_name": "Maze of the Master",
+    "baseline_value": 2.74,
+    "current_value": 2.75,
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 79,
-    "dollar_gain": 0.20000000000000284,
-    "percent_gain": 0.3683919690550798,
-    "product_id": 246444,
-    "printing": "Normal",
-    "card_name": "Maximum Gold: El Dorado Display [1st Edition]",
-    "set_name": "Maximum Gold: El Dorado",
-    "baseline_value": 54.29,
-    "current_value": 54.49,
-    "status": "UNCONFIRMED"
-  },
-  {
-    "rank": 80,
+    "rank": 74,
     "dollar_gain": 0.019999999999999574,
     "percent_gain": 0.3649635036496272,
     "product_id": 668604,
@@ -960,7 +888,7 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 81,
+    "rank": 75,
     "dollar_gain": 0.010000000000000231,
     "percent_gain": 0.3571428571428654,
     "product_id": 243606,
@@ -972,7 +900,7 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 82,
+    "rank": 76,
     "dollar_gain": 0.4200000000000159,
     "percent_gain": 0.3088008234688743,
     "product_id": 488576,
@@ -984,43 +912,19 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 83,
-    "dollar_gain": 0.009999999999999787,
-    "percent_gain": 0.3021148036253712,
-    "product_id": 668602,
+    "rank": 77,
+    "dollar_gain": 0.14999999999999858,
+    "percent_gain": 0.2973240832507405,
+    "product_id": 220329,
     "printing": "Normal",
-    "card_name": "Burst Protocol Booster Pack [1st Edition]",
-    "set_name": "Burst Protocol",
-    "baseline_value": 3.31,
-    "current_value": 3.32,
+    "card_name": "Phantom Rage Booster Box [1st Edition]",
+    "set_name": "Phantom Rage",
+    "baseline_value": 50.45,
+    "current_value": 50.6,
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 84,
-    "dollar_gain": 0.18999999999999773,
-    "percent_gain": 0.29003205617462635,
-    "product_id": 194394,
-    "printing": "Normal",
-    "card_name": "2019 Gold Sarcophagus Tin",
-    "set_name": "2019 Gold Sarcophagus Tin",
-    "baseline_value": 65.51,
-    "current_value": 65.7,
-    "status": "UNCONFIRMED"
-  },
-  {
-    "rank": 85,
-    "dollar_gain": 0.18000000000000682,
-    "percent_gain": 0.27485112230875985,
-    "product_id": 236330,
-    "printing": "Normal",
-    "card_name": "King's Court Booster Box [1st Edition]",
-    "set_name": "King's Court",
-    "baseline_value": 65.49,
-    "current_value": 65.67,
-    "status": "UNCONFIRMED"
-  },
-  {
-    "rank": 86,
+    "rank": 78,
     "dollar_gain": 0.040000000000000924,
     "percent_gain": 0.27266530334015626,
     "product_id": 478122,
@@ -1032,19 +936,19 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 87,
-    "dollar_gain": 0.1700000000000017,
-    "percent_gain": 0.2545672356993137,
-    "product_id": 257389,
+    "rank": 79,
+    "dollar_gain": 0.07000000000000028,
+    "percent_gain": 0.2349781805975169,
+    "product_id": 260854,
     "printing": "Normal",
-    "card_name": "Battle of Chaos Booster Box [1st Edition]",
-    "set_name": "Battle of Chaos",
-    "baseline_value": 66.78,
-    "current_value": 66.95,
+    "card_name": "Ghosts From the Past: The 2nd Haunting Mini Box [1st Edition]",
+    "set_name": "Ghosts From the Past: The 2nd Haunting",
+    "baseline_value": 29.79,
+    "current_value": 29.86,
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 88,
+    "rank": 80,
     "dollar_gain": 0.07000000000000028,
     "percent_gain": 0.2317880794701996,
     "product_id": 657009,
@@ -1056,19 +960,7 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 89,
-    "dollar_gain": 0.05000000000000071,
-    "percent_gain": 0.21570319240725072,
-    "product_id": 127507,
-    "printing": "Normal",
-    "card_name": "Generation Force: Special Edition Box",
-    "set_name": "Generation Force",
-    "baseline_value": 23.18,
-    "current_value": 23.23,
-    "status": "UNCONFIRMED"
-  },
-  {
-    "rank": 90,
+    "rank": 81,
     "dollar_gain": 0.09000000000000341,
     "percent_gain": 0.19027484143763934,
     "product_id": 228244,
@@ -1080,7 +972,7 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 91,
+    "rank": 82,
     "dollar_gain": 0.4300000000000068,
     "percent_gain": 0.18478727975934972,
     "product_id": 493464,
@@ -1092,7 +984,31 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 92,
+    "rank": 83,
+    "dollar_gain": 0.009999999999999787,
+    "percent_gain": 0.18181818181817794,
+    "product_id": 534539,
+    "printing": "Normal",
+    "card_name": "25th Anniversary Rarity Collection II Booster Pack",
+    "set_name": "25th Anniversary Rarity Collection II",
+    "baseline_value": 5.5,
+    "current_value": 5.51,
+    "status": "UNCONFIRMED"
+  },
+  {
+    "rank": 84,
+    "dollar_gain": 0.15000000000000568,
+    "percent_gain": 0.1633097441480737,
+    "product_id": 691167,
+    "printing": "Normal",
+    "card_name": "Chaos Origins Booster Box [1st Edition]",
+    "set_name": "Chaos Origins",
+    "baseline_value": 91.85,
+    "current_value": 92.0,
+    "status": "UNCONFIRMED"
+  },
+  {
+    "rank": 85,
     "dollar_gain": 0.03999999999999915,
     "percent_gain": 0.15313935681469812,
     "product_id": 257391,
@@ -1104,19 +1020,7 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 93,
-    "dollar_gain": 0.05999999999999517,
-    "percent_gain": 0.11892963330028775,
-    "product_id": 220329,
-    "printing": "Normal",
-    "card_name": "Phantom Rage Booster Box [1st Edition]",
-    "set_name": "Phantom Rage",
-    "baseline_value": 50.45,
-    "current_value": 50.51,
-    "status": "UNCONFIRMED"
-  },
-  {
-    "rank": 94,
+    "rank": 86,
     "dollar_gain": 0.03999999999999915,
     "percent_gain": 0.09324009324009126,
     "product_id": 206235,
@@ -1128,55 +1032,7 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 95,
-    "dollar_gain": 0.019999999999999574,
-    "percent_gain": 0.06713662302786026,
-    "product_id": 260854,
-    "printing": "Normal",
-    "card_name": "Ghosts From the Past: The 2nd Haunting Mini Box [1st Edition]",
-    "set_name": "Ghosts From the Past: The 2nd Haunting",
-    "baseline_value": 29.79,
-    "current_value": 29.81,
-    "status": "UNCONFIRMED"
-  },
-  {
-    "rank": 96,
-    "dollar_gain": 0.03999999999999915,
-    "percent_gain": 0.06494560805325401,
-    "product_id": 282081,
-    "printing": "Normal",
-    "card_name": "Battles of Legend: Crystal Revenge Booster Box",
-    "set_name": "Battles of Legend: Crystal Revenge",
-    "baseline_value": 61.59,
-    "current_value": 61.63,
-    "status": "UNCONFIRMED"
-  },
-  {
-    "rank": 97,
-    "dollar_gain": 0.12000000000000455,
-    "percent_gain": 0.05210368633581024,
-    "product_id": 575145,
-    "printing": "Normal",
-    "card_name": "Quarter Century Bonanza Booster Box",
-    "set_name": "Quarter Century Bonanza",
-    "baseline_value": 230.31,
-    "current_value": 230.43,
-    "status": "UNCONFIRMED"
-  },
-  {
-    "rank": 98,
-    "dollar_gain": 0.03999999999999204,
-    "percent_gain": 0.047348484848475425,
-    "product_id": 149407,
-    "printing": "Normal",
-    "card_name": "Kaiba's Collector Box",
-    "set_name": "Collector's Boxes",
-    "baseline_value": 84.48,
-    "current_value": 84.52,
-    "status": "UNCONFIRMED"
-  },
-  {
-    "rank": 99,
+    "rank": 87,
     "dollar_gain": 0.010000000000001563,
     "percent_gain": 0.04284490145673335,
     "product_id": 530881,
@@ -1188,7 +1044,19 @@
     "status": "UNCONFIRMED"
   },
   {
-    "rank": 100,
+    "rank": 88,
+    "dollar_gain": 0.01999999999999602,
+    "percent_gain": 0.02366863905324973,
+    "product_id": 149407,
+    "printing": "Normal",
+    "card_name": "Kaiba's Collector Box",
+    "set_name": "Collector's Boxes",
+    "baseline_value": 84.5,
+    "current_value": 84.52,
+    "status": "UNCONFIRMED"
+  },
+  {
+    "rank": 89,
     "dollar_gain": 0.00999999999999801,
     "percent_gain": 0.022241992882557852,
     "product_id": 104383,
@@ -1197,6 +1065,18 @@
     "set_name": "2015 Mega-Tins",
     "baseline_value": 44.96,
     "current_value": 44.97,
+    "status": "UNCONFIRMED"
+  },
+  {
+    "rank": 90,
+    "dollar_gain": 0.03999999999999204,
+    "percent_gain": 0.01738299074355397,
+    "product_id": 575145,
+    "printing": "Normal",
+    "card_name": "Quarter Century Bonanza Booster Box",
+    "set_name": "Quarter Century Bonanza",
+    "baseline_value": 230.11,
+    "current_value": 230.15,
     "status": "UNCONFIRMED"
   }
 ]
